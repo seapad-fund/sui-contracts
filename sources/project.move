@@ -31,7 +31,8 @@ module seapad::project {
     const ERR_INVALID_VESTING_TYPE: u64 = 1000;
     const ERR_INVALID_ROUND: u64 = 1001;
     const ERR_INVALID_ROUND_STATE: u64 = 1002;
-
+    const ERR_MAX_ALLOCATE: u64 = 1003;
+    const ERR_OUTOF_MARKETCAP: u64 = 1004;
 
     struct ProjectProfile<phantom COIN> has key, store{
         id: UID,
@@ -57,7 +58,7 @@ module seapad::project {
         sui: Coin<SUI>,
         token_total: u64, //total token
         token_released: u64, //released
-        token: Coin<COIN> //all token not released!
+        token: Option<Coin<COIN>> //all token not released!
     }
 
     ///@todo how to do vesting ?
@@ -76,24 +77,25 @@ module seapad::project {
         id: UID,
         round: u8, //which round ?
         round_state: u8,
-        total_sold: u128, //for each round
-        total_raised: u128, // all round
+        total_sold: u64, //for each round
+        total_raised: u64, // all round
         swap_ratio: u64,
         participants: u64,
-        max_allocate: u64,
+        max_allocate: u64, //in sui
         start_time: u64,
         end_time: u64,
         distribute_time: u64,
-        init_market_cap: u128,
-        market_cap: u128,
-        init_token_circulation: u128,
+        init_market_cap: u64, //cap by sui
+        market_cap: u64,
+        init_token_circulation: u64,
         token_fund: Option<Coin<COIN>>,
         fund_raising_registry: FundRaisingRegistry<COIN>
     }
 
+    ///should refer to object
     struct ProjectContract<phantom COIN> has key, store{
         id: UID,
-        coin_metadata: CoinMetadata<COIN>
+        coin_metadata: address
     }
 
     ///lives in launchpad domain
@@ -154,31 +156,37 @@ module seapad::project {
 
       struct Projects<phantom PAD> has key{
           id: UID,
-          projects: Bag
+          projects: vector<address>
       }
 
     struct AdminCap has key, store {
         id: UID
     }
 
-    ///initialize
+    ///initialize SPT_PAD project
+    /// with witness
+    /// with admin
+    /// share list of projects
+    /// share pad config
     fun init(witness: PROJECT, ctx: &mut TxContext){
         let adminCap = AdminCap { id: object::new(ctx)};
         transfer::transfer(adminCap, sender(ctx));
 
-        transfer::transfer(Projects<SPT_PAD> {
+        //share this registry for anyone to see
+        transfer::share_object(Projects<SPT_PAD> {
             id: object::new(ctx),
-            projects: bag::new(ctx)
-        }, sender(ctx));
+            projects: vector::empty<address>()
+        });
 
-        transfer::freeze_object(PadConfig{
+        transfer::share_object(PadConfig{
             id: object::new(ctx),
             adminAddr: sender(ctx)
         })
     }
 
     ///change admin
-    public entry fun changeAdmin(adminCap: AdminCap, to: address, ctx: &mut TxContext){
+    public entry fun changeAdmin(adminCap: AdminCap, to: address, padConfig: &mut PadConfig, ctx: &mut TxContext){
+        padConfig.adminAddr = to;
         transfer::transfer(adminCap, to);
     }
 
@@ -193,8 +201,8 @@ module seapad::project {
                                 swap_ratio: u64,
                                 max_allocate: u64,
                                 distribute_time: u64,
-                                init_market_cap: u128,
-                                init_token_circulation: u128,
+                                init_market_cap: u64,
+                                init_token_circulation: u64,
         vesting_type: u8,
         first_mlst_time: u64,
         first_mlst_percent: u8,
@@ -202,7 +210,9 @@ module seapad::project {
         second_mlst_percent: u8,
         third_first_mlst_time: u64,
         third_first_mlst_percent: u8,
-        coin_metadata: CoinMetadata<COIN>, //@todo fixme : can't be owner of this data
+        fourth_first_mlst_time: u64,
+        fourth_first_mlst_percent: u8,
+        coin_metadata: &CoinMetadata<COIN>, //@todo fixme : can't be owner of this data
         ctx: &mut TxContext
     ){
         let profile = ProjectProfile {
@@ -238,7 +248,7 @@ module seapad::project {
 
         let contract = ProjectContract {
             id: object::new(ctx),
-            coin_metadata
+            coin_metadata: object::id_address(coin_metadata)
         };
 
         let community = ProjectCommunity<COIN>{
@@ -266,9 +276,16 @@ module seapad::project {
                 percent: third_first_mlst_percent
             };
 
+            let mlst4 = ProjectVestingMileStone {
+                time: fourth_first_mlst_time,
+                percent: fourth_first_mlst_percent
+            };
+
             vector::push_back(&mut vestingMlsts, mlst1);
             vector::push_back(&mut vestingMlsts, mlst2);
             vector::push_back(&mut vestingMlsts, mlst3);
+            vector::push_back(&mut vestingMlsts, mlst4);
+            checkMileStones(&mut vestingMlsts);
         };
 
         let vesting = ProjectVesting {
@@ -287,22 +304,19 @@ module seapad::project {
             vesting
         };
 
-        ///save project
-       bag::add(&mut projects.projects, object::id_address(&project), project)
+        vector::push_back(&mut projects.projects, object::id_address(&project));
+
+        ///share project
+        transfer::share_object(project);
     }
 
-
+    /// if you want more milestones
     public entry fun addMileStone<COIN>(_adminCap: &AdminCap, project: &mut Project<COIN>, time: u64, percent: u8){
         let vesting = &mut project.vesting;
         assert!(vesting.type == VESTING_TYPE_MILESTONE, ERR_INVALID_VESTING_TYPE);
-
-        let more = ProjectVestingMileStone{
-            time, percent
-        };
-
         let milestone = option::borrow_mut(&mut vesting.milestones);
-        validateMileStonePercent(milestone, &more);
-        vector::push_back(milestone, more);
+        vector::push_back(milestone, ProjectVestingMileStone{ time, percent });
+        checkMileStones(milestone);
     }
 
     public entry fun updateProjectLaunch<COIN>(_adminCap: &AdminCap,
@@ -311,8 +325,8 @@ module seapad::project {
                                          max_allocate: u64,
                                          start_time: u64,
                                          distribute_time: u64,
-                                         init_market_cap: u128,
-                                         init_token_circulation: u128,
+                                         init_market_cap: u64,
+                                         init_token_circulation: u64,
                                          ctx: &mut TxContext){
         let launchState = &mut project.launchstate;
         launchState.swap_ratio = swap_ratio;
@@ -323,13 +337,11 @@ module seapad::project {
         launchState.init_token_circulation = init_token_circulation;
     }
 
-    ///@todo user deposit token before fund raising
-    public entry fun userDepositProjectFundToken<T>(token: Coin<T>, padConfig: &PadConfig, ctx: &mut TxContext){
-        transfer::transfer(token, padConfig.adminAddr);
-    }
-
-    ///@todo make sure coin merged
-    public entry fun padDepositProjectFundToken<COIN>(_adminCap: &AdminCap, token: Coin<COIN>, project: &mut Project<COIN>, ctx: &mut TxContext){
+    ///@todo
+    /// - make sure coin merged
+    /// - should limit to the one that register project ?
+    /// - make sure token deposit match the market cap & swap ratio
+    public entry fun userDepositProjectFundToken<COIN>(_adminCap: &AdminCap, token: Coin<COIN>, project: &mut Project<COIN>, ctx: &mut TxContext){
         if(option::is_some(&project.launchstate.token_fund)){
             let before = option::borrow_mut(&mut project.launchstate.token_fund);
             coin::join(before, token);
@@ -346,18 +358,52 @@ module seapad::project {
         project.launchstate.round_state = ROUND_STATE_RASING;
     }
 
-    ///@todo user buy token
-    public entry fun buy<COIN>(suiCoin: &mut Coin<SUI>, project: &mut Project<COIN>, ctx: &mut TxContext){
+    ///@todo
+    /// - implement token buy
+    /// - with someone need to do KYC, check KYC objects
+    /// - validate market cap in sui: reject all orders that is:
+    ///   * reach max_allocate
+    ///   * already full market cap
+    public entry fun buy<COIN>(suiCoin: Coin<SUI>, project: &mut Project<COIN>, ctx: &mut TxContext){
         validateStateForBuy(project);
-        //@todo then process buy
+        let launchState = &mut project.launchstate;
+
+        assert!(coin::value(&suiCoin) <= launchState.max_allocate, ERR_MAX_ALLOCATE);
+        assert!(launchState.market_cap >= launchState.total_sold + coin::value(&suiCoin), ERR_OUTOF_MARKETCAP);
+
+        let registry = &mut launchState.fund_raising_registry;
+        launchState.participants  = launchState.participants + 1;
+        launchState.total_sold = launchState.total_sold + coin::value(&suiCoin);
+        vector::push_back(&mut registry.orders, BuyInfo<COIN> {
+            buyer: sender(ctx),
+            sui: suiCoin, //just bid
+            token_total: 0, //not distributed
+            token_released: 0, //not released
+            token: option::none<Coin<COIN>>() //not released yet
+        })
     }
 
+    ///@todo end fund raising of one project
     public entry fun endFundRaising<COIN>(_adminCap: &AdminCap, project: &mut Project<COIN>, ctx: &mut TxContext){
         //@todo release token by milestone
+        let state = &mut project.launchstate;
+        let registry = &mut state.fund_raising_registry;
+        state.round_state = ROUND_STATE_ENDED;
+        //@todo just swap token
+        let index = vector::length(&registry.orders) - 1;
+        while (index >= 0){
+            let order = vector::borrow_mut(&mut registry.orders, index);
+            let ratio = state.swap_ratio; //one sui cost [ratio] token
+            let token = coin::value(&order.sui) * ratio; //@todo check overflow
+            order.token_total = token;
+            let tokenDistributed = coin::split(option::borrow_mut<Coin<COIN>>(&mut state.token_fund), token, ctx);
+            option::fill(&mut order.token, tokenDistributed);
+        }
     }
 
-    public entry fun vesting<COIN>(ctx: &mut TxContext){
-        //@todo user vesting token, how to do that ?
+    ///@todo user vesting token, how to do that ?
+    public entry fun vesting<COIN>(project: &mut Project<COIN>, ctx: &mut TxContext){
+
     }
 
     ///@todo
@@ -375,11 +421,12 @@ module seapad::project {
 
     }
 
-    ///@todo validate mile stone
-    /// make sure that: sum of all milestone is <= 100%
-    fun validateMileStonePercent(_milestone: &vector<ProjectVestingMileStone>, _moreMileStone: &ProjectVestingMileStone){
+    ///@todo validate mile stone:
+    /// -make sure that: sum of all milestone is <= 100%
+    /// -valid times
+    fun checkMileStones(_milestone: &vector<ProjectVestingMileStone>){
+       
     }
-
 
     ///@todo
     /// round must not be started, running ...
