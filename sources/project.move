@@ -17,6 +17,8 @@ module seapad::project {
     use sui::bag;
     use sui::bag::Bag;
     use sui::sui::SUI;
+    use sui::vec_map::VecMap;
+    use sui::vec_map;
 
     ///Define model first
 
@@ -70,7 +72,7 @@ module seapad::project {
     struct FundRaisingRegistry<phantom COIN>  has key, store{
         id: UID,
         //@todo add more field
-        orders: vector<BuyInfo<COIN>>
+        orders: VecMap<address, BuyInfo<COIN>>
     }
 
     struct ProjectLaunchState<phantom COIN> has key, store{
@@ -132,7 +134,6 @@ module seapad::project {
         milestones: Option<vector<ProjectVestingMileStone>>
     }
 
-
     struct Project<phantom COIN> has key, store {
         id: UID,
         profile: ProjectProfile<COIN>,
@@ -149,15 +150,10 @@ module seapad::project {
         adminAddr: address
     }
 
-//    struct Projects has key, store {
-//        id: UID,
-//        projects: LinkedTable<address, Project>
-//    }
-
-      struct Projects<phantom PAD> has key{
-          id: UID,
-          projects: vector<address>
-      }
+    struct Projects<phantom PAD> has key{
+      id: UID,
+      projects: vector<address>
+    }
 
     struct AdminCap has key, store {
         id: UID
@@ -242,10 +238,9 @@ module seapad::project {
             token_fund: option::none<Coin<COIN>>(),
             fund_raising_registry: FundRaisingRegistry<COIN> {
                 id: object::new(ctx),
-                orders: vector::empty<BuyInfo<COIN>>()
+                orders: vec_map::empty<address, BuyInfo<COIN>>()
             }
         };
-
         let contract = ProjectContract {
             id: object::new(ctx),
             coin_metadata: object::id_address(coin_metadata)
@@ -328,13 +323,13 @@ module seapad::project {
                                          init_market_cap: u64,
                                          init_token_circulation: u64,
                                          ctx: &mut TxContext){
-        let launchState = &mut project.launchstate;
-        launchState.swap_ratio = swap_ratio;
-        launchState.max_allocate = max_allocate;
-        launchState.start_time = start_time;
-        launchState.distribute_time = distribute_time;
-        launchState.init_market_cap = init_market_cap;
-        launchState.init_token_circulation = init_token_circulation;
+        let lState = &mut project.launchstate;
+        lState.swap_ratio = swap_ratio;
+        lState.max_allocate = max_allocate;
+        lState.start_time = start_time;
+        lState.distribute_time = distribute_time;
+        lState.init_market_cap = init_market_cap;
+        lState.init_token_circulation = init_token_circulation;
     }
 
     ///@todo
@@ -364,46 +359,43 @@ module seapad::project {
     /// - validate market cap in sui: reject all orders that is:
     ///   * reach max_allocate
     ///   * already full market cap
+    /// - @todo move distribute function here to decrease gas cost
     public entry fun buy<COIN>(suiCoin: Coin<SUI>, project: &mut Project<COIN>, ctx: &mut TxContext){
         validateStateForBuy(project);
-        let launchState = &mut project.launchstate;
+        let lState = &mut project.launchstate;
 
-        assert!(coin::value(&suiCoin) <= launchState.max_allocate, ERR_MAX_ALLOCATE);
-        assert!(launchState.market_cap >= launchState.total_sold + coin::value(&suiCoin), ERR_OUTOF_MARKETCAP);
+        assert!(coin::value(&suiCoin) <= lState.max_allocate, ERR_MAX_ALLOCATE);
+        assert!(lState.market_cap >= lState.total_sold + coin::value(&suiCoin), ERR_OUTOF_MARKETCAP);
 
-        let registry = &mut launchState.fund_raising_registry;
-        launchState.participants  = launchState.participants + 1;
-        launchState.total_sold = launchState.total_sold + coin::value(&suiCoin);
-        vector::push_back(&mut registry.orders, BuyInfo<COIN> {
+        let registry = &mut lState.fund_raising_registry;
+        lState.participants  = lState.participants + 1;
+        lState.total_sold = lState.total_sold + coin::value(&suiCoin);
+
+        //one sui cost [ratio] token @todo check overflow
+        let tokenAmt = coin::value(&suiCoin) * lState.swap_ratio;
+        let tokenDistributed = coin::split(option::borrow_mut<Coin<COIN>>(&mut lState.token_fund), tokenAmt, ctx);
+
+        vec_map::insert(&mut registry.orders, sender(ctx), BuyInfo<COIN> {
             buyer: sender(ctx),
             sui: suiCoin, //just bid
-            token_total: 0, //not distributed
+            token_total: tokenAmt, //not distributed
             token_released: 0, //not released
-            token: option::none<Coin<COIN>>() //not released yet
+            token: option::some<Coin<COIN>>(tokenDistributed) //not released yet
         })
     }
 
     ///@todo end fund raising of one project
     public entry fun endFundRaising<COIN>(_adminCap: &AdminCap, project: &mut Project<COIN>, ctx: &mut TxContext){
-        //@todo release token by milestone
-        let state = &mut project.launchstate;
-        let registry = &mut state.fund_raising_registry;
-        state.round_state = ROUND_STATE_ENDED;
-        //@todo just swap token
-        let index = vector::length(&registry.orders) - 1;
-        while (index >= 0){
-            let order = vector::borrow_mut(&mut registry.orders, index);
-            let ratio = state.swap_ratio; //one sui cost [ratio] token
-            let token = coin::value(&order.sui) * ratio; //@todo check overflow
-            order.token_total = token;
-            let tokenDistributed = coin::split(option::borrow_mut<Coin<COIN>>(&mut state.token_fund), token, ctx);
-            option::fill(&mut order.token, tokenDistributed);
-        }
+        project.launchstate.round_state = ROUND_STATE_ENDED;
     }
 
     ///@todo user vesting token, how to do that ?
     public entry fun vesting<COIN>(project: &mut Project<COIN>, ctx: &mut TxContext){
-
+        validateVesting(project);
+        let sender = sender(ctx);
+        let orders = &mut project.launchstate.fund_raising_registry.orders;
+        let order = vec_map::get_mut(orders, &sender(ctx));
+        //@todo make vesting ...
     }
 
     ///@todo
@@ -438,5 +430,9 @@ module seapad::project {
 
     fun validateStateForBuy<COIN>(project: &mut Project<COIN>){
         assert!(project.launchstate.round_state == ROUND_STATE_RASING, ERR_INVALID_ROUND_STATE);
+    }
+
+    fun validateVesting<COIN>(project: &mut Project<COIN>){
+        assert!(project.launchstate.round_state == ROUND_STATE_ENDED, ERR_INVALID_ROUND_STATE);
     }
 }
