@@ -19,6 +19,7 @@ module seapad::project {
     use sui::sui::SUI;
     use sui::vec_map::VecMap;
     use sui::vec_map;
+    use sui::tx_context;
 
     ///Define model first
 
@@ -57,7 +58,7 @@ module seapad::project {
 
     struct BuyInfo<phantom COIN>  has store{
         buyer: address,
-        sui: Coin<SUI>,
+        sui: u64,
         token_total: u64, //total token
         token_released: u64, //released
         token: Option<Coin<COIN>> //all token not released!
@@ -72,7 +73,8 @@ module seapad::project {
     struct FundRaisingRegistry<phantom COIN>  has key, store{
         id: UID,
         //@todo add more field
-        orders: VecMap<address, BuyInfo<COIN>>
+        orders: VecMap<address, BuyInfo<COIN>>,
+        budget: Option<Coin<SUI>>
     }
 
     struct ProjectLaunchState<phantom COIN> has key, store{
@@ -238,7 +240,8 @@ module seapad::project {
             token_fund: option::none<Coin<COIN>>(),
             fund_raising_registry: FundRaisingRegistry<COIN> {
                 id: object::new(ctx),
-                orders: vec_map::empty<address, BuyInfo<COIN>>()
+                orders: vec_map::empty<address, BuyInfo<COIN>>(),
+                budget: option::none<Coin<SUI>>()
             }
         };
         let contract = ProjectContract {
@@ -359,7 +362,6 @@ module seapad::project {
     /// - validate market cap in sui: reject all orders that is:
     ///   * reach max_allocate
     ///   * already full market cap
-    /// - @todo move distribute function here to decrease gas cost
     public entry fun buy<COIN>(suiCoin: Coin<SUI>, project: &mut Project<COIN>, ctx: &mut TxContext){
         validateStateForBuy(project);
         let lState = &mut project.launchstate;
@@ -377,16 +379,26 @@ module seapad::project {
 
         vec_map::insert(&mut registry.orders, sender(ctx), BuyInfo<COIN> {
             buyer: sender(ctx),
-            sui: suiCoin, //just bid
+            sui: coin::value(&suiCoin),
             token_total: tokenAmt, //not distributed
             token_released: 0, //not released
             token: option::some<Coin<COIN>>(tokenDistributed) //not released yet
-        })
+        });
+
+        if(option::is_none(&registry.budget)){
+            option::fill(&mut registry.budget, suiCoin);
+        }
+        else {
+            coin::join(option::borrow_mut(&mut registry.budget), suiCoin);
+        }
     }
 
-    ///@todo end fund raising of one project
+    /// - end fund raising of one project
+    /// - @todo distribute raised fund of SUI to ...
     public entry fun endFundRaising<COIN>(_adminCap: &AdminCap, project: &mut Project<COIN>, ctx: &mut TxContext){
         project.launchstate.round_state = ROUND_STATE_ENDED;
+        project.launchstate.end_time = tx_context::epoch(ctx);
+        project.launchstate.total_raised = project.launchstate.total_sold;
     }
 
     ///@todo user vesting token, how to do that ?
