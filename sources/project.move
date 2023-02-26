@@ -189,7 +189,6 @@ module seapad::project {
                                       swap_ratio_sui: u64,
                                       swap_ratio_token: u64,
                                       max_allocate: u64,
-                                      distribute_time: u64,
                                       init_market_cap: u64,
                                       init_token_circulation: u64,
                                       vesting_type: u8,
