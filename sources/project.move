@@ -99,9 +99,9 @@ module seapad::project {
 
     ///lives in launchpad domain
     ///use dynamic field to add likes, votes, and watch
-    const LIKES: vector<u8>=  b"likes"; //likes: VecSet<address>
-    const WATCHS: vector<u8>=  b"watchs"; //watchs: VecSet<address>,
-    const VOTES: vector<u8>=  b"votes"; //votes: VecSet<address>
+    const LIKES: vector<u8> =  b"likes"; //likes: VecSet<address>
+    const WATCHS: vector<u8> =  b"watchs"; //watchs: VecSet<address>,
+    const VOTES: vector<u8> =  b"votes"; //votes: VecSet<address>
     struct Community<phantom COIN> has key, store{
         id: UID,
         like: u128,
