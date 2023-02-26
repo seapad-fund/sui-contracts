@@ -16,7 +16,6 @@ module seapad::project {
     use sui::vec_set::VecSet;
     use sui::vec_set;
     use sui::dynamic_field;
-    use sui::math;
 
     ///Define model first
 
@@ -34,6 +33,7 @@ module seapad::project {
     const ERR_MAX_ALLOCATE: u64 = 1003;
     const ERR_OUTOF_HARDCAP: u64 = 1004;
     const ERR_ALREADY_VOTE: u64 = 1005;
+    const ERR_CLAIM_DONE: u64 = 1006;
 
     struct ProjectProfile<phantom COIN> has key, store{
         id: UID,
@@ -56,18 +56,11 @@ module seapad::project {
     const ROUND_STATE_END_REFUND: u8 = 5; //refund completed & stop
     const ROUND_STATE_ENDED_CLAIM: u8 = 6; //complete & ready to claim token
 
-    struct BuyInfo<phantom COIN>  has store{
+    struct BuyOrder<phantom COIN>  has store{
         buyer: address,
         sui_amount: u64,
-        token_total: u64, //total token
+        token_amt: u64, //total token
         token_released: u64, //released
-        token: Option<Coin<COIN>> //all token not released!
-    }
-
-    struct FundRaisingRegistry<phantom COIN>  has key, store{
-        id: UID,
-        orders: VecMap<address, BuyInfo<COIN>>,
-        budget: Option<Coin<SUI>>
     }
 
     struct LaunchState<phantom COIN> has key, store{
@@ -75,20 +68,17 @@ module seapad::project {
         soft_cap: u64,
         hard_cap: u64,
         round: u8, //which round ?
-        round_state: u8,
+        state: u8,
         total_sold: u64, //for each round
-        total_raised: u64, // all round
         swap_ratio_sui: u64,
         swap_ratio_token: u64,
         participants: u64,
         max_allocate: u64, //in sui
         start_time: u64,
-        end_time: u64, //when project stop fund-raising and decide to rollback or payout token
-        init_market_cap: u64, //cap by sui
-        market_cap: u64, //@todo why need market cap
-        init_token_circulation: u64,
-        token_fund: Option<Coin<COIN>>,
-        fund_raising_registry: FundRaisingRegistry<COIN>
+        end_time: u64, //when project stop fund-raising and decide to refund or payout token(ready to claim)
+        token_fund: Option<Coin<COIN>>, //owner of project deposit token fund enough to raising fund
+        raised_sui: Option<Coin<SUI>>,
+        buy_orders: VecMap<address, BuyOrder<COIN>>,
     }
 
     ///should refer to object
@@ -216,26 +206,20 @@ module seapad::project {
             id: object::new(ctx),
             soft_cap,
             hard_cap,
-            round: ROUND_INIT, //which round ?
-            round_state: ROUND_STATE_INIT,
-            total_sold: 0, //for each round
-            total_raised: 0, // all round
+            round: ROUND_INIT,
+            state: ROUND_STATE_INIT,
+            total_sold: 0,
             swap_ratio_sui,
             swap_ratio_token,
             participants: 0,
             max_allocate,
             start_time: 0,
             end_time: 0,
-            init_market_cap,
-            market_cap: 0,
-            init_token_circulation,
             token_fund: option::none<Coin<COIN>>(),
-            fund_raising_registry: FundRaisingRegistry<COIN> {
-                id: object::new(ctx),
-                orders: vec_map::empty<address, BuyInfo<COIN>>(),
-                budget: option::none<Coin<SUI>>()
-            }
+            buy_orders: vec_map::empty<address, BuyOrder<COIN>>(),
+            raised_sui: option::none<Coin<SUI>>(),
         };
+
         let contract = Contract {
             id: object::new(ctx),
             coin_metadata: object::id_address(coin_metadata)
@@ -333,8 +317,6 @@ module seapad::project {
         lState.end_time = end_time;
         lState.soft_cap = soft_cap;
         lState.hard_cap = hard_cap;
-        lState.init_market_cap = init_market_cap;
-        lState.init_token_circulation = init_token_circulation;
     }
 
     ///@todo
@@ -358,7 +340,7 @@ module seapad::project {
         validateStartFundRaising(project);
         project.launchstate.start_time = tx_context::epoch(ctx);
         project.launchstate.total_sold = 0;
-        project.launchstate.round_state = ROUND_STATE_RASING;
+        project.launchstate.state = ROUND_STATE_RASING;
         project.launchstate.participants = 0;
     }
 
@@ -368,80 +350,115 @@ module seapad::project {
     /// - validate market cap in sui: reject all orders that is:
     ///   * reach max_allocate
     ///   * already full market cap
+    /// @todo multiple buy order ?
     public entry fun buy<COIN>(suiCoin: Coin<SUI>, project: &mut Project<COIN>, ctx: &mut TxContext){
         validateStateForBuy(project);
         let lState = &mut project.launchstate;
+        let boughtAmt = 0u64;
+        let bought = false;
+        if(vec_map::contains(&lState.buy_orders, &sender(ctx))){
+            boughtAmt = vec_map::get_mut(&mut lState.buy_orders, &sender(ctx)).sui_amount;
+            bought = true;
+        };
 
-        assert!(coin::value(&suiCoin) <= lState.max_allocate, ERR_MAX_ALLOCATE);
+        assert!(coin::value(&suiCoin) + boughtAmt <= lState.max_allocate, ERR_MAX_ALLOCATE);
         assert!(lState.hard_cap >= lState.total_sold + coin::value(&suiCoin), ERR_OUTOF_HARDCAP);
 
-        let registry = &mut lState.fund_raising_registry;
-        lState.participants  = lState.participants + 1;
         lState.total_sold = lState.total_sold + coin::value(&suiCoin);
 
         //@todo check math
-        let tokenAmt = coin::value(&suiCoin) * lState.swap_ratio_sui / lState.swap_ratio_sui;
-        let tokenDistributed = coin::split(option::borrow_mut<Coin<COIN>>(&mut lState.token_fund), tokenAmt, ctx);
+        let moreSuiAmt = coin::value(&suiCoin);
+        let tokenAmt = moreSuiAmt * lState.swap_ratio_sui / lState.swap_ratio_sui;
 
-        vec_map::insert(&mut registry.orders, sender(ctx), BuyInfo<COIN> {
-            buyer: sender(ctx),
-            sui_amount: coin::value(&suiCoin),
-            token_total: tokenAmt, //not distributed
-            token_released: 0, //not released
-            token: option::some<Coin<COIN>>(tokenDistributed) //not released yet
-        });
-
-        if(option::is_none(&registry.budget)){
-            option::fill(&mut registry.budget, suiCoin);
+        if(!bought){
+            vec_map::insert(&mut lState.buy_orders, sender(ctx), BuyOrder<COIN> {
+                buyer: sender(ctx),
+                sui_amount: moreSuiAmt,
+                token_amt: tokenAmt, //not distributed
+                token_released: 0, //not released
+            });
+            lState.participants  = lState.participants + 1;
         }
         else {
-            coin::join(option::borrow_mut(&mut registry.budget), suiCoin);
+            let order = vec_map::get_mut(&mut lState.buy_orders, &sender(ctx));
+            order.sui_amount = order.sui_amount + moreSuiAmt;
+            order.token_amt = order.token_amt + tokenAmt;
+        };
+
+        if(option::is_none(&lState.raised_sui)){
+            option::fill(&mut lState.raised_sui, suiCoin);
+        }
+        else {
+            coin::join(option::borrow_mut(&mut lState.raised_sui), suiCoin);
         }
     }
 
-    /// @todo admin call to end fund raising of one project: must be completed fund raising...
-    /// should clear all token fund, sui fund, state...
+    /// @todo
+    /// - call to stop fund raising, maybe refund or success
+    /// - if refund: go to REFUND state with timeout
     public entry fun endFundRaising<COIN>(_adminCap: &AdminCap, project: &mut Project<COIN>, ctx: &mut TxContext){
         let lState = &mut project.launchstate;
         lState.end_time = tx_context::epoch(ctx);
         if(lState.total_sold < lState.soft_cap){
             //start refund
-            lState.round_state = ROUND_STATE_REFUNDING;
-            lState.total_raised = 0;
+            lState.state = ROUND_STATE_REFUNDING;
         }
         else {
-            lState.round_state = ROUND_STATE_ENDED_CLAIM;
-            lState.total_raised = lState.total_sold;
+            lState.state = ROUND_STATE_ENDED_CLAIM;
         }
     }
 
-    ///@todo to stop refunding
-    /// - admin decide to refund
-    /// - set state to refund
+    ///@todo
+    /// - stop refund process
+    /// - set state to end with refund
+    /// - clear state ?
     public entry fun endRefund<COIN>(_adminCap: &AdminCap, project: &mut Project<COIN>, ctx: &mut TxContext){
-        project.launchstate.round_state = ROUND_STATE_END_REFUND;
+        project.launchstate.state = ROUND_STATE_END_REFUND;
+    }
+
+    ///@todo
+    /// - allocate raised budget, maybe:
+    ///     *transfer all to project owner
+    ///     *charge fee
+    ///     *add liquidity
+    public entry fun allocateRaisedBudget<COIN>(_adminCap: &AdminCap, project: &mut Project<COIN>, projectOwner: address, ctx: &mut TxContext){
+        validateAllocateBudget(project);
+        let budget = option::extract(&mut project.launchstate.raised_sui);
+        transfer::transfer(budget, projectOwner);
+    }
+
+    ///@todo
+   /// - stop refund process
+   /// - set state to end with refund
+   /// - clear state ?
+    public entry fun refundToken<COIN>(_adminCap: &AdminCap, project: &mut Project<COIN>, projectOwner: address, ctx: &mut TxContext){
+        validateAllocateBudget(project);
+        let budget = option::extract(&mut project.launchstate.token_fund);
+        transfer::transfer(budget, projectOwner);
     }
 
     ///@todo user claim token
     public entry fun vestToken<COIN>(project: &mut Project<COIN>, ctx: &mut TxContext){
         validateVesting(project);
         let sender = sender(ctx);
-        let orders = &mut project.launchstate.fund_raising_registry.orders;
-        let order = vec_map::get_mut(orders, &sender(ctx));
-        //@todo make vesting according to milestone or linear
+        let lState = &mut project.launchstate;
+        let order = vec_map::get_mut(&mut lState.buy_orders, &sender(ctx));
+        //@todo make vesting according to milestone or linear, the most simple: distribute right now
+        let moreToken = order.token_amt - order.token_released;
+        assert!(moreToken > 0, ERR_CLAIM_DONE);
+        let token = coin::split<COIN>(option::borrow_mut(&mut lState.token_fund), moreToken, ctx);
+        transfer::transfer(token, sender(ctx));
     }
 
     ///@todo when project refund, use claim sui
     public entry fun claimRefund<COIN>(project: &mut Project<COIN>, ctx: &mut TxContext){
         validateRefund(project);
         let sender = sender(ctx);
-        let order = vec_map::get_mut(&mut project.launchstate.fund_raising_registry.orders, &sender(ctx));
-        coin::join(option::borrow_mut(&mut project.launchstate.token_fund), option::extract(&mut order.token));
-        let userSui = coin::split(option::borrow_mut(&mut project.launchstate.fund_raising_registry.budget), order.sui_amount, ctx);
+        let order = vec_map::get_mut(&mut project.launchstate.buy_orders, &sender(ctx));
+        let userSui = coin::split(option::borrow_mut(&mut project.launchstate.raised_sui), order.sui_amount, ctx);
         transfer::transfer(userSui, sender);
     }
 
-    ///@todo
     public entry fun vote<COIN>(project: &mut Project<COIN>, ctx: &mut TxContext){
         let com = &mut project.community;
         let senderAddr = sender(ctx);
@@ -449,7 +466,7 @@ module seapad::project {
 
         assert!(vec_set::contains(votes, &senderAddr), ERR_ALREADY_VOTE);
 
-        com.vote = com.vote +1;
+        com.vote = com.vote + 1;
         vec_set::insert(votes, senderAddr);
     }
 
@@ -485,18 +502,22 @@ module seapad::project {
     ///@todo
     /// round must not be started, running ...
     fun validateStartFundRaising<COIN>(project: &mut Project<COIN>){
-        assert!(project.launchstate.round_state >= ROUND_STATE_ENDED_CLAIM, ERR_INVALID_ROUND_STATE);
+        assert!(project.launchstate.state >= ROUND_STATE_ENDED_CLAIM, ERR_INVALID_ROUND_STATE);
     }
 
     fun validateStateForBuy<COIN>(project: &mut Project<COIN>){
-        assert!(project.launchstate.round_state == ROUND_STATE_RASING, ERR_INVALID_ROUND_STATE);
+        assert!(project.launchstate.state == ROUND_STATE_RASING, ERR_INVALID_ROUND_STATE);
     }
 
     fun validateVesting<COIN>(project: &mut Project<COIN>){
-        assert!(project.launchstate.round_state == ROUND_STATE_ENDED_CLAIM, ERR_INVALID_ROUND_STATE);
+        assert!(project.launchstate.state == ROUND_STATE_ENDED_CLAIM, ERR_INVALID_ROUND_STATE);
     }
 
     fun validateRefund<COIN>(project: &mut Project<COIN>){
-        assert!(project.launchstate.round_state == ROUND_STATE_REFUNDING, ERR_INVALID_ROUND_STATE);
+        assert!(project.launchstate.state == ROUND_STATE_REFUNDING, ERR_INVALID_ROUND_STATE);
+    }
+
+    fun validateAllocateBudget<COIN>(project: &mut Project<COIN>){
+        assert!(project.launchstate.state == ROUND_STATE_END_REFUND || project.launchstate.state == ROUND_STATE_ENDED_CLAIM, ERR_INVALID_ROUND_STATE);
     }
 }
