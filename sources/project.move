@@ -1,3 +1,10 @@
+///This module provide:
+/// - manage project's fund raising
+/// - one round only, not all round (seed, private ...) in one project instance
+/// - how to decentralize admin ?
+/// - soft cap, hardcap. Fundraising can be refunded!
+/// - not implement KYC now
+///
 module seapad::project {
     use std::option::Option;
     use sui::tx_context::{TxContext, sender};
@@ -340,8 +347,8 @@ module seapad::project {
         validateStartFundRaising(project);
         project.launchstate.start_time = tx_context::epoch(ctx);
         project.launchstate.total_sold = 0;
-        project.launchstate.state = ROUND_STATE_RASING;
         project.launchstate.participants = 0;
+        project.launchstate.state = ROUND_STATE_RASING;
     }
 
     ///@todo
