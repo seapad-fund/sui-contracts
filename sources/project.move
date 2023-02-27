@@ -717,3 +717,31 @@ module seapad::project {
         event
     }
 }
+
+#[test_only]
+module seapad::project_tests {
+    #[test]
+    fun test_create_project(){
+
+    }
+
+    #[test]
+    fun test_update_project(){
+
+    }
+
+    #[test]
+    fun test_fundraising_project(){
+
+    }
+
+    #[test]
+    fun test_refund_project(){
+
+    }
+
+    #[test]
+    fun test_claim_project(){
+
+    }
+}
