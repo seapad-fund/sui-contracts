@@ -1,7 +1,7 @@
-// Copyright (c) Web3 Labs.
+// Copyright (c) Web3 Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-module seapad::launchpad {
+module seapad::dex {
     use sui::object::{Self, UID};
     use sui::coin::{Self, Coin};
     use sui::balance::{Self, Supply, Balance};

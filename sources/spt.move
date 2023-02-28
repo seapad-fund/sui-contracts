@@ -1,3 +1,6 @@
+// Copyright (c) Web3 Labs, Inc.
+// SPDX-License-Identifier: Apache-2.0
+
 module seapad::spt {
     use sui::tx_context::{TxContext, sender};
     use sui::coin;
