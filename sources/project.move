@@ -1,10 +1,10 @@
-///This module provide:
-/// - manage project's fund raising
-/// - one round only, not all round (seed, private ...) in one project instance
-/// - how to decentralize admin ?
-/// - soft cap, hardcap. Fundraising can be refunded!
-/// - not implement KYC now
-///
+// Copyright (c) Web3 Labs, Inc.
+// SPDX-License-Identifier: Apache-2.0
+
+///This module provide fund raising functions:
+/// - support whitelist, soft cap, hardcap, refund
+/// - support vesting token, claim token
+/// - many round
 module seapad::project {
     use std::ascii;
     use std::option::{Self, Option};
