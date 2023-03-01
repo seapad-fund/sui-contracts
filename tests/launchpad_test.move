@@ -9,12 +9,12 @@
 /// |               +-- test_withdraw_almost_all
 /// |               +-- test_withdraw_all
 /// ```
-module seapad::launchpad_tests {
+module seapad::dex_tests {
     use sui::sui::SUI;
     use sui::coin::{mint_for_testing as mint, destroy_for_testing as burn};
     use sui::test_scenario::{Self as test, Scenario, next_tx, ctx}
     ;
-    use seapad::launchpad::{Self, Pool, LSP};
+    use seapad::dex::{Self, Pool, LSP};
 
     /// Gonna be our test token.
     struct BEEP {}
@@ -78,12 +78,12 @@ module seapad::launchpad_tests {
 
         next_tx(test, owner);
             {
-                launchpad::init_for_testing(ctx(test));
+                dex::init_for_testing(ctx(test));
             };
 
         next_tx(test, owner);
             {
-                let lsp = launchpad::create_pool(
+                let lsp = dex::create_pool(
                     POOLEY {},
                     mint<BEEP>(BEEP_AMT, ctx(test)),
                     mint<SUI>(SUI_AMT, ctx(test)),
@@ -98,7 +98,7 @@ module seapad::launchpad_tests {
             {
                 let pool = test::take_shared<Pool<POOLEY, BEEP>>(test);
                 let pool_mut = &mut pool;
-                let (amt_sui, amt_tok, lsp_supply) = launchpad::get_amounts(pool_mut);
+                let (amt_sui, amt_tok, lsp_supply) = dex::get_amounts(pool_mut);
 
                 assert!(lsp_supply == 31622000, 0);
                 assert!(amt_sui == SUI_AMT, 0);
@@ -118,9 +118,9 @@ module seapad::launchpad_tests {
             {
                 let pool = test::take_shared<Pool<POOLEY, BEEP>>(test);
                 let pool_mut = &mut pool;
-                let (amt_sui, amt_tok, lsp_supply) = launchpad::get_amounts(pool_mut);
+                let (amt_sui, amt_tok, lsp_supply) = dex::get_amounts(pool_mut);
 
-                let lsp_tokens = launchpad::add_liquidity(
+                let lsp_tokens = dex::add_liquidity(
                     pool_mut,
                     mint<SUI>(amt_sui, ctx(test)),
                     mint<BEEP>(amt_tok, ctx(test)),
@@ -145,7 +145,7 @@ module seapad::launchpad_tests {
                 let pool = test::take_shared<Pool<POOLEY, BEEP>>(test);
                 let pool_mut = &mut pool;
 
-                let token = launchpad::swap_sui(pool_mut, mint<SUI>(5000000, ctx(test)), ctx(test));
+                let token = dex::swap_sui(pool_mut, mint<SUI>(5000000, ctx(test)), ctx(test));
 
                 // Check the value of the coin received by the guy.
                 // Due to rounding problem the value is not precise
@@ -168,7 +168,7 @@ module seapad::launchpad_tests {
                 let pool = test::take_shared<Pool<POOLEY, BEEP>>(test);
                 let pool_mut = &mut pool;
 
-                let sui = launchpad::swap_token(pool_mut, mint<BEEP>(1000, ctx(test)), ctx(test));
+                let sui = dex::swap_token(pool_mut, mint<BEEP>(1000, ctx(test)), ctx(test));
 
                 // Actual win is 1005971, which is ~ 0.6% profit
                 assert!(burn(sui) > 1000000u64, 2);
@@ -190,8 +190,8 @@ module seapad::launchpad_tests {
                 let pool = test::take_shared<Pool<POOLEY, BEEP>>(test);
                 let pool_mut = &mut pool;
 
-                let (sui, tok) = launchpad::remove_liquidity(pool_mut, lsp, ctx(test));
-                let (sui_reserve, tok_reserve, lsp_supply) = launchpad::get_amounts(pool_mut);
+                let (sui, tok) = dex::remove_liquidity(pool_mut, lsp, ctx(test));
+                let (sui_reserve, tok_reserve, lsp_supply) = dex::get_amounts(pool_mut);
 
                 assert!(lsp_supply == 1, 3);
                 assert!(tok_reserve > 0, 3); // actually 1 BEEP is left
@@ -216,8 +216,8 @@ module seapad::launchpad_tests {
                 let pool = test::take_shared<Pool<POOLEY, BEEP>>(test);
                 let pool_mut = &mut pool;
 
-                let (sui, tok) = launchpad::remove_liquidity(pool_mut, lsp, ctx(test));
-                let (sui_reserve, tok_reserve, lsp_supply) = launchpad::get_amounts(pool_mut);
+                let (sui, tok) = dex::remove_liquidity(pool_mut, lsp, ctx(test));
+                let (sui_reserve, tok_reserve, lsp_supply) = dex::get_amounts(pool_mut);
 
                 assert!(sui_reserve == 0, 3);
                 assert!(tok_reserve == 0, 3);
@@ -237,12 +237,12 @@ module seapad::launchpad_tests {
         let max_val = u64_max / 10000;
 
         // Try small values
-        assert!(launchpad::get_input_price(10, 1000, 1000, 0) == 9, 0);
+        assert!(dex::get_input_price(10, 1000, 1000, 0) == 9, 0);
 
         // Even with 0 commission there's this small loss of 1
-        assert!(launchpad::get_input_price(10000, max_val, max_val, 0) == 9999, 0);
-        assert!(launchpad::get_input_price(1000, max_val, max_val, 0) == 999, 0);
-        assert!(launchpad::get_input_price(100, max_val, max_val, 0) == 99, 0);
+        assert!(dex::get_input_price(10000, max_val, max_val, 0) == 9999, 0);
+        assert!(dex::get_input_price(1000, max_val, max_val, 0) == 999, 0);
+        assert!(dex::get_input_price(100, max_val, max_val, 0) == 99, 0);
     }
 
     // utilities
