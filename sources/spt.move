@@ -2,14 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module seapad::spt {
-    use sui::tx_context::{TxContext, sender};
-    use sui::coin;
+    use std::ascii::string;
     use std::option;
-    use sui::url;
-    use std::ascii::{String, string};
+
+    use sui::coin::{Self, TreasuryCap};
     use sui::transfer;
-    use sui::coin::TreasuryCap;
-    use std::string;
+    use sui::tx_context::{TxContext, sender};
+    use sui::url;
 
     const SYMBOL: vector<u8> = b"SPT";
     const NAME: vector<u8> = b"SPT";
@@ -29,17 +28,17 @@ module seapad::spt {
     }
 
     //@todo
-    public entry fun minto(treasury_cap: &TreasuryCap<SPT>, to: address, amount: u128){
+    public entry fun minto(_treasury_cap: &TreasuryCap<SPT>, _to: address, _amount: u128){
 
     }
 
     //@todo
-    public entry fun updateSupply(treasury_cap: &TreasuryCap<SPT>, supply: u128){
+    public entry fun updateSupply(_treasury_cap: &TreasuryCap<SPT>, _supply: u128){
 
     }
 
     //@todo
-    public entry fun burn(treasury_cap: &TreasuryCap<SPT>, amount: u128){
+    public entry fun burn(_treasury_cap: &TreasuryCap<SPT>, _amount: u128){
 
     }
 }
