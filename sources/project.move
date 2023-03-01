@@ -38,6 +38,15 @@ module seapad::project {
     const ERR_PROJECT_NOTWHITELIST: u64 = 1007;
     const ERR_ALREADY_WHITELIST: u64 = 1008;
     const ERR_NOT_WHITELIST: u64 = 1009;
+    const ERR_INVALID_PERCENT: u64 = 1010;
+    const ERR_EXCEED_PERCENT: u64 = 1011;
+    const ERR_TIME_GE_PREV: u64 = 1012;
+    const ERR_INVALID_TIME_INVEST: u64 = 1013;
+    const ERR_INVALID_SWAP_RATIO_TOKEN: u64 = 1014;
+    const ERR_INVALID_SWAP_RATIO_SUI: u64 = 1015;
+    const ERR_INVALID_RELEASE_TIME: u64 = 1016;
+
+
 
     const ROUND_SEED: u8 = 1;
     const ROUND_PRIVATE: u8 = 2;
@@ -232,14 +241,15 @@ module seapad::project {
             buy_orders: vec_map::empty<address, BuyOrder>(),
             raised_sui: option::none<Coin<SUI>>(),
         };
+        validate_launchstate(&launchstate);
 
         let iconUrl = option::none<vector<u8>>();
         let iconUrl0 = coin::get_icon_url(coin_metadata);
         if (option::is_some(&iconUrl0))
-        {
-            let url = *ascii::as_bytes(&url::inner_url(&option::extract(&mut iconUrl0)));
-            option::fill(&mut iconUrl, url);
-        };
+            {
+                let url = *ascii::as_bytes(&url::inner_url(&option::extract(&mut iconUrl0)));
+                option::fill(&mut iconUrl, url);
+            };
 
         let contract = Contract {
             id: object::new(ctx),
@@ -288,7 +298,7 @@ module seapad::project {
             vector::push_back(&mut vestingMlsts, mlst2);
             vector::push_back(&mut vestingMlsts, mlst3);
             vector::push_back(&mut vestingMlsts, mlst4);
-            check_mile_stones(&mut vestingMlsts);
+            validate_mile_stones(&mut vestingMlsts, tx_context::epoch(ctx));
         };
 
         let vesting = Vesting<COIN> {
@@ -297,6 +307,7 @@ module seapad::project {
             init_release_time: first_mlst_time,
             milestones: option::some(vestingMlsts)
         };
+        validate_vesting(&vesting, tx_context::epoch(ctx));
 
         let project = Project {
             id: object::new(ctx),
@@ -319,12 +330,12 @@ module seapad::project {
     }
 
     /// if you want more milestones
-    public entry fun add_mile_stone<COIN>(_adminCap: &AdminCap, project: &mut Project<COIN>, time: u64, percent: u8) {
+    public entry fun add_mile_stone<COIN>(_adminCap: &AdminCap, project: &mut Project<COIN>, time: u64, percent: u8, ctx: &mut TxContext) {
         let vesting = dynamic_field::borrow_mut<vector<u8>, Vesting<COIN>>(&mut project.id, VESTING);
         assert!(vesting.type == VESTING_TYPE_MILESTONE, ERR_INVALID_VESTING_TYPE);
-        let milestone = option::borrow_mut(&mut vesting.milestones);
-        vector::push_back(milestone, ProjectVestingMileStone { time, percent });
-        check_mile_stones(milestone);
+        let milestones = option::borrow_mut(&mut vesting.milestones);
+        vector::push_back(milestones, ProjectVestingMileStone { time, percent });
+        validate_mile_stones(milestones, tx_context::epoch(ctx));
     }
 
     public entry fun update_project<COIN>(_adminCap: &AdminCap,
@@ -372,7 +383,12 @@ module seapad::project {
     /// - make sure coin merged
     /// - should limit to the one that register project ?
     /// - make sure token deposit match the market cap & swap ratio
-    public entry fun user_deposit_project_fund_token<COIN>(_adminCap: &AdminCap, token: Coin<COIN>, project: &mut Project<COIN>, ctx: &mut TxContext) {
+    public entry fun user_deposit_project_fund_token<COIN>(
+        _adminCap: &AdminCap,
+        token: Coin<COIN>,
+        project: &mut Project<COIN>,
+        ctx: &mut TxContext
+    ) {
         let tokenAmt = coin::value(&token);
 
         if (option::is_some(&project.launchstate.token_fund)) {
@@ -512,7 +528,12 @@ module seapad::project {
     ///     *transfer all to project owner
     ///     *charge fee
     ///     *add liquidity
-    public entry fun distribute_raised_fund<COIN>(_adminCap: &AdminCap, project: &mut Project<COIN>, projectOwner: address, ctx: &mut TxContext) {
+    public entry fun distribute_raised_fund<COIN>(
+        _adminCap: &AdminCap,
+        project: &mut Project<COIN>,
+        projectOwner: address,
+        ctx: &mut TxContext
+    ) {
         validate_allocate_budget(project);
         let budget = option::extract(&mut project.launchstate.raised_sui);
         transfer::transfer(budget, projectOwner);
@@ -524,7 +545,12 @@ module seapad::project {
 
     ///@todo
     /// - refund token to owner when failed to make fund-raising
-    public entry fun reufund_token<COIN>(_adminCap: &AdminCap, project: &mut Project<COIN>, projectOwner: address, _ctx: &mut TxContext) {
+    public entry fun refund_token<COIN>(
+        _adminCap: &AdminCap,
+        project: &mut Project<COIN>,
+        projectOwner: address,
+        _ctx: &mut TxContext
+    ) {
         validate_allocate_budget(project);
         let budget = option::extract(&mut project.launchstate.token_fund);
         transfer::transfer(budget, projectOwner);
@@ -532,7 +558,7 @@ module seapad::project {
 
     ///@todo user claim token
     public entry fun vest_token<COIN>(project: &mut Project<COIN>, ctx: &mut TxContext) {
-        validate_vesting(project);
+        validate_vest_token(project);
         let sender = sender(ctx);
         let lState = &mut project.launchstate;
         let order = vec_map::get_mut(&mut lState.buy_orders, &sender);
@@ -585,24 +611,46 @@ module seapad::project {
         vec_set::insert(watch, senderAddr);
     }
 
-    ///@todo validate mile stone:
-    /// -make sure that sum of all milestone is <= 100%
-    /// -time is ordered min --> max, is valid, should be offset
-    fun check_mile_stones(_milestone: &vector<ProjectVestingMileStone>) {}
-
-    //==========================================Start Validate Area==========================================
+    //==========================================Start Validate Area=========================================
     ///@todo
     /// round must not be started, running ...
     fun validate_start_fund_raising<COIN>(project: &mut Project<COIN>) {
         assert!(project.launchstate.state >= ROUND_STATE_ENDED_CLAIM, ERR_INVALID_ROUND_STATE);
     }
 
-    fun validate_state_for_buy<COIN>(project: &mut Project<COIN>, senderAddr: address) {
-        assert!(project.launchstate.state == ROUND_STATE_RASING, ERR_INVALID_ROUND_STATE);
-        assert!(!project.usewhitelist || vec_set::contains(dynamic_field::borrow<vector<u8>, VecSet<address>>(&project.id, WHITELIST), &senderAddr), ERR_NOT_WHITELIST);
+    /// -make sure that sum of all milestone is <= 100%
+    /// -time is ordered min --> max, is valid, should be offset
+    fun validate_mile_stones(milestones: &vector<ProjectVestingMileStone>, now: u64) {
+        let i = 0;
+        let n = vector::length(milestones);
+        let total_percent = 0;
+
+        while (i < n) {
+            let milestone = vector::borrow(milestones, i);
+            assert!(0 < milestone.percent && milestone.percent <= 100, ERR_INVALID_PERCENT);
+            assert!(milestone.time < now, ERR_INVALID_TIME_INVEST);
+            if (i < n - 1) {
+                let next = vector::borrow(milestones, i + 1);
+                assert!(milestone.time < next.time, ERR_TIME_GE_PREV);
+            };
+            total_percent = total_percent + milestone.percent;
+            i = i + 1;
+        };
+        assert!(total_percent <= 100, ERR_EXCEED_PERCENT);
     }
 
-    fun validate_vesting<COIN>(project: &mut Project<COIN>) {
+    fun validate_state_for_buy<COIN>(project: &mut Project<COIN>, senderAddr: address) {
+        assert!(project.launchstate.state == ROUND_STATE_RASING, ERR_INVALID_ROUND_STATE);
+        assert!(
+            !project.usewhitelist || vec_set::contains(
+                dynamic_field::borrow<vector<u8>, VecSet<address>>(&project.id, WHITELIST),
+                &senderAddr
+            ),
+            ERR_NOT_WHITELIST
+        );
+    }
+
+    fun validate_vest_token<COIN>(project: &mut Project<COIN>) {
         assert!(project.launchstate.state == ROUND_STATE_ENDED_CLAIM, ERR_INVALID_ROUND_STATE);
     }
 
@@ -611,12 +659,24 @@ module seapad::project {
     }
 
     fun validate_allocate_budget<COIN>(project: &mut Project<COIN>) {
-        assert!(project.launchstate.state == ROUND_STATE_END_REFUND || project.launchstate.state == ROUND_STATE_ENDED_CLAIM, ERR_INVALID_ROUND_STATE);
+        assert!(
+            project.launchstate.state == ROUND_STATE_END_REFUND || project.launchstate.state == ROUND_STATE_ENDED_CLAIM,
+            ERR_INVALID_ROUND_STATE
+        );
+    }
+
+    fun validate_launchstate<COIN>(launchstate: &LaunchState<COIN>){
+        assert!(0 < launchstate.swap_ratio_sui && launchstate.swap_ratio_sui <= 100, ERR_INVALID_SWAP_RATIO_SUI);
+        assert!(0 < launchstate.swap_ratio_token && launchstate.swap_ratio_token <= 100, ERR_INVALID_SWAP_RATIO_TOKEN);
+    }
+
+    fun validate_vesting<COIN>(vesting: &Vesting<COIN>, now: u64) {
+        assert!(vesting.init_release_time > now, ERR_INVALID_ROUND_STATE);
     }
     //==========================================End Validate Area==========================================
 
 
-    //==========================================Start Event Area==========================================
+    //==========================================Start Event Area===========================================
     fun build_event_add_project<COIN>(project: &Project<COIN>): ProjectCreatedEvent {
         let event = ProjectCreatedEvent {
             name: project.profile.name,
@@ -643,7 +703,10 @@ module seapad::project {
             token_decimals: project.contract.decimals,
             usewhitelist: project.usewhitelist,
             vesting_type: dynamic_field::borrow<vector<u8>, Vesting<COIN>>(&project.id, VESTING).type,
-            vesting_init_release_time: dynamic_field::borrow<vector<u8>, Vesting<COIN>>(&project.id, VESTING).init_release_time,
+            vesting_init_release_time: dynamic_field::borrow<vector<u8>, Vesting<COIN>>(
+                &project.id,
+                VESTING
+            ).init_release_time,
             vesting_milestones: dynamic_field::borrow<vector<u8>, Vesting<COIN>>(&project.id, VESTING).milestones
         };
 
