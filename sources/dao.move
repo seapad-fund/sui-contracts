@@ -1,0 +1,1 @@
+module seapad::dao {}
