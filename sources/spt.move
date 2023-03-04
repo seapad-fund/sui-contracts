@@ -41,4 +41,9 @@ module seapad::spt {
     public entry fun burn(_treasury_cap: &TreasuryCap<SPT>, _amount: u128){
 
     }
+
+    #[test_only]
+    public fun init_for_testing(ctx: &mut TxContext) {
+        init(SPT {}, ctx);
+    }
 }
