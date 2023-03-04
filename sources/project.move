@@ -26,6 +26,7 @@ module seapad::project {
     ///Define model first
 
     struct SPT_PAD has drop {}
+
     struct PROJECT has drop {}
 
     const EInvalidVestingType: u64 = 1000;
@@ -97,14 +98,18 @@ module seapad::project {
         round: u8,
         //which round ?
         state: u8,
-        total_sold: u64, //for each round
+        total_sold: u64,
+        //for each round
         swap_ratio_sui: u64,
         swap_ratio_token: u64,
         participants: u64,
-        max_allocate: u64, //in sui
+        max_allocate: u64,
+        //in sui
         start_time: u64,
-        end_time: u64, //when project stop fund-raising and decide to refund or payout token(ready to claim)
-        token_fund: Option<Coin<COIN>>, //owner of project deposit token fund enough to raising fund
+        end_time: u64,
+        //when project stop fund-raising and decide to refund or payout token(ready to claim)
+        token_fund: Option<Coin<COIN>>,
+        //owner of project deposit token fund enough to raising fund
         raised_sui: Option<Coin<SUI>>,
         buy_orders: VecMap<address, BuyOrder>,
     }
@@ -437,7 +442,7 @@ module seapad::project {
             project.launchstate.state = ROUND_STATE_CLAIMING;
         };
 
-        event::emit(LunchStateEvent {
+        event::emit(LaunchStateEvent {
             project: id_address(project),
             total_sold: project.launchstate.total_sold,
             epoch: tx_context::epoch(ctx),
@@ -493,7 +498,12 @@ module seapad::project {
     /// - make sure coin merged
     /// - should limit to the one that register project ?
     /// - make sure token deposit match the market cap & swap ratio
-    public entry fun deposit_project<COIN>(coins: vector<Coin<COIN>>, value: u64, project: &mut Project<COIN>, ctx: &mut TxContext) {
+    public entry fun deposit_project<COIN>(
+        coins: vector<Coin<COIN>>,
+        value: u64,
+        project: &mut Project<COIN>,
+        ctx: &mut TxContext
+    ) {
         let token = payment::take_from(coins, value, ctx);
         let launchstate = &mut project.launchstate;
         if (option::is_some(&launchstate.token_fund)) {
@@ -593,7 +603,10 @@ module seapad::project {
             EInvalidRoundState
         );
         let token_value = coin::value(option::borrow(&project.launchstate.token_fund));
-        assert!(token_value >= project.launchstate.soft_cap * project.launchstate.swap_ratio_token, ENotEnoughTokenFund);
+        assert!(
+            token_value >= project.launchstate.soft_cap * project.launchstate.swap_ratio_token,
+            ENotEnoughTokenFund
+        );
     }
 
     /// -make sure that sum of all milestone is <= 100%
@@ -692,7 +705,7 @@ module seapad::project {
         epoch: u64
     }
 
-    struct LunchStateEvent has copy, drop {
+    struct LaunchStateEvent has copy, drop {
         project: address,
         total_sold: u64,
         epoch: u64,
