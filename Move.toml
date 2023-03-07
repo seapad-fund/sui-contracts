@@ -4,12 +4,8 @@ version = "0.0.1"
 
 [dependencies]
 Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework", rev = "devnet" }
-W3libs = { git = "https://github.com/seapad-fund/w3libs", rev = "dev" }
-#Sui = {local = "/Users/anhtv/Documents/SUI/SeaPad/sui-contracts/dependencies/Sui"}
-#W3libs = { local = "/Users/anhtv/Documents/SUI/SeaPad/w3libs" }
-
+W3libs = { git = "https://github.com/seapad-fund/w3libs", rev = "devnet0x3575" }
 
 [addresses]
 seapad =  "0x00"
 sui =  "0x02"
-w3libs =  "0x00"
