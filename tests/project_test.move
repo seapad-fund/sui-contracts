@@ -52,18 +52,18 @@ module seapad::launchpad_tests {
 
             let now = tx_context::epoch(ctx);
             let time1 = now + 1000;
-            let time2 = time1 + 1000;
-            let time3 = time2 + 1000;
-            let time4 = time3 + 1000;
+            // let time2 = time1 + 1000;
+            // let time3 = time2 + 1000;
+            // let time4 = time3 + 1000;
 
             project::add_project(
                 &admin_cap,
                 1,
-                b"PROJECT_TEST",
-                b"https://twitter.com",
-                b"https://discord.com/channels/916379725201563759/971488439931392130",
-                b"https://web.telegram.org/z/#-1898400336",
-                b"https://seapad.fund/",
+                // b"PROJECT_TEST",
+                // b"https://twitter.com",
+                // b"https://discord.com/channels/916379725201563759/971488439931392130",
+                // b"https://web.telegram.org/z/#-1898400336",
+                // b"https://seapad.fund/",
                 false,
                 1000000,
                 5000000,
@@ -72,13 +72,13 @@ module seapad::launchpad_tests {
                 1000,
                 1,
                 time1,
-                25,
-                time2,
-                20,
-                time3,
-                40,
-                time4,
-                15,
+                // 25,
+                // time2,
+                // 20,
+                // time3,
+                // 40,
+                // time4,
+                // 15,
                 &coin_metadata,
                 ctx
             );
