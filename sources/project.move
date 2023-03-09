@@ -184,7 +184,7 @@ module seapad::project {
     }
 
     ///change admin
-    public entry fun change_admin<COIN>(adminCap: AdminCap, to: address, _ctx: &mut TxContext) {
+    public entry fun change_admin(adminCap: AdminCap, to: address, _ctx: &mut TxContext) {
         transfer::transfer(adminCap, to);
     }
 
@@ -298,9 +298,9 @@ module seapad::project {
                                           swap_ratio_token: u64,
                                           max_allocate: u64,
                                           start_time: u64,
+                                          end_time: u64,
                                           soft_cap: u64,
                                           hard_cap: u64,
-                                          end_time: u64,
                                           _ctx: &mut TxContext) {
         project.usewhitelist = usewhitelist;
         let launchstate = &mut project.launchstate;
@@ -314,7 +314,18 @@ module seapad::project {
         launchstate.soft_cap = soft_cap;
         launchstate.hard_cap = hard_cap;
 
-        event::emit(build_event_add_project(project));
+        event::emit(UpdateStateProjectEvent {
+            project: id_address(project),
+            usewhitelist,
+            round,
+            swap_ratio_sui,
+            swap_ratio_token,
+            max_allocate,
+            start_time,
+            end_time,
+            soft_cap,
+            hard_cap
+        });
     }
 
     public entry fun save_profile<COIN>(_adminCap: &AdminCap,
@@ -352,7 +363,10 @@ module seapad::project {
         let whitelist = dynamic_field::borrow_mut<vector<u8>, VecSet<address>>(&mut project.id, WHITELIST);
         assert!(vec_set::contains(whitelist, &user), EExistsInWhitelist);
         vec_set::insert(whitelist, user);
-        event::emit(AddWhiteListEvent { whitelist: user })
+        event::emit(AddWhiteListEvent {
+            project: id_address(project),
+            whitelist: user
+        })
     }
 
     public entry fun start_fund_raising<COIN>(_adminCap: &AdminCap, project: &mut Project<COIN>, ctx: &mut TxContext) {
@@ -378,7 +392,8 @@ module seapad::project {
         let more_token = (more_sui / launchstate.swap_ratio_sui) * launchstate.swap_ratio_sui ;
 
         launchstate.total_sold = launchstate.total_sold + more_token;
-        assert!(launchstate.hard_cap >= launchstate.total_sold, EOutOfHardCap);
+        let tokens_allow = launchstate.hard_cap /launchstate.swap_ratio_sui * launchstate.swap_ratio_sui;
+        assert!(tokens_allow >= launchstate.total_sold, EOutOfHardCap);
 
         if (!vec_map::contains(&launchstate.buy_orders, &sender(ctx))) {
             let newBuyOrder = BuyOrder {
@@ -436,7 +451,7 @@ module seapad::project {
         project.launchstate.state = ROUND_STATE_END_REFUND;
         event::emit(RefundClosedEvent {
             project: id_address(project),
-            sui_refunded: project.launchstate.total_sold, //@todo update total refunded
+            sui_refunded: project.launchstate.total_sold,
             epoch: tx_context::epoch(ctx)
         })
     }
@@ -492,6 +507,7 @@ module seapad::project {
         };
 
         event::emit(ProjectDepositFundEvent {
+            project: id_address(project),
             depositor: sender(ctx),
             token_amount: value
         })
@@ -573,16 +589,18 @@ module seapad::project {
 
     //==========================================Start Validate Area=========================================
     fun validate_start_fund_raising<COIN>(project: &mut Project<COIN>) {
-        let state = project.launchstate.state;
+        let launchstate = &project.launchstate;
+        let state = launchstate.state;
+
         assert!(
             (state >= ROUND_STATE_INIT && state < ROUND_STATE_RASING)
                 || state >= ROUND_STATE_CLAIMING
                 || state == ROUND_STATE_END_REFUND,
             EInvalidRoundState
         );
-        let token_value = coin::value(option::borrow(&project.launchstate.token_fund));
+        let total_token = coin::value(option::borrow(&project.launchstate.token_fund));
         assert!(
-            token_value >= project.launchstate.soft_cap * project.launchstate.swap_ratio_token,
+            total_token >= (launchstate.soft_cap / launchstate.swap_ratio_sui) * launchstate.swap_ratio_token,
             ENotEnoughTokenFund
         );
     }
@@ -637,6 +655,7 @@ module seapad::project {
     //==========================================Start Event Area===========================================
     fun build_event_add_project<COIN>(project: &Project<COIN>): ProjectCreatedEvent {
         let event = ProjectCreatedEvent {
+            project: id_address(project),
             soft_cap: project.launchstate.soft_cap,
             hard_cap: project.launchstate.hard_cap,
             round: project.launchstate.round, //which round ?
@@ -666,6 +685,19 @@ module seapad::project {
         event
     }
 
+    struct UpdateStateProjectEvent has copy, drop {
+        project: address,
+        usewhitelist: bool,
+        round: u8,
+        swap_ratio_sui: u64,
+        swap_ratio_token: u64,
+        max_allocate: u64,
+        start_time: u64,
+        end_time: u64,
+        soft_cap: u64,
+        hard_cap: u64,
+    }
+
     struct StartFundRaisingEvent has copy, drop {
         project: address,
         start_time: u64
@@ -686,6 +718,7 @@ module seapad::project {
     }
 
     struct AddWhiteListEvent has copy, drop {
+        project: address,
         whitelist: address
     }
 
@@ -701,11 +734,13 @@ module seapad::project {
     }
 
     struct ProjectDepositFundEvent has copy, drop {
+        project: address,
         depositor: address,
         token_amount: u64
     }
 
     struct ProjectCreatedEvent has copy, drop {
+        project: address,
         soft_cap: u64,
         hard_cap: u64,
         round: u8,
