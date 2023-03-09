@@ -1,7 +1,7 @@
 #!/bin/bash
 #sui move build
 #sui move test
-sui client publish --force --gas-budget 10000
+sui client publish --force --with-unpublished-dependencies  --gas-budget 10000 
 
 ##move  call
 export ENV_ADDR=0x385514285b7b7499455c8c395c4995baf7ab97ba
