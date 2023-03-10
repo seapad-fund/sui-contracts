@@ -11,6 +11,8 @@ module seapad::project {
     use std::string;
     use std::vector;
 
+    use w3libs::payment;
+
     use sui::coin::{Self, CoinMetadata, Coin};
     use sui::dynamic_field;
     use sui::event;
@@ -21,7 +23,6 @@ module seapad::project {
     use sui::url;
     use sui::vec_map::{Self, VecMap};
     use sui::vec_set::{Self, VecSet};
-    use w3libs::payment;
 
     ///Define model first
 
@@ -72,9 +73,9 @@ module seapad::project {
     const VESTING_TYPE_LINEAR: u8 = 2;
     const VESTING: vector<u8> = b"vesting";
     const WHITELIST: vector<u8> = b"whitelist";
+    const PROFILE: vector<u8> = b"profile";
 
-    struct ProjectProfile has key, store {
-        id: UID,
+    struct ProjectProfile has store, copy, drop {
         name: vector<u8>,
         twitter: vector<u8>,
         discord: vector<u8>,
@@ -147,11 +148,11 @@ module seapad::project {
 
     struct Project<phantom COIN> has key, store {
         id: UID,
-        profile: ProjectProfile,
         launchstate: LaunchState<COIN>,
         contract: Contract,
         community: Community,
         usewhitelist: bool,
+        //        profile: //use dynamic field
         //        whitelist: VecSet<address> //use dynamic field
         //        vesting: Vesting<COIN> //use dynamic field
     }
@@ -183,18 +184,13 @@ module seapad::project {
     }
 
     ///change admin
-    public entry fun change_admin<COIN>(adminCap: AdminCap, to: address, _ctx: &mut TxContext) {
+    public entry fun change_admin(adminCap: AdminCap, to: address, _ctx: &mut TxContext) {
         transfer::transfer(adminCap, to);
     }
 
     /// add one project
     public entry fun add_project<COIN>(_adminCap: &AdminCap,
                                        round: u8,
-                                       name: vector<u8>,
-                                       twitter: vector<u8>,
-                                       discord: vector<u8>,
-                                       telegram: vector<u8>,
-                                       website: vector<u8>,
                                        usewhitelist: bool,
                                        soft_cap: u64,
                                        hard_cap: u64,
@@ -202,26 +198,10 @@ module seapad::project {
                                        swap_ratio_token: u64,
                                        max_allocate: u64,
                                        vesting_type: u8,
-                                       first_mlst_time: u64,
-                                       first_mlst_percent: u8,
-                                       second_mlst_time: u64,
-                                       second_mlst_percent: u8,
-                                       third_first_mlst_time: u64,
-                                       third_first_mlst_percent: u8,
-                                       fourth_first_mlst_time: u64,
-                                       fourth_first_mlst_percent: u8,
+                                       first_vesting_time: u64,
                                        coin_metadata: &CoinMetadata<COIN>,
                                        ctx: &mut TxContext)
     {
-        let profile = ProjectProfile {
-            id: object::new(ctx),
-            name,
-            twitter,
-            discord,
-            telegram,
-            website
-        };
-
         let launchstate = LaunchState<COIN> {
             id: object::new(ctx),
             soft_cap,
@@ -270,45 +250,16 @@ module seapad::project {
 
         let vestingMlsts = vector::empty<ProjectVestingMileStone>();
 
-        if (vesting_type == VESTING_TYPE_MILESTONE) {
-            let mlst1 = ProjectVestingMileStone {
-                time: first_mlst_time,
-                percent: first_mlst_percent
-            };
-
-            let mlst2 = ProjectVestingMileStone {
-                time: second_mlst_time,
-                percent: second_mlst_percent
-            };
-
-            let mlst3 = ProjectVestingMileStone {
-                time: third_first_mlst_time,
-                percent: third_first_mlst_percent
-            };
-
-            let mlst4 = ProjectVestingMileStone {
-                time: fourth_first_mlst_time,
-                percent: fourth_first_mlst_percent
-            };
-
-            vector::push_back(&mut vestingMlsts, mlst1);
-            vector::push_back(&mut vestingMlsts, mlst2);
-            vector::push_back(&mut vestingMlsts, mlst3);
-            vector::push_back(&mut vestingMlsts, mlst4);
-            validate_mile_stones(&mut vestingMlsts, tx_context::epoch(ctx));
-        };
-
         let vesting = Vesting<COIN> {
             id: object::new(ctx),
             type: vesting_type,
-            init_release_time: first_mlst_time,
+            init_release_time: first_vesting_time,
             milestones: option::some(vestingMlsts)
         };
         validate_vesting(&vesting, tx_context::epoch(ctx));
 
         let project = Project {
             id: object::new(ctx),
-            profile,
             launchstate,
             contract,
             community,
@@ -347,9 +298,9 @@ module seapad::project {
                                           swap_ratio_token: u64,
                                           max_allocate: u64,
                                           start_time: u64,
+                                          end_time: u64,
                                           soft_cap: u64,
                                           hard_cap: u64,
-                                          end_time: u64,
                                           _ctx: &mut TxContext) {
         project.usewhitelist = usewhitelist;
         let launchstate = &mut project.launchstate;
@@ -363,7 +314,45 @@ module seapad::project {
         launchstate.soft_cap = soft_cap;
         launchstate.hard_cap = hard_cap;
 
-        event::emit(build_event_add_project(project));
+        event::emit(UpdateStateProjectEvent {
+            project: id_address(project),
+            usewhitelist,
+            round,
+            swap_ratio_sui,
+            swap_ratio_token,
+            max_allocate,
+            start_time,
+            end_time,
+            soft_cap,
+            hard_cap
+        });
+    }
+
+    public entry fun save_profile<COIN>(_adminCap: &AdminCap,
+                                        project: &mut Project<COIN>,
+                                        name: vector<u8>,
+                                        twitter: vector<u8>,
+                                        discord: vector<u8>,
+                                        telegram: vector<u8>,
+                                        website: vector<u8>,
+                                        _ctx: &mut TxContext) {
+        let exists = dynamic_field::exists_with_type<vector<u8>, ProjectProfile>(&project.id, PROFILE);
+        if (exists) {
+            let profile = dynamic_field::borrow_mut<vector<u8>, ProjectProfile>(&mut project.id, PROFILE);
+            profile.name = name;
+            profile.twitter = twitter;
+            profile.discord = discord;
+            profile.telegram = telegram;
+            profile.website = website;
+        }else {
+            dynamic_field::add(&mut project.id, PROFILE, ProjectProfile {
+                name,
+                twitter,
+                discord,
+                telegram,
+                website
+            })
+        }
     }
 
     public entry fun add_whitelist<COIN>(_adminCap: &AdminCap,
@@ -374,7 +363,10 @@ module seapad::project {
         let whitelist = dynamic_field::borrow_mut<vector<u8>, VecSet<address>>(&mut project.id, WHITELIST);
         assert!(vec_set::contains(whitelist, &user), EExistsInWhitelist);
         vec_set::insert(whitelist, user);
-        event::emit(AddWhiteListEvent { whitelist: user })
+        event::emit(AddWhiteListEvent {
+            project: id_address(project),
+            whitelist: user
+        })
     }
 
     public entry fun start_fund_raising<COIN>(_adminCap: &AdminCap, project: &mut Project<COIN>, ctx: &mut TxContext) {
@@ -397,10 +389,11 @@ module seapad::project {
         validate_state_for_buy(project, sender(ctx));
         let launchstate = &mut project.launchstate;
         let more_sui = coin::value(&sui_amt);
-        let more_token = more_sui * launchstate.swap_ratio_sui;
+        let more_token = (more_sui / launchstate.swap_ratio_sui) * launchstate.swap_ratio_sui ;
 
         launchstate.total_sold = launchstate.total_sold + more_token;
-        assert!(launchstate.hard_cap >= launchstate.total_sold, EOutOfHardCap);
+        let tokens_allow = launchstate.hard_cap /launchstate.swap_ratio_sui * launchstate.swap_ratio_sui;
+        assert!(tokens_allow >= launchstate.total_sold, EOutOfHardCap);
 
         if (!vec_map::contains(&launchstate.buy_orders, &sender(ctx))) {
             let newBuyOrder = BuyOrder {
@@ -458,7 +451,7 @@ module seapad::project {
         project.launchstate.state = ROUND_STATE_END_REFUND;
         event::emit(RefundClosedEvent {
             project: id_address(project),
-            sui_refunded: project.launchstate.total_sold, //@todo update total refunded
+            sui_refunded: project.launchstate.total_sold,
             epoch: tx_context::epoch(ctx)
         })
     }
@@ -514,6 +507,7 @@ module seapad::project {
         };
 
         event::emit(ProjectDepositFundEvent {
+            project: id_address(project),
             depositor: sender(ctx),
             token_amount: value
         })
@@ -595,16 +589,18 @@ module seapad::project {
 
     //==========================================Start Validate Area=========================================
     fun validate_start_fund_raising<COIN>(project: &mut Project<COIN>) {
-        let state = project.launchstate.state;
+        let launchstate = &project.launchstate;
+        let state = launchstate.state;
+
         assert!(
             (state >= ROUND_STATE_INIT && state < ROUND_STATE_RASING)
                 || state >= ROUND_STATE_CLAIMING
                 || state == ROUND_STATE_END_REFUND,
             EInvalidRoundState
         );
-        let token_value = coin::value(option::borrow(&project.launchstate.token_fund));
+        let total_token = coin::value(option::borrow(&project.launchstate.token_fund));
         assert!(
-            token_value >= project.launchstate.soft_cap * project.launchstate.swap_ratio_token,
+            total_token >= (launchstate.soft_cap / launchstate.swap_ratio_sui) * launchstate.swap_ratio_token,
             ENotEnoughTokenFund
         );
     }
@@ -659,11 +655,7 @@ module seapad::project {
     //==========================================Start Event Area===========================================
     fun build_event_add_project<COIN>(project: &Project<COIN>): ProjectCreatedEvent {
         let event = ProjectCreatedEvent {
-            name: project.profile.name,
-            twitter: project.profile.twitter,
-            discord: project.profile.discord,
-            telegram: project.profile.telegram,
-            website: project.profile.website,
+            project: id_address(project),
             soft_cap: project.launchstate.soft_cap,
             hard_cap: project.launchstate.hard_cap,
             round: project.launchstate.round, //which round ?
@@ -693,6 +685,19 @@ module seapad::project {
         event
     }
 
+    struct UpdateStateProjectEvent has copy, drop {
+        project: address,
+        usewhitelist: bool,
+        round: u8,
+        swap_ratio_sui: u64,
+        swap_ratio_token: u64,
+        max_allocate: u64,
+        start_time: u64,
+        end_time: u64,
+        soft_cap: u64,
+        hard_cap: u64,
+    }
+
     struct StartFundRaisingEvent has copy, drop {
         project: address,
         start_time: u64
@@ -713,6 +718,7 @@ module seapad::project {
     }
 
     struct AddWhiteListEvent has copy, drop {
+        project: address,
         whitelist: address
     }
 
@@ -728,16 +734,13 @@ module seapad::project {
     }
 
     struct ProjectDepositFundEvent has copy, drop {
+        project: address,
         depositor: address,
         token_amount: u64
     }
 
     struct ProjectCreatedEvent has copy, drop {
-        name: vector<u8>,
-        twitter: vector<u8>,
-        discord: vector<u8>,
-        telegram: vector<u8>,
-        website: vector<u8>,
+        project: address,
         soft_cap: u64,
         hard_cap: u64,
         round: u8,
