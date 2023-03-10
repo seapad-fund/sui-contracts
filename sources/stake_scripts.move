@@ -2,11 +2,12 @@
 module seapad::stake_scripts {
     use seapad::stake;
     use sui::tx_context::{TxContext, sender};
-    use sui::coin::{Coin, CoinMetadata};
+    use sui::coin::{Coin};
     use seapad::stake_config::GlobalConfig;
     use sui::clock::Clock;
     use seapad::stake::StakePool;
     use sui::transfer;
+    use sui::clock;
 
     /// Register new staking pool with staking coin `S` and reward coin `R`.
     ///     * `rewards` - reward amount in R coins.
@@ -14,11 +15,11 @@ module seapad::stake_scripts {
     public entry fun register_pool<S, R>(rewards: Coin<R>,
                                          duration: u64,
                                          global_config: &GlobalConfig,
-                                         coin_metadata_s: &CoinMetadata<S>,
-                                         coin_metadata_r: &CoinMetadata<R>,
+                                         decimalS: u8,
+                                         decimalR: u8,
                                          system_clock: &Clock,
                                          ctx: &mut TxContext) {
-        stake::register_pool<S, R>(rewards, duration, global_config, coin_metadata_s, coin_metadata_r, system_clock, ctx);
+        stake::register_pool<S, R>(rewards, duration, global_config, decimalS, decimalR, clock::timestamp_ms(system_clock), ctx);
     }
 
     /// Stake an `amount` of `Coin<S>` to the pool of stake coin `S` and reward coin `R` on the address `pool_addr`.
@@ -29,7 +30,7 @@ module seapad::stake_scripts {
                                  global_config: &GlobalConfig,
                                  system_clock: &Clock,
                                  ctx: &mut TxContext) {
-        stake::stake<S, R>(pool, coins, global_config, system_clock, ctx);
+        stake::stake<S, R>(pool, coins, global_config, clock::timestamp_ms(system_clock), ctx);
     }
 
     /// Unstake an `amount` of `Coin<S>` from a pool of stake coin `S` and reward coin `R` `pool`.
@@ -40,7 +41,7 @@ module seapad::stake_scripts {
                                    global_config: &GlobalConfig,
                                    system_clock: &Clock,
                                    ctx: &mut TxContext) {
-        let coins = stake::unstake<S, R>(pool, stake_amount, global_config, system_clock, ctx);
+        let coins = stake::unstake<S, R>(pool, stake_amount, global_config, clock::timestamp_ms(system_clock), ctx);
         transfer::transfer(coins, sender(ctx));
     }
 
@@ -50,7 +51,7 @@ module seapad::stake_scripts {
                                    global_config: &GlobalConfig,
                                    system_clock: &Clock,
                                    ctx: &mut TxContext) {
-        let rewards = stake::harvest<S, R>(pool, global_config, system_clock, ctx);
+        let rewards = stake::harvest<S, R>(pool, global_config, clock::timestamp_ms(system_clock), ctx);
         transfer::transfer( rewards, sender(ctx));
     }
 
@@ -62,7 +63,7 @@ module seapad::stake_scripts {
                                                 global_config: &GlobalConfig,
                                                 system_clock: &Clock,
                                                 ctx: &mut TxContext) {
-        stake::deposit_reward_coins<S, R>(pool, reward_coins, global_config, system_clock, ctx);
+        stake::deposit_reward_coins<S, R>(pool, reward_coins, global_config, clock::timestamp_ms(system_clock), ctx);
     }
 
     /// Enable "emergency state" for a pool on a `pool_addr` address. This state cannot be disabled
@@ -95,7 +96,7 @@ module seapad::stake_scripts {
                                                        system_clock: &Clock,
                                                        ctx: &mut TxContext) {
         let treasury_addr = sender(ctx);
-        let rewards = stake::withdraw_to_treasury<S, R>(pool, amount, global_config, system_clock, ctx);
+        let rewards = stake::withdraw_to_treasury<S, R>(pool, amount, global_config, clock::timestamp_ms(system_clock), ctx);
         transfer::transfer(rewards, treasury_addr);
     }
 }

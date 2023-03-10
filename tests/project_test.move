@@ -2,9 +2,9 @@
 module seapad::launchpad_tests {
     use seapad::project::{Self, AdminCap, Project};
     use seapad::spt::{Self, SPT};
-    use sui::coin::CoinMetadata;
     use sui::test_scenario::{Self, Scenario};
     use sui::tx_context;
+    use sui::sui::SUI;
 
     const OWNER: address = @0xC0FFEE;
 
@@ -47,14 +47,12 @@ module seapad::launchpad_tests {
         test_scenario::next_tx(scenario, OWNER);
         {
             let admin_cap = test_scenario::take_from_sender<AdminCap>(scenario);
-            let coin_metadata = test_scenario::take_immutable<CoinMetadata<spt::SPT>>(scenario);
             let ctx = test_scenario::ctx(scenario);
 
             let now = tx_context::epoch(ctx);
             let time1 = now + 1000;
 
-
-            project::add_project(
+            project::add_project<SUI>(
                 &admin_cap,
                 1,
                 false,
@@ -65,11 +63,9 @@ module seapad::launchpad_tests {
                 1000,
                 1,
                 time1,
-                &coin_metadata,
                 ctx
             );
             test_scenario::return_to_sender(scenario, admin_cap);
-            test_scenario::return_immutable(coin_metadata);
         };
     }
 

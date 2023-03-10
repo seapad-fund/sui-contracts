@@ -5,7 +5,7 @@ module seapad::emergency_tests {
     use seapad::stake_config;
     use seapad::stake_config::GlobalConfig;
     use seapad::stake;
-
+    use sui::coin;
 
     /// this is number of decimals in both StakeCoin and RewardCoin by default, named like that for readability
     const ONE_COIN: u64 = 1000000;
@@ -99,6 +99,7 @@ module seapad::emergency_tests {
 
     struct  REWARD_COIN has drop {}
     struct  STAKE_COIN has drop {}
+    const TIMESTAMP_MS_NOW: u64 = 1678444368000;
 
     fun test_cannot_register_with_global_emergency_(scenario: &mut Scenario) {
         let (stake_emergency_admin, _) = admins();
@@ -112,18 +113,16 @@ module seapad::emergency_tests {
             {
                 let gConfig = test_scenario::take_shared<GlobalConfig>(scenario);
 
-//                let clock = test_scenario::take_shared<Clock>(scenario);
-//
-//                stake_config::enable_global_emergency(&mut gConfig, ctx(scenario));
-//                // register staking pool
-//                let reward_coins = mint_for_testing<REWARD_COIN>(12345 * ONE_COIN, ctx(scenario));
-//                let (_cap, _metadataS) = coin::create_currency(STAKE_COIN {}, 8, b"SPT", b"SPT", b"SPT", option::none<Url>(), ctx(scenario));
-//                let metaR = coin::create_currency(REWARD_COIN {}, 8, b"SPT", b"SPT", b"SPT", option::none<Url>(), ctx(scenario));
-//
-//                let duration = 12345;
-//                stake::register_pool<StakeCoin, RewardCoin>(reward_coins, duration, gConfig, metaS, metaR);
+                stake_config::enable_global_emergency(&mut gConfig, ctx(scenario));
+                // register staking pool
+                let decimalS = 6;
+                let decimalR = 6;
+
+                let reward_coins = coin::mint_for_testing<REWARD_COIN>(12345 * ONE_COIN, ctx(scenario));
+                let duration = 12345;
+
+                stake::register_pool<STAKE_COIN, REWARD_COIN>(reward_coins, duration, &gConfig, decimalS, decimalR, TIMESTAMP_MS_NOW, ctx(scenario));
                 test_scenario::return_shared(gConfig);
-//                test_scenario::return_shared(clock);
             };
     }
 
