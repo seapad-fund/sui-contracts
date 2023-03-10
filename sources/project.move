@@ -6,21 +6,18 @@
 /// - support vesting token, claim token
 /// - many round
 module seapad::project {
-    use std::ascii;
     use std::option::{Self, Option};
-    use std::string;
     use std::vector;
 
     use w3libs::payment;
 
-    use sui::coin::{Self, CoinMetadata, Coin};
+    use sui::coin::{Self, Coin};
     use sui::dynamic_field;
     use sui::event;
     use sui::object::{Self, UID, id_address};
     use sui::sui::SUI;
     use sui::transfer;
     use sui::tx_context::{Self, TxContext, sender};
-    use sui::url;
     use sui::vec_map::{Self, VecMap};
     use sui::vec_set::{Self, VecSet};
 
@@ -51,23 +48,17 @@ module seapad::project {
     const ROUND_SEED: u8 = 1;
     const ROUND_PRIVATE: u8 = 2;
     const ROUND_PUBLIC: u8 = 3;
-    const ROUND_STATE_INIT: u8 = 10;
+
+    const ROUND_STATE_INIT: u8 = 1;
     const ROUND_STATE_PREPARE: u8 = 2;
     const ROUND_STATE_RASING: u8 = 3;
     const ROUND_STATE_REFUNDING: u8 = 4;
-    //complete & start refunding
-    const ROUND_STATE_END_REFUND: u8 = 5;
-    //refund completed & stop
+    const ROUND_STATE_END_REFUND: u8 = 5; //complete & start refunding
     const ROUND_STATE_CLAIMING: u8 = 6; //complete & ready to claim token
 
-
-    ///lives in launchpad domain
-    ///use dynamic field to add likes, votes, and watch
-    const LIKES: vector<u8> = b"likes";
-    //likes: VecSet<address>
-    const WATCHS: vector<u8> = b"watchs";
-    //watchs: VecSet<address>,
-    const VOTES: vector<u8> = b"votes"; //votes: VecSet<address>
+    const LIKES: vector<u8> = b"likes"; //dynamic field of VecSet<address>
+    const WATCHS: vector<u8> = b"watchs"; //dynamic field of VecSet<address>
+    const VOTES: vector<u8> = b"votes"; //dynamic field of VecSet<address>
 
     const VESTING_TYPE_MILESTONE: u8 = 1;
     const VESTING_TYPE_LINEAR: u8 = 2;
@@ -149,7 +140,6 @@ module seapad::project {
     struct Project<phantom COIN> has key, store {
         id: UID,
         launchstate: LaunchState<COIN>,
-        contract: Contract,
         community: Community,
         usewhitelist: bool,
         //        profile: //use dynamic field
@@ -199,7 +189,6 @@ module seapad::project {
                                        max_allocate: u64,
                                        vesting_type: u8,
                                        first_vesting_time: u64,
-                                       coin_metadata: &CoinMetadata<COIN>,
                                        ctx: &mut TxContext)
     {
         let launchstate = LaunchState<COIN> {
@@ -218,24 +207,6 @@ module seapad::project {
             token_fund: option::none<Coin<COIN>>(),
             buy_orders: vec_map::empty<address, BuyOrder>(),
             raised_sui: option::none<Coin<SUI>>(),
-        };
-
-        let iconUrl = option::none<vector<u8>>();
-        let iconUrl0 = coin::get_icon_url(coin_metadata);
-        if (option::is_some(&iconUrl0))
-            {
-                let url = *ascii::as_bytes(&url::inner_url(&option::extract(&mut iconUrl0)));
-                option::fill(&mut iconUrl, url);
-            };
-
-        let contract = Contract {
-            id: object::new(ctx),
-            coin_metadata: object::id_address(coin_metadata),
-            name: *string::bytes(&mut coin::get_name(coin_metadata)),
-            symbol: *ascii::as_bytes(&mut coin::get_symbol(coin_metadata)),
-            description: *string::bytes(&mut coin::get_description(coin_metadata)),
-            decimals: coin::get_decimals(coin_metadata),
-            url: iconUrl
         };
 
         let community = Community {
@@ -261,7 +232,6 @@ module seapad::project {
         let project = Project {
             id: object::new(ctx),
             launchstate,
-            contract,
             community,
             usewhitelist
         };
@@ -270,9 +240,8 @@ module seapad::project {
         if (usewhitelist) {
             dynamic_field::add(&mut project.id, WHITELIST, vec_set::empty<address>());
         };
-        //fire event
+
         let event = build_event_add_project(&project);
-        //share project
         transfer::share_object(project);
         event::emit(event);
     }
@@ -551,7 +520,7 @@ module seapad::project {
         transfer::transfer(coin_fund, sender);
     }
 
-    //==========================================Start Community Area=========================================
+    ///Community actions
     public entry fun vote<COIN>(project: &mut Project<COIN>, ctx: &mut TxContext) {
         let com = &mut project.community;
         let senderAddr = sender(ctx);
@@ -584,10 +553,8 @@ module seapad::project {
         com.like = com.like + 1;
         vec_set::insert(watch, senderAddr);
     }
-    //==========================================End Community Area=========================================
 
 
-    //==========================================Start Validate Area=========================================
     fun validate_start_fund_raising<COIN>(project: &mut Project<COIN>) {
         let launchstate = &project.launchstate;
         let state = launchstate.state;
@@ -605,6 +572,7 @@ module seapad::project {
         );
     }
 
+    ///Validations
     /// -make sure that sum of all milestone is <= 100%
     /// -time is ordered min --> max, is valid, should be offset
     fun validate_mile_stones(milestones: &vector<ProjectVestingMileStone>, now: u64) {
@@ -649,10 +617,8 @@ module seapad::project {
     fun validate_vesting<COIN>(vesting: &Vesting<COIN>, now: u64) {
         assert!(vesting.init_release_time > now, EInvalidRoundState);
     }
-    //==========================================End Validate Area==========================================
 
-
-    //==========================================Start Event Area===========================================
+    /// Events
     fun build_event_add_project<COIN>(project: &Project<COIN>): ProjectCreatedEvent {
         let event = ProjectCreatedEvent {
             project: id_address(project),
@@ -667,12 +633,6 @@ module seapad::project {
             max_allocate: project.launchstate.max_allocate, //in sui
             start_time: project.launchstate.start_time,
             end_time: project.launchstate.end_time,
-            coin_metadata: project.contract.coin_metadata,
-            token_symbol: project.contract.symbol,
-            token_name: project.contract.name,
-            token_description: project.contract.description,
-            token_url: project.contract.url,
-            token_decimals: project.contract.decimals,
             usewhitelist: project.usewhitelist,
             vesting_type: dynamic_field::borrow<vector<u8>, Vesting<COIN>>(&project.id, VESTING).type,
             vesting_init_release_time: dynamic_field::borrow<vector<u8>, Vesting<COIN>>(
@@ -755,18 +715,13 @@ module seapad::project {
         //in sui
         start_time: u64,
         end_time: u64,
-        coin_metadata: address,
-        token_symbol: vector<u8>,
-        token_name: vector<u8>,
-        token_description: vector<u8>,
-        token_url: Option<vector<u8>>,
-        token_decimals: u8,
         usewhitelist: bool,
         vesting_type: u8,
         vesting_init_release_time: u64,
         vesting_milestones: Option<vector<ProjectVestingMileStone>>
     }
-    //==========================================Start Event Area==========================================
+
+
 
     #[test_only]
     public fun init_for_testing(ctx: &mut TxContext) {
