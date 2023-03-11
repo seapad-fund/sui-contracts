@@ -464,9 +464,9 @@ module seapad::project {
     ///     *charge fee
     ///     *add liquidity
     public entry fun distribute_raised_fund<COIN>(_adminCap: &AdminCap,
-                                                     project: &mut Project<COIN>,
-                                                     project_owner: address,
-                                                     ctx: &mut TxContext) {
+                                                  project: &mut Project<COIN>,
+                                                  project_owner: address,
+                                                  ctx: &mut TxContext) {
         validate_allocate_budget(project);
         let budget = option::extract(&mut project.launchstate.raised_sui);
         transfer::transfer(budget, project_owner);
@@ -519,24 +519,30 @@ module seapad::project {
         validate_vest_token(project);
         let sender = sender(ctx);
         let launchstate = &mut project.launchstate;
-        assert!(vec_map::contains(& launchstate.buy_orders, &sender), ENoOrder);
+        assert!(vec_map::contains(&launchstate.buy_orders, &sender), ENoOrder);
         let order = vec_map::get_mut(&mut launchstate.buy_orders, &sender);
 
         let vesting = dynamic_field::borrow_mut<vector<u8>, Vesting<COIN>>(&mut project.id, VESTING);
         let milestones = option::borrow(&vesting.milestones);
 
-        let i = 0;
-        let n = vector::length(milestones);
-        let total_percent = 0;
 
-        while (i < n) {
-            let milestone = vector::borrow(milestones, i);
-            if (tx_context::epoch(ctx) >= milestone.time) {
-                total_percent = total_percent + milestone.percent;
-            }else {
-                break
+        let total_percent = if (vector::is_empty(milestones)) {
+            100
+        }else {
+            let i = 0;
+            let n = vector::length(milestones);
+            let sum = 0;
+
+            while (i < n) {
+                let milestone = vector::borrow(milestones, i);
+                if (tx_context::epoch(ctx) >= milestone.time) {
+                    sum = sum + milestone.percent;
+                }else {
+                    break
+                };
+                i = i + 1;
             };
-            i = i + 1;
+            sum
         };
 
         let more_token = order.token_amount / 100 * (total_percent as u64);
