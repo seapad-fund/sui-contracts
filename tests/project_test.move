@@ -277,7 +277,7 @@ module seapad::project_test {
             let time1 = now + 1000;
 
 
-            project::create_project(
+            project::create_project<SPT>(
                 &admin_cap,
                 1,
                 usewhitelist,
@@ -288,7 +288,6 @@ module seapad::project_test {
                 MAX_ALLOCATE,
                 1,
                 time1,
-                &coin_metadata,
                 ctx
             );
             test_scenario::return_to_sender(scenario, admin_cap);

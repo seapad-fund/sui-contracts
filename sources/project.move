@@ -6,21 +6,18 @@
 /// - support vesting token, claim token
 /// - many round
 module seapad::project {
-    use std::ascii;
     use std::option::{Self, Option};
-    use std::string;
     use std::vector;
 
     use w3libs::payment;
 
-    use sui::coin::{Self, CoinMetadata, Coin};
+    use sui::coin::{Self, Coin};
     use sui::dynamic_field;
     use sui::event;
     use sui::object::{Self, UID, id_address};
     use sui::sui::SUI;
     use sui::transfer;
     use sui::tx_context::{Self, TxContext, sender};
-    use sui::url;
     use sui::vec_map::{Self, VecMap};
     use sui::vec_set::{Self, VecSet};
 
@@ -150,7 +147,6 @@ module seapad::project {
     struct Project<phantom COIN> has key, store {
         id: UID,
         launchstate: LaunchState<COIN>,
-        contract: Contract,
         community: Community,
         usewhitelist: bool,
         //        profile: //use dynamic field
@@ -200,7 +196,6 @@ module seapad::project {
                                           max_allocate: u64,
                                           vesting_type: u8,
                                           first_vesting_time: u64,
-                                          coin_metadata: &CoinMetadata<COIN>,
                                           ctx: &mut TxContext)
     {
         let launchstate = LaunchState<COIN> {
@@ -219,24 +214,6 @@ module seapad::project {
             token_fund: option::none<Coin<COIN>>(),
             buy_orders: vec_map::empty<address, Order>(),
             raised_sui: option::none<Coin<SUI>>(),
-        };
-
-        let iconUrl = option::none<vector<u8>>();
-        let iconUrl0 = coin::get_icon_url(coin_metadata);
-        if (option::is_some(&iconUrl0))
-            {
-                let url = *ascii::as_bytes(&url::inner_url(&option::extract(&mut iconUrl0)));
-                option::fill(&mut iconUrl, url);
-            };
-
-        let contract = Contract {
-            id: object::new(ctx),
-            coin_metadata: object::id_address(coin_metadata),
-            name: *string::bytes(&mut coin::get_name(coin_metadata)),
-            symbol: *ascii::as_bytes(&mut coin::get_symbol(coin_metadata)),
-            description: *string::bytes(&mut coin::get_description(coin_metadata)),
-            decimals: coin::get_decimals(coin_metadata),
-            url: iconUrl
         };
 
         let community = Community {
@@ -262,7 +239,6 @@ module seapad::project {
         let project = Project {
             id: object::new(ctx),
             launchstate,
-            contract,
             community,
             usewhitelist
         };
@@ -686,12 +662,6 @@ module seapad::project {
             max_allocate: project.launchstate.max_allocate, //in sui
             start_time: project.launchstate.start_time,
             end_time: project.launchstate.end_time,
-            coin_metadata: project.contract.coin_metadata,
-            token_symbol: project.contract.symbol,
-            token_name: project.contract.name,
-            token_description: project.contract.description,
-            token_url: project.contract.url,
-            token_decimals: project.contract.decimals,
             usewhitelist: project.usewhitelist,
             vesting_type: dynamic_field::borrow<vector<u8>, Vesting<COIN>>(&project.id, VESTING).type,
             vesting_init_release_time: dynamic_field::borrow<vector<u8>, Vesting<COIN>>(
@@ -774,12 +744,6 @@ module seapad::project {
         //in sui
         start_time: u64,
         end_time: u64,
-        coin_metadata: address,
-        token_symbol: vector<u8>,
-        token_name: vector<u8>,
-        token_description: vector<u8>,
-        token_url: Option<vector<u8>>,
-        token_decimals: u8,
         usewhitelist: bool,
         vesting_type: u8,
         vesting_init_release_time: u64,
