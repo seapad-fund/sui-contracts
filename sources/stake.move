@@ -3,12 +3,10 @@ module seapad::stake {
     // Look at math part of this module.
 
     use seapad::stake_config;
-    use sui::coin::{Coin, CoinMetadata};
+    use sui::coin::{Coin};
     use sui::tx_context::{TxContext, sender};
     use seapad::stake_config::GlobalConfig;
     use sui::coin;
-    use sui::clock::Clock;
-    use sui::clock;
     use seapad::math128;
     use sui::table;
     use sui::transfer::share_object;
@@ -132,14 +130,14 @@ module seapad::stake {
     ///     * `global_config` - shared global config.
     ///     * `coin_metadata_s` - coin metadata S.
     ///     * `coin_metadata_r` - coin metadata R.
-    ///     * `system_clock` - shared singleton system clock.
+    ///     * `timestamp_ms` - shared singleton system clock.
     public fun register_pool<S, R>(
         reward_coins: Coin<R>,
         duration: u64,
         global_config: &GlobalConfig,
-        coin_metadata_s: &CoinMetadata<S>,
-        coin_metadata_r: &CoinMetadata<R>,
-        system_clock: &Clock,
+        decimalS: u8,
+        decimalR: u8,
+        timestamp_ms: u64,
         ctx: &mut TxContext
     ) {
         assert!(!stake_config::is_global_emergency(global_config), ERR_EMERGENCY);
@@ -148,14 +146,14 @@ module seapad::stake {
         let reward_per_sec = coin::value(&reward_coins) / duration;
         assert!(reward_per_sec > 0, ERR_REWARD_CANNOT_BE_ZERO);
 
-        let current_time = clock::timestamp_ms(system_clock)/1000; //@todo review math div
+        let current_time = timestamp_ms/1000; //@todo review math div
         let end_timestamp = current_time + duration;
 
-        let origin_decimals = (coin::get_decimals(coin_metadata_r) as u128);
+        let origin_decimals = (decimalR as u128);
         assert!(origin_decimals <= 10, ERR_INVALID_REWARD_DECIMALS);
 
         let reward_scale = ACCUM_REWARD_SCALE / math128::pow(10, origin_decimals);
-        let stake_scale = math128::pow(10, (coin::get_decimals(coin_metadata_s) as u128));
+        let stake_scale = math128::pow(10, (decimalS as u128));
         let scale = stake_scale * reward_scale;
 
         let pool = StakePool<S, R> {
@@ -182,14 +180,14 @@ module seapad::stake {
     public fun deposit_reward_coins<S, R>(pool: &mut StakePool<S, R>,
                                           coins: Coin<R>,
                                           global_config: &GlobalConfig,
-                                          system_clock: &Clock,
+                                          timestamp_ms: u64,
                                           ctx: &mut TxContext) {
 
         assert!(!is_emergency_inner(pool, global_config), ERR_EMERGENCY);
 
         // it's forbidden to deposit more rewards (extend pool duration) after previous pool duration passed
         // preventing unfair reward distribution
-        assert!(!is_finished_inner(pool, system_clock), ERR_HARVEST_FINISHED);
+        assert!(!is_finished_inner(pool, timestamp_ms), ERR_HARVEST_FINISHED);
 
         let amount = coin::value(&coins);
         assert!(amount > 0, ERR_AMOUNT_CANNOT_BE_ZERO);
@@ -220,19 +218,19 @@ module seapad::stake {
         pool: &mut StakePool<S, R>,
         coins: Coin<S>,
         global_config: &GlobalConfig,
-        system_clock: &Clock,
+        timestamp_ms: u64,
         ctx: &mut TxContext
     ) {
         let amount = coin::value(&coins);
         assert!(amount > 0, ERR_AMOUNT_CANNOT_BE_ZERO);
 
         assert!(!is_emergency_inner(pool, global_config), ERR_EMERGENCY);
-        assert!(!is_finished_inner(pool, system_clock), ERR_HARVEST_FINISHED);
+        assert!(!is_finished_inner(pool, timestamp_ms), ERR_HARVEST_FINISHED);
 
         // update pool accum_reward and timestamp
-        update_accum_reward(pool, system_clock);
+        update_accum_reward(pool, timestamp_ms);
 
-        let current_time = clock::timestamp_ms(system_clock);
+        let current_time = timestamp_ms/1000;
         let user_address = sender(ctx);
         let accum_reward = pool.accum_reward;
 
@@ -278,7 +276,7 @@ module seapad::stake {
         pool: &mut StakePool<S, R>,
         amount: u64,
         global_config: &GlobalConfig,
-        system_clock: &Clock,
+        timestamp_ms: u64,
         ctx: &mut TxContext
     ): Coin<S> {
         assert!(amount > 0, ERR_AMOUNT_CANNOT_BE_ZERO);
@@ -289,13 +287,13 @@ module seapad::stake {
         assert!(table::contains(&pool.stakes, user_address), ERR_NO_STAKE);
 
         // update pool accum_reward and timestamp
-        update_accum_reward(pool, system_clock);
+        update_accum_reward(pool, timestamp_ms);
 
         let user_stake = table::borrow_mut(&mut pool.stakes, user_address);
         assert!(amount <= user_stake.amount, ERR_NOT_ENOUGH_S_BALANCE);
 
         // check unlock timestamp
-        let current_time = clock::timestamp_ms(system_clock)/1000; //@todo review math div
+        let current_time = timestamp_ms/1000; //@todo review math div
         if (pool.end_timestamp >= current_time) {
             assert!(current_time >= user_stake.unlock_time, ERR_TOO_EARLY_UNSTAKE);
         };
@@ -322,7 +320,7 @@ module seapad::stake {
     /// Returns R coins: `Coin<R>`.
     public fun harvest<S, R>(pool: &mut StakePool<S, R>,
                              global_config: &GlobalConfig,
-                             system_clock: &Clock,
+                             timestamp_ms: u64,
                              ctx: &mut TxContext): Coin<R> {
 
         assert!(!is_emergency_inner(pool, global_config), ERR_EMERGENCY);
@@ -331,7 +329,7 @@ module seapad::stake {
         assert!(table::contains(&pool.stakes, user_address), ERR_NO_STAKE);
 
         // update pool accum_reward and timestamp
-        update_accum_reward(pool, system_clock);
+        update_accum_reward(pool, timestamp_ms);
 
         let user_stake = table::borrow_mut(&mut pool.stakes, user_address);
 
@@ -401,12 +399,12 @@ module seapad::stake {
     public fun withdraw_to_treasury<S, R>(pool: &mut StakePool<S, R>,
                                           amount: u64,
                                           global_config: &GlobalConfig,
-                                          system_clock: &Clock,
+                                          timestamp_ms: u64,
                                           ctx: &mut TxContext): Coin<R> {
         assert!(sender(ctx) == stake_config::get_treasury_admin_address(global_config), ERR_NOT_TREASURY);
 
         if (!is_emergency_inner(pool, global_config)) {
-            let now = clock::timestamp_ms(system_clock)/1000; //@todo review math
+            let now = timestamp_ms/1000; //@todo review math
             assert!(now >= (pool.end_timestamp + WITHDRAW_REWARD_PERIOD_IN_SECONDS), ERR_NOT_WITHDRAW_PERIOD);
         };
 
@@ -427,8 +425,8 @@ module seapad::stake {
     /// Checks if harvest on the pool finished.
     ///     * `pool_addr` - address under which pool are stored.
     /// Returns true if harvest finished for the pool.
-    public fun is_finished<S, R>(pool: &StakePool<S, R>, system_clock: &Clock): bool {
-        is_finished_inner(pool, system_clock)
+    public fun is_finished<S, R>(pool: &StakePool<S, R>, timestamp_ms: u64): bool {
+        is_finished_inner(pool, timestamp_ms)
     }
 
     /// Gets timestamp when harvest will be finished for the pool.
@@ -466,12 +464,12 @@ module seapad::stake {
     ///     * `pool_addr` - address under which pool are stored.
     ///     * `user_addr` - stake owner address.
     /// Returns reward amount that can be harvested by stake owner.
-    public fun get_pending_user_rewards<S, R>(pool: &StakePool<S, R>, user_addr: address, system_clock: &Clock): u64 {
+    public fun get_pending_user_rewards<S, R>(pool: &StakePool<S, R>, user_addr: address, timestamp_ms: u64): u64 {
 
         assert!(table::contains(&pool.stakes, user_addr), ERR_NO_STAKE);
 
         let user_stake = table::borrow(&pool.stakes, user_addr);
-        let current_time = get_time_for_last_update(pool, system_clock);
+        let current_time = get_time_for_last_update(pool, timestamp_ms);
         let new_accum_rewards = accum_rewards_since_last_updated(pool, current_time);
 
         let earned_since_last_update = user_earned_since_last_update(
@@ -497,11 +495,11 @@ module seapad::stake {
     ///     * `pool_addr` - address under which pool are stored.
     ///     * `user_addr` - stake owner address.
     /// Returns true if user can unstake.
-    public fun is_unlocked<S, R>(pool: &StakePool<S, R>, user_addr: address, system_clock: &Clock): bool {
+    public fun is_unlocked<S, R>(pool: &StakePool<S, R>, user_addr: address, timestamp_ms: u64): bool {
 
         assert!(table::contains(&pool.stakes, user_addr), ERR_NO_STAKE);
 
-        let current_time = clock::timestamp_ms(system_clock);
+        let current_time = timestamp_ms/1000;
         let unlock_time = math::min(pool.end_timestamp, table::borrow(&pool.stakes, user_addr).unlock_time);
 
         current_time >= unlock_time
@@ -535,15 +533,15 @@ module seapad::stake {
     /// Internal function to check if harvest finished on the pool.
     ///     * `pool` - the pool itself.
     /// Returns true if harvest finished for the pool.
-    fun is_finished_inner<S, R>(pool: &StakePool<S, R>, system_clock: &Clock): bool {
-        let now = clock::timestamp_ms(system_clock)/1000;
+    fun is_finished_inner<S, R>(pool: &StakePool<S, R>, timestamp_ms: u64): bool {
+        let now = timestamp_ms/1000;
         now >= pool.end_timestamp
     }
 
     /// Calculates pool accumulated reward, updating pool.
     ///     * `pool` - pool to update rewards.
-    fun update_accum_reward<S, R>(pool: &mut StakePool<S, R>, system_clock: &Clock) {
-        let current_time = get_time_for_last_update(pool, system_clock);
+    fun update_accum_reward<S, R>(pool: &mut StakePool<S, R>, timestamp_now: u64) {
+        let current_time = get_time_for_last_update(pool, timestamp_now);
         let new_accum_rewards = accum_rewards_since_last_updated(pool, current_time);
 
         pool.last_updated = current_time;
@@ -597,8 +595,8 @@ module seapad::stake {
     /// Get time for last pool update: current time if the pool is not finished or end timmestamp.
     ///     * `pool` - pool to get time.
     /// Returns timestamp.
-    fun get_time_for_last_update<S, R>(pool: &StakePool<S, R>, system_clock: &Clock): u64 {
-        math::min(pool.end_timestamp, clock::timestamp_ms(system_clock)/1000) //@todo review math div
+    fun get_time_for_last_update<S, R>(pool: &StakePool<S, R>, timestamp_now: u64): u64 {
+        math::min(pool.end_timestamp, timestamp_now/1000) //@todo review math div
     }
 
     /// Get total staked amount in the pool.
@@ -662,8 +660,8 @@ module seapad::stake {
 
     #[test_only]
     /// Force pool & user stake recalculations.
-    public fun recalculate_user_stake<S, R>(pool: &mut StakePool<S, R>, user_addr: address, system_clock: &Clock) {
-        update_accum_reward(pool, system_clock);
+    public fun recalculate_user_stake<S, R>(pool: &mut StakePool<S, R>, user_addr: address, timestamp_ms: u64) {
+        update_accum_reward(pool, timestamp_ms);
 
         let user_stake = table::borrow_mut(&mut pool.stakes, user_addr);
         update_user_earnings(pool.accum_reward, pool.scale, user_stake);
