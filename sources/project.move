@@ -18,7 +18,7 @@ module seapad::project {
     use sui::sui::SUI;
     use sui::transfer;
     use sui::tx_context::{Self, TxContext, sender};
-    use sui::vec_map::{Self, VecMap};
+    use sui::vec_map;
     use sui::vec_set::{Self, VecSet};
 
     ///Define model first
@@ -45,6 +45,9 @@ module seapad::project {
     const EInvalidSwapRatioSui: u64 = 1015;
     const ENotEnoughTokenFund: u64 = 1016;
     const ENoOrder: u64 = 1017;
+    const ENotOwner: u64 = 1018;
+    const ENotMeetExpect: u64 = 1019;
+
 
     const ROUND_SEED: u8 = 1;
     const ROUND_PRIVATE: u8 = 2;
@@ -70,6 +73,7 @@ module seapad::project {
     const VESTING_TYPE_MILESTONE: u8 = 1;
     const VESTING_TYPE_LINEAR: u8 = 2;
     const VESTING: vector<u8> = b"vesting";
+    const ORDERS: vector<u8> = b"orders";
     const WHITELIST: vector<u8> = b"whitelist";
     const PROFILE: vector<u8> = b"profile";
 
@@ -81,13 +85,15 @@ module seapad::project {
         website: vector<u8>,
     }
 
+    struct OrderBook has key, store {
+        id: UID,
+    }
+
     struct Order  has store {
         buyer: address,
         sui_amount: u64,
         token_amount: u64,
-        //total token
         token_released: u64,
-        //released
     }
 
     struct LaunchState<phantom COIN> has key, store {
@@ -110,7 +116,7 @@ module seapad::project {
         token_fund: Option<Coin<COIN>>,
         //owner of project deposit token fund enough to raising fund
         raised_sui: Option<Coin<SUI>>,
-        buy_orders: VecMap<address, Order>,
+        order_book: OrderBook
     }
 
     ///should refer to object
@@ -136,7 +142,7 @@ module seapad::project {
         percent: u8
     }
 
-    struct Vesting<phantom COIN> has key, store {
+    struct Vesting has key, store {
         id: UID,
         type: u8,
         init_release_time: u64,
@@ -149,9 +155,10 @@ module seapad::project {
         launchstate: LaunchState<COIN>,
         community: Community,
         usewhitelist: bool,
+        owner: address,
         //        profile: //use dynamic field
         //        whitelist: VecSet<address> //use dynamic field
-        //        vesting: Vesting<COIN> //use dynamic field
+        //        vesting: Vesting //use dynamic field
     }
 
     ///@todo review: when change admin account, should flush all fund to all project
@@ -159,11 +166,6 @@ module seapad::project {
     struct PadConfig has key, store {
         id: UID,
         adminAddr: address
-    }
-
-    struct Projects<phantom PAD> has key {
-        id: UID,
-        projects: vector<address>
     }
 
     struct AdminCap has key, store {
@@ -187,6 +189,7 @@ module seapad::project {
 
     /// add one project
     public entry fun create_project<COIN>(_adminCap: &AdminCap,
+                                          owner: address,
                                           round: u8,
                                           usewhitelist: bool,
                                           soft_cap: u64,
@@ -212,9 +215,11 @@ module seapad::project {
             start_time: 0,
             end_time: 0,
             token_fund: option::none<Coin<COIN>>(),
-            buy_orders: vec_map::empty<address, Order>(),
             raised_sui: option::none<Coin<SUI>>(),
+            order_book: OrderBook { id: object::new(ctx) }
         };
+        dynamic_field::add(&mut launchstate.id, ORDERS, vec_map::empty<address, Order>());
+
 
         let community = Community {
             id: object::new(ctx),
@@ -228,7 +233,7 @@ module seapad::project {
 
         let vestingMlsts = vector::empty<VestingMileStone>();
 
-        let vesting = Vesting<COIN> {
+        let vesting = Vesting {
             id: object::new(ctx),
             type: vesting_type,
             init_release_time: first_vesting_time,
@@ -238,6 +243,7 @@ module seapad::project {
 
         let project = Project {
             id: object::new(ctx),
+            owner,
             launchstate,
             community,
             usewhitelist
@@ -260,7 +266,7 @@ module seapad::project {
                                          time: u64,
                                          percent: u8,
                                          ctx: &mut TxContext) {
-        let vesting = dynamic_field::borrow_mut<vector<u8>, Vesting<COIN>>(&mut project.id, VESTING);
+        let vesting = dynamic_field::borrow_mut<vector<u8>, Vesting>(&mut project.id, VESTING);
         assert!(vesting.type == VESTING_TYPE_MILESTONE, EInvalidVestingType);
         let milestones = option::borrow_mut(&mut vesting.milestones);
         vector::push_back(milestones, VestingMileStone { time, percent });
@@ -362,8 +368,8 @@ module seapad::project {
 
     public entry fun buy<COIN>(suis: vector<Coin<SUI>>, amount: u64, project: &mut Project<COIN>, ctx: &mut TxContext) {
         let sui_amt = payment::take_from(suis, amount, ctx);
-
-        validate_state_for_buy(project, sender(ctx));
+        let sender = sender(ctx);
+        validate_state_for_buy(project, sender);
         let launchstate = &mut project.launchstate;
         let more_sui = coin::value(&sui_amt);
         let more_token = (more_sui / launchstate.swap_ratio_sui) * launchstate.swap_ratio_token ;
@@ -371,22 +377,27 @@ module seapad::project {
         launchstate.total_sold = launchstate.total_sold + more_token;
         let tokens_allow = launchstate.hard_cap / launchstate.swap_ratio_sui * launchstate.swap_ratio_token;
         assert!(tokens_allow >= launchstate.total_sold, EOutOfHardCap);
+        let order_book = &mut launchstate.order_book;
+        // let buy_orders = dynamic_field::borrow_mut<vector<u8>, VecMap<address, Order>>(&mut launchstate.id, ORDERS);
+        let exists_order = dynamic_field::exists_with_type<address, Order>(&mut order_book.id, sender);
 
-        if (!vec_map::contains(&launchstate.buy_orders, &sender(ctx))) {
+        if (!exists_order) {
             let newBuyOrder = Order {
-                buyer: sender(ctx),
+                buyer: sender,
                 sui_amount: 0,
                 token_amount: 0, //not distributed
                 token_released: 0, //not released
             };
-            vec_map::insert(&mut launchstate.buy_orders, sender(ctx), newBuyOrder);
+            dynamic_field::add(&mut order_book.id, sender, newBuyOrder);
+            // vec_map::insert(buy_orders, sender(ctx), newBuyOrder);
             launchstate.participants = launchstate.participants + 1;
         };
-        let order = vec_map::get_mut(&mut launchstate.buy_orders, &sender(ctx));
+        let order = dynamic_field::borrow_mut<address, Order>(&mut order_book.id, sender);
+        // let order = vec_map::get_mut(buy_orders, &sender(ctx));
         order.sui_amount = order.sui_amount + more_sui;
         order.token_amount = order.token_amount + more_token;
 
-        let bought_amt = vec_map::get_mut(&mut launchstate.buy_orders, &sender(ctx)).sui_amount;
+        let bought_amt = order.sui_amount;
         assert!(bought_amt <= launchstate.max_allocate, EMaxAllocate);
 
         if (option::is_none(&launchstate.raised_sui)) {
@@ -397,7 +408,7 @@ module seapad::project {
 
         event::emit(BuyEvent {
             project: id_address(project),
-            buyer: sender(ctx),
+            buyer: sender,
             total_sui_amt: bought_amt,
             epoch: tx_context::epoch(ctx)
         })
@@ -469,25 +480,27 @@ module seapad::project {
     /// - make sure coin merged
     /// - should limit to the one that register project ?
     /// - make sure token deposit match the market cap & swap ratio
-    public entry fun deposit_project<COIN>(
-        coins: vector<Coin<COIN>>,
-        value: u64,
-        project: &mut Project<COIN>,
-        ctx: &mut TxContext
-    ) {
-        let token = payment::take_from(coins, value, ctx);
+    public entry fun deposit_project<COIN>(coins: vector<Coin<COIN>>,
+                                           project: &mut Project<COIN>,
+                                           ctx: &mut TxContext) {
+        let depositer = sender(ctx);
+        assert!(depositer == project.owner, ENotOwner);
+
         let launchstate = &mut project.launchstate;
+        let token_expect = (launchstate.soft_cap / launchstate.swap_ratio_sui) * launchstate.swap_ratio_token;
+        let token_fund = payment::take_from(coins, token_expect, ctx);
+
         if (option::is_some(&launchstate.token_fund)) {
             let before = option::borrow_mut(&mut launchstate.token_fund);
-            coin::join(before, token);
+            coin::join(before, token_fund);
         }else {
-            option::fill(&mut launchstate.token_fund, token);
+            option::fill(&mut launchstate.token_fund, token_fund);
         };
 
         event::emit(ProjectDepositFundEvent {
             project: id_address(project),
             depositor: sender(ctx),
-            token_amount: value
+            token_amount: token_expect
         })
     }
 
@@ -495,10 +508,15 @@ module seapad::project {
         validate_vest_token(project);
         let sender = sender(ctx);
         let launchstate = &mut project.launchstate;
-        assert!(vec_map::contains(&launchstate.buy_orders, &sender), ENoOrder);
-        let order = vec_map::get_mut(&mut launchstate.buy_orders, &sender);
+        let order_book = &mut launchstate.order_book;
 
-        let vesting = dynamic_field::borrow_mut<vector<u8>, Vesting<COIN>>(&mut project.id, VESTING);
+        // let buy_orders = dynamic_field::borrow_mut<vector<u8>, VecMap<address, Order>>(&mut launchstate.id, ORDERS);
+
+        assert!(dynamic_field::exists_with_type<address, Order>(&mut order_book.id, sender), ENoOrder);
+        let order = dynamic_field::borrow_mut<address, Order>(&mut order_book.id, sender);
+        // let order = vec_map::get_mut(buy_orders, &sender);
+
+        let vesting = dynamic_field::borrow_mut<vector<u8>, Vesting>(&mut project.id, VESTING);
         let milestones = option::borrow(&vesting.milestones);
 
 
@@ -533,7 +551,10 @@ module seapad::project {
     public entry fun claim_refund<COIN>(project: &mut Project<COIN>, ctx: &mut TxContext) {
         validate_refund(project);
         let sender = sender(ctx);
-        let order = vec_map::get_mut(&mut project.launchstate.buy_orders, &sender(ctx));
+        let order_book = &mut project.launchstate.order_book;
+        // let buy_orders = dynamic_field::borrow_mut<vector<u8>, VecMap<address, Order>>(&mut project.launchstate.id, ORDERS);
+        // let order = vec_map::get_mut(buy_orders, &sender(ctx));
+        let order = dynamic_field::borrow_mut<address, Order>(&mut order_book.id, sender);
         let amount_fund = order.sui_amount;
         let coin_fund = coin::split(option::borrow_mut(&mut project.launchstate.raised_sui), amount_fund, ctx);
         transfer::transfer(coin_fund, sender);
@@ -593,8 +614,8 @@ module seapad::project {
         }else {
             coin::value(option::borrow(&project.launchstate.token_fund))
         };
-        let token_expect = (launchstate.soft_cap / launchstate.swap_ratio_sui) * launchstate.swap_ratio_token;
-        assert!(total_token >= token_expect, ENotEnoughTokenFund);
+        let token_amt_expect = (launchstate.soft_cap / launchstate.swap_ratio_sui) * launchstate.swap_ratio_token;
+        assert!(total_token >= token_amt_expect, ENotEnoughTokenFund);
     }
 
     /// -make sure that sum of all milestone is <= 100%
@@ -641,7 +662,7 @@ module seapad::project {
         assert!(state == ROUND_STATE_END_REFUND || state == ROUND_STATE_CLAIMING, EInvalidRoundState);
     }
 
-    fun validate_vesting<COIN>(vesting: &Vesting<COIN>, now: u64) {
+    fun validate_vesting(vesting: &Vesting, now: u64) {
         assert!(vesting.init_release_time > now, EInvalidRoundState);
     }
     //==========================================End Validate Area==========================================
@@ -663,12 +684,12 @@ module seapad::project {
             start_time: project.launchstate.start_time,
             end_time: project.launchstate.end_time,
             usewhitelist: project.usewhitelist,
-            vesting_type: dynamic_field::borrow<vector<u8>, Vesting<COIN>>(&project.id, VESTING).type,
-            vesting_init_release_time: dynamic_field::borrow<vector<u8>, Vesting<COIN>>(
+            vesting_type: dynamic_field::borrow<vector<u8>, Vesting>(&project.id, VESTING).type,
+            vesting_init_release_time: dynamic_field::borrow<vector<u8>, Vesting>(
                 &project.id,
                 VESTING
             ).init_release_time,
-            vesting_milestones: dynamic_field::borrow<vector<u8>, Vesting<COIN>>(&project.id, VESTING).milestones
+            vesting_milestones: dynamic_field::borrow<vector<u8>, Vesting>(&project.id, VESTING).milestones
         };
 
         event

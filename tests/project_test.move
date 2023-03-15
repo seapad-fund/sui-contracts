@@ -82,7 +82,7 @@ module seapad::project_test {
         let scenario_val = scenario();
         let scenario = &mut scenario_val;
         create_project_(false, scenario);
-        deposit_to_project_(OWNER_PROJECT,5000000000000, scenario);
+        deposit_to_project_(OWNER_PROJECT, scenario);
         start_fund_raising_(scenario);
 
         test_scenario::end(scenario_val);
@@ -93,7 +93,7 @@ module seapad::project_test {
         let scenario_val = scenario();
         let scenario = &mut scenario_val;
         create_project_(false, scenario);
-        deposit_to_project_(OWNER_PROJECT,5000000000000, scenario);
+        deposit_to_project_(OWNER_PROJECT, scenario);
         start_fund_raising_(scenario);
 
         buy_token_(OWNER_PROJECT, 500000000000, scenario);//pass
@@ -109,7 +109,7 @@ module seapad::project_test {
         let scenario_val = scenario();
         let scenario = &mut scenario_val;
         create_project_(false, scenario);
-        deposit_to_project_(OWNER_PROJECT,5000000000000, scenario);
+        deposit_to_project_(OWNER_PROJECT, scenario);
         start_fund_raising_(scenario);
 
         buy_token_(OWNER_PROJECT, 500000000000, scenario);//pass
@@ -130,7 +130,7 @@ module seapad::project_test {
         let scenario_val = scenario();
         let scenario = &mut scenario_val;
         create_project_(false, scenario);
-        deposit_to_project_(OWNER_PROJECT,5000000000000, scenario);
+        deposit_to_project_(OWNER_PROJECT, scenario);
         start_fund_raising_(scenario);
 
         buy_token_(OWNER_PROJECT, 500000000000, scenario);//pass
@@ -145,7 +145,7 @@ module seapad::project_test {
         let scenario_val = scenario();
         let scenario = &mut scenario_val;
         create_project_(true, scenario);
-        deposit_to_project_(OWNER_PROJECT,5000000000000, scenario);
+        deposit_to_project_(OWNER_PROJECT, scenario);
         start_fund_raising_(scenario);
         add_whitelist_(OWNER_PROJECT, scenario);
         buy_token_(OWNER_PROJECT, 500000000000, scenario);
@@ -158,7 +158,7 @@ module seapad::project_test {
         let scenario_val = scenario();
         let scenario = &mut scenario_val;
         create_project_(false, scenario);
-        deposit_to_project_(OWNER_PROJECT,5000000000000, scenario);
+        deposit_to_project_(OWNER_PROJECT, scenario);
         start_fund_raising_(scenario);
 
         // add_whitelist_(USER1, scenario);
@@ -213,7 +213,7 @@ module seapad::project_test {
         create_project_(false, scenario);
 
         let deposit_value = 5000000000000;
-        deposit_to_project_(OWNER_PROJECT,deposit_value, scenario);
+        deposit_to_project_(OWNER_PROJECT, scenario);
         start_fund_raising_(scenario);
 
         // add_whitelist_(USER1, scenario);
@@ -279,6 +279,7 @@ module seapad::project_test {
 
             project::create_project<SPT>(
                 &admin_cap,
+                OWNER_PROJECT,
                 1,
                 usewhitelist,
                 SOFT_CAP,
@@ -380,7 +381,7 @@ module seapad::project_test {
         test_scenario::return_shared(ido);
     }
 
-    fun deposit_to_project_(owner: address, value: u64, scenario: &mut Scenario) {
+    fun deposit_to_project_(owner: address, scenario: &mut Scenario) {
         test_scenario::next_tx(scenario, owner);
         {
             //deposit
@@ -390,7 +391,7 @@ module seapad::project_test {
             let spts = vector::empty<Coin<SPT>>();
             vector::push_back(&mut spts, spt);
             //expect 5k
-            project::deposit_project(spts, value, &mut ido, ctx);
+            project::deposit_project(spts, &mut ido, ctx);
 
             test_scenario::return_shared(ido);
         };
