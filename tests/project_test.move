@@ -7,15 +7,14 @@ module seapad::project_test {
     use sui::coin::{Self, CoinMetadata, Coin};
     use sui::sui::SUI;
     use sui::test_scenario::{Self, Scenario};
-    use sui::tx_context;
 
     const ADMIN: address = @0xC0FFEE;
     const TOKEN_MINT_TEST: u64 = 1000000000000000;
     const SWAP_RATIO_SUI: u64 = 1;
-    const SWAP_RATIO_TOKEN: u64 = 5;
+    const SWAP_RATIO_TOKEN: u64 = 2;
     //1000sui
     const SOFT_CAP: u64 = 1000000000000;
-    //2000sui
+    //2000 SPT
     const HARD_CAP: u64 = 2000000000000;
     const MAX_ALLOCATE: u64 = 500000000000;
     const OWNER_PROJECT: address = @0x1;
@@ -38,7 +37,7 @@ module seapad::project_test {
     fun test_create_project() {
         let scenario_val = scenario();
         let scenario = &mut scenario_val;
-        create_project_(false, scenario);
+        create_project_( scenario);
         test_scenario::end(scenario_val);
     }
 
@@ -46,7 +45,8 @@ module seapad::project_test {
     fun test_update_project() {
         let scenario_val = scenario();
         let scenario = &mut scenario_val;
-        update_project_(scenario);
+        create_project_( scenario);
+        setup_launch_state_(scenario, 1, true);
         test_scenario::end(scenario_val);
     }
 
@@ -54,7 +54,8 @@ module seapad::project_test {
     fun test_add_milestone() {
         let scenario_val = scenario();
         let scenario = &mut scenario_val;
-        create_project_(false, scenario);
+        create_project_( scenario);
+        setup_launch_state_(scenario, 1, true);
 
         add_milestone_(1000, 75, scenario);//alway pass
         add_milestone_(2000, 25, scenario);//must pass
@@ -67,7 +68,8 @@ module seapad::project_test {
     fun test_add_milestone_must_failure() {
         let scenario_val = scenario();
         let scenario = &mut scenario_val;
-        create_project_(false, scenario);
+        create_project_( scenario);
+        setup_launch_state_(scenario, 1, true);
 
         add_milestone_(1000, 75, scenario);//alway pass
         add_milestone_(2000, 25, scenario);//must pass
@@ -81,8 +83,9 @@ module seapad::project_test {
     fun test_fundraising_project() {
         let scenario_val = scenario();
         let scenario = &mut scenario_val;
-        create_project_(false, scenario);
-        deposit_to_project_(OWNER_PROJECT, scenario);
+        create_project_( scenario);
+        setup_launch_state_(scenario, 1, false);
+        deposit_to_project_(OWNER_PROJECT, 5000000000000, scenario);
         start_fund_raising_(scenario);
 
         test_scenario::end(scenario_val);
@@ -92,8 +95,9 @@ module seapad::project_test {
     fun test_buy_token() {
         let scenario_val = scenario();
         let scenario = &mut scenario_val;
-        create_project_(false, scenario);
-        deposit_to_project_(OWNER_PROJECT, scenario);
+        create_project_( scenario);
+        setup_launch_state_(scenario, 1, false);
+        deposit_to_project_(OWNER_PROJECT, 5000000000000, scenario);
         start_fund_raising_(scenario);
 
         buy_token_(OWNER_PROJECT, 500000000000, scenario);//pass
@@ -108,11 +112,12 @@ module seapad::project_test {
     fun test_buy_token_out_of_hardcap() {
         let scenario_val = scenario();
         let scenario = &mut scenario_val;
-        create_project_(false, scenario);
-        deposit_to_project_(OWNER_PROJECT, scenario);
+        create_project_( scenario);
+        setup_launch_state_(scenario, 1, false);
+        deposit_to_project_(OWNER_PROJECT, 5000000000000, scenario);
         start_fund_raising_(scenario);
 
-        buy_token_(OWNER_PROJECT, 500000000000, scenario);//pass
+        buy_token_(USER2, 500000000000, scenario);//pass
         buy_token_(USER3, 500000000000, scenario);//failed out of hard_card
         buy_token_(USER4, 500000000000, scenario);//failed out of hard_card
         buy_token_(USER5, 500000000000, scenario);//failed out of hard_card
@@ -129,8 +134,9 @@ module seapad::project_test {
     fun test_buy_token_max_allocate() {
         let scenario_val = scenario();
         let scenario = &mut scenario_val;
-        create_project_(false, scenario);
-        deposit_to_project_(OWNER_PROJECT, scenario);
+        create_project_( scenario);
+        setup_launch_state_(scenario, 1, false);
+        deposit_to_project_(OWNER_PROJECT, 5000000000000, scenario);
         start_fund_raising_(scenario);
 
         buy_token_(OWNER_PROJECT, 500000000000, scenario);//pass
@@ -144,8 +150,9 @@ module seapad::project_test {
     fun test_buy_token_use_whitelist() {
         let scenario_val = scenario();
         let scenario = &mut scenario_val;
-        create_project_(true, scenario);
-        deposit_to_project_(OWNER_PROJECT, scenario);
+        create_project_(scenario);
+        setup_launch_state_(scenario, 1, true);
+        deposit_to_project_(OWNER_PROJECT, 5000000000000, scenario);
         start_fund_raising_(scenario);
         add_whitelist_(OWNER_PROJECT, scenario);
         buy_token_(OWNER_PROJECT, 500000000000, scenario);
@@ -157,13 +164,13 @@ module seapad::project_test {
     fun test_claim_project() {
         let scenario_val = scenario();
         let scenario = &mut scenario_val;
-        create_project_(false, scenario);
-        deposit_to_project_(OWNER_PROJECT, scenario);
+        create_project_( scenario);
+        setup_launch_state_(scenario, 1, false);
+        deposit_to_project_(OWNER_PROJECT, 5000000000000, scenario);
         start_fund_raising_(scenario);
 
         // add_whitelist_(USER1, scenario);
         let sui_buy = 500000000000;
-        buy_token_(USER4, sui_buy, scenario);
         buy_token_(USER2, sui_buy, scenario);
         buy_token_(USER3, sui_buy, scenario);
         end_fund_raising_(scenario);
@@ -191,7 +198,7 @@ module seapad::project_test {
             let admin_cap = test_scenario::take_from_sender<AdminCap>(scenario);
             let ctx = test_scenario::ctx(scenario);
 
-            project::distribute_raised_fund(&admin_cap, &mut project, OWNER_PROJECT, ctx);
+            project::distribute_raised_fund(&admin_cap, &mut project, ctx);
             test_scenario::return_shared(project);
             test_scenario::return_to_sender(scenario, admin_cap);
 
@@ -199,7 +206,7 @@ module seapad::project_test {
             let sui_raised = test_scenario::take_from_sender<Coin<SUI>>(scenario);
             let sui_value = coin::value(&sui_raised);
 
-            assert!(sui_value == 500000000000 * 3, 0);
+            assert!(sui_value == 500000000000 * 2, 0);
             test_scenario::return_to_sender(scenario, sui_raised);
         };
 
@@ -210,10 +217,11 @@ module seapad::project_test {
     fun test_refund_project() {
         let scenario_val = scenario();
         let scenario = &mut scenario_val;
-        create_project_(false, scenario);
+        create_project_( scenario);
+        setup_launch_state_(scenario, 1, false);
 
         let deposit_value = 5000000000000;
-        deposit_to_project_(OWNER_PROJECT, scenario);
+        deposit_to_project_(OWNER_PROJECT, deposit_value, scenario);
         start_fund_raising_(scenario);
 
         // add_whitelist_(USER1, scenario);
@@ -245,7 +253,7 @@ module seapad::project_test {
             let project = test_scenario::take_shared<Project<SPT>>(scenario);
             let admin_cap = test_scenario::take_from_sender<AdminCap>(scenario);
             let ctx = test_scenario::ctx(scenario);
-            project::refund_token_to_owner(&admin_cap, &mut project, OWNER_PROJECT, ctx);
+            project::refund_token_to_owner(&admin_cap, &mut project, ctx);
             test_scenario::return_shared(project);
             test_scenario::return_to_sender(scenario, admin_cap);
 
@@ -259,7 +267,7 @@ module seapad::project_test {
         test_scenario::end(scenario_val);
     }
 
-    fun create_project_(usewhitelist: bool, scenario: &mut Scenario) {
+    fun create_project_(scenario: &mut Scenario) {
         test_scenario::next_tx(scenario, ADMIN);
         {
             let ctx = test_scenario::ctx(scenario);
@@ -272,23 +280,10 @@ module seapad::project_test {
             let admin_cap = test_scenario::take_from_sender<AdminCap>(scenario);
             let coin_metadata = test_scenario::take_immutable<CoinMetadata<spt::SPT>>(scenario);
             let ctx = test_scenario::ctx(scenario);
-
-            let now = tx_context::epoch(ctx);
-            let time1 = now + 1000;
-
-
             project::create_project<SPT>(
                 &admin_cap,
                 OWNER_PROJECT,
                 1,
-                usewhitelist,
-                SOFT_CAP,
-                HARD_CAP,
-                SWAP_RATIO_SUI,
-                SWAP_RATIO_TOKEN,
-                MAX_ALLOCATE,
-                1,
-                time1,
                 ctx
             );
             test_scenario::return_to_sender(scenario, admin_cap);
@@ -296,38 +291,27 @@ module seapad::project_test {
         };
     }
 
-    fun update_project_(scenario: &mut Scenario) {
-        create_project_(false, scenario);
+    fun setup_launch_state_(scenario: &mut Scenario, round: u8, usewhitelist: bool) {
+        create_project_( scenario);
 
         test_scenario::next_tx(scenario, ADMIN);
         {
             let admin_cap = test_scenario::take_from_sender<AdminCap>(scenario);
             let project = test_scenario::take_shared<Project<SPT>>(scenario);
             let ctx = test_scenario::ctx(scenario);
-
-            let round = 1;
-            let usewhitelist = true;
-            let swap_ratio_sui = 2;
-            let swap_ratio_token = 2;
-            let max_allocate = 1111;
-            let start_time = tx_context::epoch(ctx) + 1000;
-            let end_time = start_time + 1000;
-
-            let soft_cap = 999999;
-            let hard_cap = 999999;
-
-            project::update_project(
+            
+            project::setup_launch_state<SPT>(
                 &admin_cap,
                 &mut project,
                 round,
                 usewhitelist,
-                swap_ratio_sui,
-                swap_ratio_token,
-                max_allocate,
-                start_time,
-                soft_cap,
-                hard_cap,
-                end_time,
+                SWAP_RATIO_SUI,
+                SWAP_RATIO_TOKEN,
+                MAX_ALLOCATE,
+                0,
+                0,
+                SOFT_CAP,
+                HARD_CAP,
                 ctx);
 
             test_scenario::return_to_sender(scenario, admin_cap);
@@ -381,7 +365,7 @@ module seapad::project_test {
         test_scenario::return_shared(ido);
     }
 
-    fun deposit_to_project_(owner: address, scenario: &mut Scenario) {
+    fun deposit_to_project_(owner: address, value: u64, scenario: &mut Scenario) {
         test_scenario::next_tx(scenario, owner);
         {
             //deposit
@@ -391,7 +375,7 @@ module seapad::project_test {
             let spts = vector::empty<Coin<SPT>>();
             vector::push_back(&mut spts, spt);
             //expect 5k
-            project::deposit_project(spts, &mut ido, ctx);
+            project::deposit_by_owner(spts, value, &mut ido, ctx);
 
             test_scenario::return_shared(ido);
         };

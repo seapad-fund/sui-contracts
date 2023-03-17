@@ -1,0 +1,31 @@
+
+
+SPT: 0x0aae50c7ec75fedaecb0886d2de5b8521db69864
+Admin: 0x0f0f9de059fac6ed799ae895dc74ead45ba34f4c
+Module: 0xd934ec68ce7903b4cd4c6aa1619b0d607eeb6174
+ProjectId: 0xc8e4595987a40ffc27d1f5ce1b2413bc03073d80
+
+==========================================================Project
+sudo sui client publish --gas-budget 10000
+
+//create
+sudo sui client call --gas-budget 2000 --package 0xd934ec68ce7903b4cd4c6aa1619b0d607eeb6174 --module project --function create_project --type-args "0xd934ec68ce7903b4cd4c6aa1619b0d607eeb6174::spt::SPT" --args 0x0f0f9de059fac6ed799ae895dc74ead45ba34f4c 0xd572cacdbf2364803d59094f1baa9bed651c2476 1 false 10000000000 100000000000 1 5 50000000 1 1679356799
+
+//add_milestone
+sudo sui client call --gas-budget 2000 --package 0xd934ec68ce7903b4cd4c6aa1619b0d607eeb6174 --module project --function add_milestone --type-args "0xd934ec68ce7903b4cd4c6aa1619b0d607eeb6174::spt::SPT" --args 0x0f0f9de059fac6ed799ae895dc74ead45ba34f4c 0xc8e4595987a40ffc27d1f5ce1b2413bc03073d80 1679356799 25
+
+//deposit by owner
+sudo sui client call --gas-budget 2000 --package 0xd934ec68ce7903b4cd4c6aa1619b0d607eeb6174 --module project --function deposit_project --type-args "0xd934ec68ce7903b4cd4c6aa1619b0d607eeb6174::spt::SPT" --args "[0x7ad8b9da5ca3ec19b84a090086ded02f9b7e5d1a]" 0xc8e4595987a40ffc27d1f5ce1b2413bc03073d80
+
+//start_fund_raising
+sudo sui client call --gas-budget 2000 --package 0xd934ec68ce7903b4cd4c6aa1619b0d607eeb6174 --module project --function start_fund_raising --type-args "0xd934ec68ce7903b4cd4c6aa1619b0d607eeb6174::spt::SPT" --args 0x0f0f9de059fac6ed799ae895dc74ead45ba34f4c 0xc8e4595987a40ffc27d1f5ce1b2413bc03073d80
+
+//buy token by user
+sudo sui client call --gas-budget 2000 --package 0xd934ec68ce7903b4cd4c6aa1619b0d607eeb6174 --module project --function buy --type-args "0xd934ec68ce7903b4cd4c6aa1619b0d607eeb6174::spt::SPT" --args "[0x7c621b66687b78df88fa6b8e15c334cf0ab759e3]" 1000000 0xc8e4595987a40ffc27d1f5ce1b2413bc03073d80
+
+=================================================================SPT
+sudo sui client call --gas-budget 2000 --package 0xd934ec68ce7903b4cd4c6aa1619b0d607eeb6174 --module spt --function increase_supply --args 0x0aae50c7ec75fedaecb0886d2de5b8521db69864 1000000000000000000
+
+sudo sui client call --gas-budget 2000 --package 0xd934ec68ce7903b4cd4c6aa1619b0d607eeb6174 --module spt --function minto --args 0x0aae50c7ec75fedaecb0886d2de5b8521db69864 0xcc36a5b86990e76cadf8e7d6112d954adff08f88 1000000000000000
+
+
