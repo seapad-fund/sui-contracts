@@ -5,7 +5,10 @@ module seapad::spt {
     use std::ascii::string;
     use std::option;
 
-    use sui::coin::{Self, TreasuryCap};
+    use w3libs::payment;
+
+    use sui::balance;
+    use sui::coin::{Self, TreasuryCap, Coin};
     use sui::transfer;
     use sui::tx_context::{TxContext, sender};
     use sui::url;
@@ -19,27 +22,46 @@ module seapad::spt {
     struct SPT has drop {}
 
     ///initialize SPT
-    fun init(witness: SPT, ctx: &mut TxContext){
+    fun init(witness: SPT, ctx: &mut TxContext) {
         let (treasury_cap, spt_metadata) = coin::create_currency<SPT>(
-            witness, DECIMAL,  SYMBOL, NAME, DESCRIPTION, option::some(url::new_unsafe(string(ICON_URL))), ctx);
+            witness,
+            DECIMAL,
+            SYMBOL,
+            NAME,
+            DESCRIPTION,
+            option::some(url::new_unsafe(string(ICON_URL))),
+            ctx);
 
-        transfer::transfer(treasury_cap, sender(ctx));
         transfer::freeze_object(spt_metadata);
+        transfer::transfer(treasury_cap, sender(ctx));
     }
 
-    //@todo
-    public entry fun minto(_treasury_cap: &TreasuryCap<SPT>, _to: address, _amount: u128){
-
+    public entry fun minto(treasury_cap: &mut TreasuryCap<SPT>, to: address, amount: u64, ctx: &mut TxContext) {
+        coin::mint_and_transfer(treasury_cap, amount, to, ctx);
     }
 
-    //@todo
-    public entry fun updateSupply(_treasury_cap: &TreasuryCap<SPT>, _supply: u128){
-
+    public entry fun increase_supply(treasury_cap: &mut TreasuryCap<SPT>, value: u64, ctx: &mut TxContext) {
+        minto(treasury_cap, sender(ctx), value, ctx);
     }
 
-    //@todo
-    public entry fun burn(_treasury_cap: &TreasuryCap<SPT>, _amount: u128){
+    public entry fun decrease_supply(
+        treasury_cap: &mut TreasuryCap<SPT>,
+        coins: vector<Coin<SPT>>,
+        value: u64,
+        ctx: &mut TxContext
+    ) {
+        let take = payment::take_from(coins, value, ctx);
 
+        let total_supply = coin::supply_mut(treasury_cap);
+        balance::decrease_supply(total_supply, coin::into_balance(take));
+    }
+
+    public entry fun burn(treasury_cap: &mut TreasuryCap<SPT>,
+                          coins: vector<Coin<SPT>>,
+                          value: u64,
+                          ctx: &mut TxContext) {
+        let take = payment::take_from(coins, value, ctx);
+        coin::burn_(treasury_cap, take);
     }
 
     #[test_only]
