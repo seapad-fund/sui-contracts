@@ -11,8 +11,8 @@ seapad =  "0x00"
 sui =  "0x02"
 
 # staking admin
-treasury_admin = "0x385514285b7b7499455c8c395c4995baf7ab97ba"
-stake_emergency_admin = "0x385514285b7b7499455c8c395c4995baf7ab97ba"
+treasury_admin = "0x928b28cd70cb832e50c6da65ccdb839850bb9a7f"
+stake_emergency_admin = "0x928b28cd70cb832e50c6da65ccdb839850bb9a7f"
 
 # staking test addresses.
 treasury = "0x13"
