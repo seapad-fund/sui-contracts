@@ -4,11 +4,12 @@ version = "0.0.1"
 
 [dependencies]
 Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework", rev = "devnet" }
-W3libs = { git = "https://github.com/seapad-fund/w3libs", rev = "devnet0x3575" }
+W3libs = { local = "../w3libs" }
 
 [addresses]
 seapad =  "0x00"
 sui =  "0x02"
+
 
 # staking admin
 treasury_admin = "0x928b28cd70cb832e50c6da65ccdb839850bb9a7f"

@@ -405,9 +405,15 @@ module seapad::project_test {
             //deposit
             let ido = test_scenario::take_shared<Project<SPT>>(scenario);
             let ctx = test_scenario::ctx(scenario);
-            let spt = coin::mint_for_testing<SPT>(TOKEN_MINT_TEST, ctx);
+            let spt1 = coin::mint_for_testing<SPT>(value / 2, ctx);
+            let spt2 = coin::mint_for_testing<SPT>(value / 2, ctx);
+            let spt3 = coin::mint_for_testing<SPT>(value / 2, ctx);
+
             let spts = vector::empty<Coin<SPT>>();
-            vector::push_back(&mut spts, spt);
+            vector::push_back(&mut spts, spt1);
+            vector::push_back(&mut spts, spt2);
+            vector::push_back(&mut spts, spt3);
+
             //expect 5k
             project::deposit_by_owner(spts, value, &mut ido, ctx);
 
@@ -437,7 +443,10 @@ module seapad::project_test {
             let admin_cap = test_scenario::take_from_sender<AdminCap>(scenario);
 
             let ctx = test_scenario::ctx(scenario);
-            project::add_whitelist(&admin_cap, &mut project, user, ctx);
+
+            let users = vector::empty<address>();
+            vector::push_back(&mut users, user);
+            project::add_whitelist(&admin_cap, &mut project, users, ctx);
 
             test_scenario::return_shared(project);
             test_scenario::return_to_sender(scenario, admin_cap);
