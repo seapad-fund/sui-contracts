@@ -136,9 +136,8 @@ module seapad::project {
 
     struct Community has key, store {
         id: UID,
-        like: u128,
-        vote: u128,
-        watch: u128,
+        total_vote: u64,
+        voters: VecSet<address>
     }
 
     struct VestingMileStone has copy, drop, store {
@@ -162,7 +161,6 @@ module seapad::project {
         owner: address,
         token_metadata: TokenMetadata,
         vesting: Vesting
-
         //        profile: //use dynamic field
         //        whitelist: VecSet<address> //use dynamic field
     }
@@ -189,7 +187,7 @@ module seapad::project {
     }
 
     ///change admin
-    public entry fun abdicate_admin(adminCap: AdminCap, to: address, _ctx: &mut TxContext) {
+    public entry fun abdicate_admin(adminCap: AdminCap, to: address) {
         transfer::transfer(adminCap, to);
     }
 
@@ -219,9 +217,8 @@ module seapad::project {
 
         let community = Community {
             id: object::new(ctx),
-            like: 0,
-            vote: 0,
-            watch: 0
+            total_vote: 0,
+            voters: vec_set::empty()
         };
         dynamic_field::add(&mut community.id, LIKES, vec_set::empty<address>());
         dynamic_field::add(&mut community.id, WATCHS, vec_set::empty<address>());
@@ -246,6 +243,11 @@ module seapad::project {
 
         event::emit(build_event_create_project(&project));
         transfer::share_object(project);
+    }
+
+    public entry fun change_owner<COIN>(_admin_cap: &AdminCap, new_owner: address, project: &mut Project<COIN>){
+        project.owner = new_owner;
+        event::emit(ChangeProjectOwnerEvent{project: id_address(project), new_owner});
     }
 
     /// if you want more milestones
@@ -641,35 +643,10 @@ module seapad::project {
     //==========================================Start Community Area=======================================
     public entry fun vote<COIN>(project: &mut Project<COIN>, ctx: &mut TxContext) {
         let com = &mut project.community;
-        let senderAddr = sender(ctx);
-        let votes = dynamic_field::borrow_mut<vector<u8>, VecSet<address>>(&mut com.id, VOTES);
-
-        assert!(vec_set::contains(votes, &senderAddr), EVoted);
-
-        com.vote = com.vote + 1;
-        vec_set::insert(votes, senderAddr);
-    }
-
-    public entry fun like<COIN>(project: &mut Project<COIN>, ctx: &mut TxContext) {
-        let com = &mut project.community;
-        let senderAddr = sender(ctx);
-        let likes = dynamic_field::borrow_mut<vector<u8>, VecSet<address>>(&mut com.id, LIKES);
-
-        assert!(vec_set::contains(likes, &senderAddr), EVoted);
-
-        com.like = com.like + 1;
-        vec_set::insert(likes, senderAddr);
-    }
-
-    public entry fun watch<COIN>(project: &mut Project<COIN>, ctx: &mut TxContext) {
-        let com = &mut project.community;
-        let senderAddr = sender(ctx);
-        let watch = dynamic_field::borrow_mut<vector<u8>, VecSet<address>>(&mut com.id, WATCHS);
-
-        assert!(vec_set::contains(watch, &senderAddr), EVoted);
-
-        com.watch = com.watch + 1;
-        vec_set::insert(watch, senderAddr);
+        let voter_address = sender(ctx);
+        assert!(vec_set::contains(&mut com.voters, &voter_address), EVoted);
+        com.total_vote = com.total_vote + 1;
+        vec_set::insert(&mut com.voters, voter_address);
     }
     //==========================================End Community Area=========================================
 
@@ -836,6 +813,11 @@ module seapad::project {
 
     struct RemoveMaxAllocateEvent has copy, drop {
         user: address
+    }
+
+    struct ChangeProjectOwnerEvent has copy, drop{
+        project: address,
+        new_owner: address
     }
     //==========================================Start Event Area==========================================
 
