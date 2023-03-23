@@ -142,7 +142,7 @@ module seapad::project {
 
     struct VestingMileStone has copy, drop, store {
         time: u64,
-        percent: u8
+        percent: u16
     }
 
     struct Vesting has key, store {
@@ -163,13 +163,6 @@ module seapad::project {
         vesting: Vesting
         //        profile: //use dynamic field
         //        whitelist: VecSet<address> //use dynamic field
-    }
-
-    ///@todo review: when change admin account, should flush all fund to all project
-    /// or should have "resource" account!
-    struct PadConfig has key, store {
-        id: UID,
-        adminAddr: address
     }
 
     struct AdminCap has key, store {
@@ -256,7 +249,7 @@ module seapad::project {
     public entry fun add_milestone<COIN>(_adminCap: &AdminCap,
                                          project: &mut Project<COIN>,
                                          time: u64,
-                                         percent: u8,
+                                         percent: u16,
                                          ctx: &mut TxContext) {
         let vesting = &mut project.vesting;
 
@@ -562,7 +555,7 @@ module seapad::project {
         let milestones = &vesting.milestones;
 
         let total_percent = if (vector::is_empty(milestones)) {
-            100
+            1000
         }else {
             let i = 0;
             let n = vector::length(milestones);
@@ -580,7 +573,7 @@ module seapad::project {
             sum
         };
 
-        let more_token = order.token_amount / 100 * (total_percent as u64);
+        let more_token = order.token_amount / 1000 * (total_percent as u64);
         let more_token_actual = more_token - order.token_released;
 
         assert!(more_token_actual > 0, EClaimDone);
@@ -621,16 +614,21 @@ module seapad::project {
     }
 
     fun to_token_value<COIN>(sui_value: u64, project: &Project<COIN>): u64 {
-        let swap_ratio_sui = project.launch_state.swap_ratio_sui;
+        let swap_ratio_coin = project.launch_state.swap_ratio_sui;
         let swap_ratio_token = project.launch_state.swap_ratio_token;
-        let token_decimals = project.token_metadata.decimals;
-        let ratio_sui_value = math::pow(10, SUI_DECIMALS) / swap_ratio_token;
-        let ratio_token_value = math::pow(10, token_decimals) / swap_ratio_sui;
-        let token_value = if (ratio_token_value >= ratio_sui_value) {
-            sui_value * (ratio_token_value / ratio_sui_value)
+
+        let ratio_coin = math::pow(10, SUI_DECIMALS) / swap_ratio_coin;
+        let ratio_token = math::pow(10, project.token_metadata.decimals) / swap_ratio_token;
+
+        let token_value = if (ratio_coin >= ratio_token) {
+            sui_value * (ratio_coin / ratio_token)
         }else {
-            let delta = ratio_sui_value - ratio_token_value;
-            sui_value - (sui_value * delta) / ratio_sui_value
+            let delta = ratio_token - ratio_coin;
+            while(delta % 10 == 0 && ratio_token % 10 == 0){
+                delta = delta / 10;
+                ratio_token = ratio_token / 10;
+            };
+            sui_value - (sui_value * delta) / ratio_token
         };
 
         token_value
@@ -684,7 +682,7 @@ module seapad::project {
 
         while (i < n) {
             let milestone = vector::borrow(milestones, i);
-            assert!(milestone.percent <= 100, EInvalidPercent);
+            assert!(milestone.percent <= 1000, EInvalidPercent);
             assert!(milestone.time >= now, EInvalidTimeVest);
             if (i < n - 1) {
                 let next = vector::borrow(milestones, i + 1);
@@ -693,7 +691,7 @@ module seapad::project {
             total_percent = total_percent + milestone.percent;
             i = i + 1;
         };
-        assert!(total_percent <= 100, EExceedPercent);
+        assert!(total_percent <= 1000, EExceedPercent);
     }
 
     fun validate_state_for_buy<COIN>(project: &mut Project<COIN>, senderAddr: address) {
