@@ -11,7 +11,6 @@ module seapad::project {
 
     use w3libs::payment;
 
-    use sui::bag::{Self, Bag};
     use sui::coin::{Self, Coin};
     use sui::dynamic_field;
     use sui::event;
@@ -112,7 +111,7 @@ module seapad::project {
         coin_raised: Option<Coin<R>>,
         order_book: Table<address, Order>,
         default_max_allocate: u64,
-        max_allocations: Bag,
+        max_allocations: Table<address, u64>,
     }
 
     struct Community has key, store {
@@ -189,7 +188,7 @@ module seapad::project {
             coin_raised: option::none<Coin<COIN>>(),
             order_book: table::new(ctx),
             default_max_allocate: 0,
-            max_allocations: bag::new(ctx)
+            max_allocations: table::new(ctx)
         };
 
         let community = Community {
@@ -254,8 +253,8 @@ module seapad::project {
                                                 project: &mut Project<COIN, TOKEN>,
                                                 round: u8,
                                                 usewhitelist: bool,
-                                                swap_ratio_coin: u64,
-                                                swap_ratio_token: u64,
+                                                swap_ratio_coin_: u64,
+                                                swap_ratio_token_: u64,
                                                 max_allocate: u64,
                                                 start_time: u64,
                                                 end_time: u64,
@@ -269,8 +268,8 @@ module seapad::project {
         let launchstate = &mut project.launch_state;
         launchstate.default_max_allocate = max_allocate;
         launchstate.round = round;
-        launchstate.swap_ratio_coin = swap_ratio_coin;
-        launchstate.swap_ratio_token = swap_ratio_token;
+        launchstate.swap_ratio_coin = swap_ratio_coin_;
+        launchstate.swap_ratio_token = swap_ratio_token_;
         launchstate.start_time = start_time;
         launchstate.end_time = end_time;
         launchstate.soft_cap = soft_cap;
@@ -280,8 +279,8 @@ module seapad::project {
             project: id_address(project),
             usewhitelist,
             round,
-            swap_ratio_coin: swap_ratio_coin,
-            swap_ratio_token: swap_ratio_token,
+            swap_ratio_coin: swap_ratio_coin_,
+            swap_ratio_token: swap_ratio_token_,
             max_allocate,
             start_time,
             end_time,
@@ -290,27 +289,27 @@ module seapad::project {
         });
     }
 
-    public entry fun add_max_allocate<COIN, TOKEN>(_admin_cap: &AdminCap,
-                                            user: address,
-                                            max_allocate: u64,
-                                            project: &mut Project<COIN, TOKEN>,
-                                            _ctx: &mut TxContext) {
+    public entry fun set_max_allocate<COIN, TOKEN>(_admin_cap: &AdminCap,
+                                                   user: address,
+                                                   max_allocate: u64,
+                                                   project: &mut Project<COIN, TOKEN>,
+                                                   _ctx: &mut TxContext) {
         let max_allocation = &mut project.launch_state.max_allocations;
-        if (bag::contains(max_allocation, user)) {
-            bag::remove<address, u64>(max_allocation, user);
+        if (table::contains(max_allocation, user)) {
+            table::remove<address, u64>(max_allocation, user);
         };
-        bag::add(max_allocation, user, max_allocate);
+        table::add(max_allocation, user, max_allocate);
 
         event::emit(AddMaxAllocateEvent { user, max_allocate })
     }
 
-    public entry fun remove_max_allocate<COIN, TOKEN>(_admin_cap: &AdminCap,
-                                               user: address,
-                                               project: &mut Project<COIN, TOKEN>,
-                                               _ctx: &mut TxContext) {
+    public entry fun clear_max_allocate<COIN, TOKEN>(_admin_cap: &AdminCap,
+                                                     user: address,
+                                                     project: &mut Project<COIN, TOKEN>,
+                                                     _ctx: &mut TxContext) {
         let max_allocation = &mut project.launch_state.max_allocations;
-        if (bag::contains(max_allocation, user)) {
-            bag::remove<address, u64>(max_allocation, user);
+        if (table::contains(max_allocation, user)) {
+            table::remove<address, u64>(max_allocation, user);
         };
         event::emit(RemoveMaxAllocateEvent { user })
     }
@@ -573,8 +572,8 @@ module seapad::project {
 
     fun get_max_allocate<COIN, TOKEN>(user: address, launchstate: &LaunchState<COIN, TOKEN>): u64 {
         let max_allocation = &launchstate.max_allocations;
-        let max_allocate = if (bag::contains(max_allocation, user)) {
-            bag::borrow<address, u64>(max_allocation, user)
+        let max_allocate = if (table::contains(max_allocation, user)) {
+            table::borrow<address, u64>(max_allocation, user)
         }else {
             &launchstate.default_max_allocate
         };
