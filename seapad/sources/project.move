@@ -187,6 +187,7 @@ module seapad::project {
     }
 
     ///change admin
+    /// @todo change name
     public entry fun abdicate_admin(adminCap: AdminCap, to: address) {
         transfer::transfer(adminCap, to);
     }
@@ -212,7 +213,8 @@ module seapad::project {
             token_fund: option::none<Coin<COIN>>(),
             sui_raised: option::none<Coin<SUI>>(),
             order_book: table::new(ctx),
-            max_allocation: bag::new(ctx)
+            ///default_max_allocation: u64 @todo should move the default allocation here !
+            max_allocation: bag::new(ctx) ///@todo change to max_allocations
         };
 
         let community = Community {
@@ -313,6 +315,7 @@ module seapad::project {
         });
     }
 
+    ///@todo change to set_max_allocate
     public entry fun add_max_allocate<COIN>(_admin_cap: &AdminCap,
                                             user: address,
                                             max_allocate: u64,
@@ -327,6 +330,7 @@ module seapad::project {
         event::emit(AddMaxAllocateEvent { user, max_allocate })
     }
 
+    ///@todo change to clear_max_allocate
     public entry fun remove_max_allocate<COIN>(_admin_cap: &AdminCap,
                                                user: address,
                                                project: &mut Project<COIN>,
@@ -595,6 +599,16 @@ module seapad::project {
         transfer::transfer(coin_fund, sender);
     }
 
+    public entry fun vote<COIN>(project: &mut Project<COIN>, ctx: &mut TxContext) {
+        let com = &mut project.community;
+        let voter_address = sender(ctx);
+        assert!(vec_set::contains(&mut com.voters, &voter_address), EVoted);
+        com.total_vote = com.total_vote + 1;
+        vec_set::insert(&mut com.voters, voter_address);
+    }
+
+
+    // internal functions
     fun get_max_allocate<COIN>(user: address, launchstate: &LaunchState<COIN>): u64 {
         let max_allocation = &launchstate.max_allocation;
         let max_allocate = if (bag::contains(max_allocation, user)) {
@@ -640,18 +654,7 @@ module seapad::project {
         }
     }
 
-    //==========================================Start Community Area=======================================
-    public entry fun vote<COIN>(project: &mut Project<COIN>, ctx: &mut TxContext) {
-        let com = &mut project.community;
-        let voter_address = sender(ctx);
-        assert!(vec_set::contains(&mut com.voters, &voter_address), EVoted);
-        com.total_vote = com.total_vote + 1;
-        vec_set::insert(&mut com.voters, voter_address);
-    }
-    //==========================================End Community Area=========================================
 
-
-    //==========================================Start Validate Area========================================
     fun validate_start_fund_raising<COIN>(project: &mut Project<COIN>) {
         let launchstate = &project.launch_state;
         let state = launchstate.state;
@@ -719,10 +722,9 @@ module seapad::project {
         assert!(state == ROUND_STATE_INIT, EInvalidRoundState);
         assert!(sender(ctx) == project.owner, ENotOwner);
     }
-    //==========================================End Validate Area==========================================
 
 
-    //==========================================Start Event Area===========================================
+    // Events
     fun build_event_create_project<COIN>(project: &Project<COIN>): ProjectCreatedEvent {
         let event = ProjectCreatedEvent {
             project: id_address(project),
@@ -817,8 +819,9 @@ module seapad::project {
         project: address,
         new_owner: address
     }
-    //==========================================Start Event Area==========================================
 
+
+    // For testing
     #[test_only]
     public fun init_for_testing(ctx: &mut TxContext) {
         init(PROJECT {}, ctx);
