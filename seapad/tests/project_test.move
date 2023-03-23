@@ -61,11 +61,11 @@ module seapad::project_test {
         create_project_(scenario);
         setup_launch_state_(scenario, 1, true);
 
-        add_milestone_(1000, 75, scenario);//alway pass
-        add_milestone_(2000, 25, scenario);//must pass
+        add_milestone_(1000, 750, scenario);//alway pass
+        add_milestone_(2000, 250, scenario);//must pass
 
         reset_milestone_(scenario);
-        add_milestone_(1000, 100, scenario);//alway pass
+        add_milestone_(1000, 1000, scenario);//alway pass
 
 
         test_scenario::end(scenario_val);
@@ -79,10 +79,10 @@ module seapad::project_test {
         create_project_(scenario);
         setup_launch_state_(scenario, 1, true);
 
-        add_milestone_(1000, 75, scenario);//alway pass
-        add_milestone_(2000, 25, scenario);//must pass
-        add_milestone_(900, 25, scenario);//must failed
-        add_milestone_(2000, 30, scenario);//must failed
+        add_milestone_(1000, 750, scenario);//alway pass
+        add_milestone_(2000, 250, scenario);//must pass
+        add_milestone_(900, 250, scenario);//must failed
+        add_milestone_(2000, 300, scenario);//must failed
 
         test_scenario::end(scenario_val);
     }
@@ -208,7 +208,7 @@ module seapad::project_test {
         buy_token_(USER3, sui_buy, scenario);
         end_fund_raising_(scenario);
 
-        let percent = 50;
+        let percent = 500;
         add_milestone_(0, percent, scenario);
         receive_token_(USER2, scenario);
 
@@ -219,7 +219,7 @@ module seapad::project_test {
             let spt_value = coin::value(&spt);
 
             let spt_value_expected = project::swap_token(sui_buy, &project);
-            let spt_value_actual = spt_value_expected / 100 * (percent as u64);
+            let spt_value_actual = spt_value_expected / 1000 * (percent as u64);
 
             assert!(spt_value_actual == spt_value, 0);
 
@@ -357,7 +357,7 @@ module seapad::project_test {
         };
     }
 
-    fun add_milestone_(time: u64, percent: u8, scenario: &mut Scenario) {
+    fun add_milestone_(time: u64, percent: u16, scenario: &mut Scenario) {
         test_scenario::next_tx(scenario, ADMIN);
         let admin_cap = test_scenario::take_from_sender<AdminCap>(scenario);
         let ido = test_scenario::take_shared<Project<SUI, SPT>>(scenario);

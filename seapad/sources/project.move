@@ -111,7 +111,8 @@ module seapad::project {
         token_fund: Option<Coin<F>>,
         coin_raised: Option<Coin<R>>,
         order_book: Table<address, Order>,
-        max_allocation: Bag,
+        default_max_allocate: u64,
+        max_allocations: Bag,
     }
 
     struct Community has key, store {
@@ -122,7 +123,7 @@ module seapad::project {
 
     struct VestingMileStone has copy, drop, store {
         time: u64,
-        percent: u8
+        percent: u16
     }
 
     struct Vesting has key, store {
@@ -146,13 +147,6 @@ module seapad::project {
         //        whitelist: VecSet<address> //use dynamic field
     }
 
-    ///@todo review: when change admin account, should flush all fund to all project
-    /// or should have "resource" account!
-    struct PadConfig has key, store {
-        id: UID,
-        adminAddr: address
-    }
-
     struct AdminCap has key, store {
         id: UID
     }
@@ -168,7 +162,7 @@ module seapad::project {
     }
 
     ///change admin
-    public entry fun abdicate_admin(adminCap: AdminCap, to: address) {
+    public entry fun change_admin(adminCap: AdminCap, to: address) {
         transfer::transfer(adminCap, to);
     }
 
@@ -194,7 +188,8 @@ module seapad::project {
             token_fund: option::none<Coin<TOKEN>>(),
             coin_raised: option::none<Coin<COIN>>(),
             order_book: table::new(ctx),
-            max_allocation: bag::new(ctx)
+            default_max_allocate: 0,
+            max_allocations: bag::new(ctx)
         };
 
         let community = Community {
@@ -237,7 +232,7 @@ module seapad::project {
     public entry fun add_milestone<COIN, TOKEN>(_adminCap: &AdminCap,
                                          project: &mut Project<COIN, TOKEN>,
                                          time: u64,
-                                         percent: u8,
+                                         percent: u16,
                                          ctx: &mut TxContext) {
         let vesting = &mut project.vesting;
 
@@ -272,8 +267,7 @@ module seapad::project {
             dynamic_field::add(&mut project.id, WHITELIST, vec_set::empty<address>());
         };
         let launchstate = &mut project.launch_state;
-
-        bag::add(&mut launchstate.max_allocation, MAX_ALLOCATE, max_allocate);
+        launchstate.default_max_allocate = max_allocate;
         launchstate.round = round;
         launchstate.swap_ratio_coin = swap_ratio_coin;
         launchstate.swap_ratio_token = swap_ratio_token;
@@ -301,7 +295,7 @@ module seapad::project {
                                             max_allocate: u64,
                                             project: &mut Project<COIN, TOKEN>,
                                             _ctx: &mut TxContext) {
-        let max_allocation = &mut project.launch_state.max_allocation;
+        let max_allocation = &mut project.launch_state.max_allocations;
         if (bag::contains(max_allocation, user)) {
             bag::remove<address, u64>(max_allocation, user);
         };
@@ -314,7 +308,7 @@ module seapad::project {
                                                user: address,
                                                project: &mut Project<COIN, TOKEN>,
                                                _ctx: &mut TxContext) {
-        let max_allocation = &mut project.launch_state.max_allocation;
+        let max_allocation = &mut project.launch_state.max_allocations;
         if (bag::contains(max_allocation, user)) {
             bag::remove<address, u64>(max_allocation, user);
         };
@@ -495,7 +489,6 @@ module seapad::project {
     }
 
 
-    ///@todo
     /// - refund token to owner when failed to make fund-raising
     public entry fun refund_token_to_owner<COIN, TOKEN>(_cap: &AdminCap, project: &mut Project<COIN, TOKEN>, _ctx: &mut TxContext) {
         validate_allocate_budget(project);
@@ -541,7 +534,7 @@ module seapad::project {
         let milestones = &vesting.milestones;
 
         let total_percent = if (vector::is_empty(milestones)) {
-            100
+            1000
         }else {
             let i = 0;
             let n = vector::length(milestones);
@@ -559,7 +552,7 @@ module seapad::project {
             sum
         };
 
-        let more_token = order.token_amount / 100 * (total_percent as u64);
+        let more_token = order.token_amount / 1000 * (total_percent as u64);
         let more_token_actual = more_token - order.token_released;
 
         assert!(more_token_actual > 0, EClaimDone);
@@ -579,11 +572,11 @@ module seapad::project {
     }
 
     fun get_max_allocate<COIN, TOKEN>(user: address, launchstate: &LaunchState<COIN, TOKEN>): u64 {
-        let max_allocation = &launchstate.max_allocation;
+        let max_allocation = &launchstate.max_allocations;
         let max_allocate = if (bag::contains(max_allocation, user)) {
             bag::borrow<address, u64>(max_allocation, user)
         }else {
-            bag::borrow<vector<u8>, u64>(max_allocation, MAX_ALLOCATE)
+            &launchstate.default_max_allocate
         };
 
         *max_allocate
@@ -651,7 +644,7 @@ module seapad::project {
 
         while (i < n) {
             let milestone = vector::borrow(milestones, i);
-            assert!(milestone.percent <= 100, EInvalidPercent);
+            assert!(milestone.percent <= 1000, EInvalidPercent);
             assert!(milestone.time >= now, EInvalidTimeVest);
             if (i < n - 1) {
                 let next = vector::borrow(milestones, i + 1);
@@ -660,7 +653,7 @@ module seapad::project {
             total_percent = total_percent + milestone.percent;
             i = i + 1;
         };
-        assert!(total_percent <= 100, EExceedPercent);
+        assert!(total_percent <= 1000, EExceedPercent);
     }
 
     fun validate_state_for_buy<COIN, TOKEN>(project: &mut Project<COIN, TOKEN>, senderAddr: address) {
@@ -668,8 +661,6 @@ module seapad::project {
         if (project.use_whitelist) {
             let whitelist = dynamic_field::borrow<vector<u8>, VecSet<address>>(&project.id, WHITELIST);
             assert!(vec_set::contains(whitelist, &senderAddr), ENotWhitelist);
-        }else {
-            assert!(!project.use_whitelist, ENotWhitelist);
         }
     }
 
@@ -789,6 +780,8 @@ module seapad::project {
     }
     //==========================================Start Event Area==========================================
 
+
+    // For testing
     #[test_only]
     public fun init_for_testing(ctx: &mut TxContext) {
         init(PROJECT {}, ctx);
