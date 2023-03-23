@@ -698,8 +698,6 @@ module seapad::project {
         if (project.use_whitelist) {
             let whitelist = dynamic_field::borrow<vector<u8>, VecSet<address>>(&project.id, WHITELIST);
             assert!(vec_set::contains(whitelist, &senderAddr), ENotWhitelist);
-        }else {
-            assert!(!project.use_whitelist, ENotWhitelist);
         }
     }
 
