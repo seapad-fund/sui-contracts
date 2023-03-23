@@ -142,7 +142,7 @@ module seapad::project {
 
     struct VestingMileStone has copy, drop, store {
         time: u64,
-        percent: u8
+        percent: u16
     }
 
     struct Vesting has key, store {
@@ -247,7 +247,7 @@ module seapad::project {
     public entry fun add_milestone<COIN>(_adminCap: &AdminCap,
                                          project: &mut Project<COIN>,
                                          time: u64,
-                                         percent: u8,
+                                         percent: u16,
                                          ctx: &mut TxContext) {
         let vesting = &mut project.vesting;
 
@@ -551,7 +551,7 @@ module seapad::project {
         let milestones = &vesting.milestones;
 
         let total_percent = if (vector::is_empty(milestones)) {
-            100
+            1000
         }else {
             let i = 0;
             let n = vector::length(milestones);
@@ -569,7 +569,7 @@ module seapad::project {
             sum
         };
 
-        let more_token = order.token_amount / 100 * (total_percent as u64);
+        let more_token = order.token_amount / 1000 * (total_percent as u64);
         let more_token_actual = more_token - order.token_released;
 
         assert!(more_token_actual > 0, EClaimDone);
@@ -679,7 +679,7 @@ module seapad::project {
 
         while (i < n) {
             let milestone = vector::borrow(milestones, i);
-            assert!(milestone.percent <= 100, EInvalidPercent);
+            assert!(milestone.percent <= 1000, EInvalidPercent);
             assert!(milestone.time >= now, EInvalidTimeVest);
             if (i < n - 1) {
                 let next = vector::borrow(milestones, i + 1);
@@ -688,7 +688,7 @@ module seapad::project {
             total_percent = total_percent + milestone.percent;
             i = i + 1;
         };
-        assert!(total_percent <= 100, EExceedPercent);
+        assert!(total_percent <= 1000, EExceedPercent);
     }
 
     fun validate_state_for_buy<COIN>(project: &mut Project<COIN>, senderAddr: address) {
