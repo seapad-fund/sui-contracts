@@ -121,7 +121,8 @@ module seapad::project {
         token_fund: Option<Coin<COIN>>,
         sui_raised: Option<Coin<SUI>>,
         order_book: Table<address, Order>,
-        max_allocation: Bag,
+        default_max_allocate: u64,
+        max_allocations: Bag,
     }
 
     ///should refer to object
@@ -180,8 +181,7 @@ module seapad::project {
     }
 
     ///change admin
-    /// @todo change name
-    public entry fun abdicate_admin(adminCap: AdminCap, to: address) {
+    public entry fun change_admin(adminCap: AdminCap, to: address) {
         transfer::transfer(adminCap, to);
     }
 
@@ -206,8 +206,8 @@ module seapad::project {
             token_fund: option::none<Coin<COIN>>(),
             sui_raised: option::none<Coin<SUI>>(),
             order_book: table::new(ctx),
-            ///default_max_allocation: u64 @todo should move the default allocation here !
-            max_allocation: bag::new(ctx) ///@todo change to max_allocations
+            default_max_allocate: 0,
+            max_allocations: bag::new(ctx)
         };
 
         let community = Community {
@@ -284,8 +284,7 @@ module seapad::project {
             dynamic_field::add(&mut project.id, WHITELIST, vec_set::empty<address>());
         };
         let launchstate = &mut project.launch_state;
-
-        bag::add(&mut launchstate.max_allocation, MAX_ALLOCATE, max_allocate);
+        launchstate.default_max_allocate = max_allocate;
         launchstate.round = round;
         launchstate.swap_ratio_sui = swap_ratio_sui;
         launchstate.swap_ratio_token = swap_ratio_token;
@@ -308,13 +307,12 @@ module seapad::project {
         });
     }
 
-    ///@todo change to set_max_allocate
-    public entry fun add_max_allocate<COIN>(_admin_cap: &AdminCap,
+    public entry fun set_max_allocate<COIN>(_admin_cap: &AdminCap,
                                             user: address,
                                             max_allocate: u64,
                                             project: &mut Project<COIN>,
                                             _ctx: &mut TxContext) {
-        let max_allocation = &mut project.launch_state.max_allocation;
+        let max_allocation = &mut project.launch_state.max_allocations;
         if (bag::contains(max_allocation, user)) {
             bag::remove<address, u64>(max_allocation, user);
         };
@@ -323,12 +321,11 @@ module seapad::project {
         event::emit(AddMaxAllocateEvent { user, max_allocate })
     }
 
-    ///@todo change to clear_max_allocate
-    public entry fun remove_max_allocate<COIN>(_admin_cap: &AdminCap,
-                                               user: address,
-                                               project: &mut Project<COIN>,
-                                               _ctx: &mut TxContext) {
-        let max_allocation = &mut project.launch_state.max_allocation;
+    public entry fun clear_max_allocate<COIN>(_admin_cap: &AdminCap,
+                                              user: address,
+                                              project: &mut Project<COIN>,
+                                              _ctx: &mut TxContext) {
+        let max_allocation = &mut project.launch_state.max_allocations;
         if (bag::contains(max_allocation, user)) {
             bag::remove<address, u64>(max_allocation, user);
         };
@@ -509,7 +506,6 @@ module seapad::project {
     }
 
 
-    ///@todo
     /// - refund token to owner when failed to make fund-raising
     public entry fun refund_token_to_owner<COIN>(_cap: &AdminCap, project: &mut Project<COIN>, _ctx: &mut TxContext) {
         validate_allocate_budget(project);
@@ -603,11 +599,11 @@ module seapad::project {
 
     // internal functions
     fun get_max_allocate<COIN>(user: address, launchstate: &LaunchState<COIN>): u64 {
-        let max_allocation = &launchstate.max_allocation;
+        let max_allocation = &launchstate.max_allocations;
         let max_allocate = if (bag::contains(max_allocation, user)) {
             bag::borrow<address, u64>(max_allocation, user)
         }else {
-            bag::borrow<vector<u8>, u64>(max_allocation, MAX_ALLOCATE)
+            &launchstate.default_max_allocate
         };
 
         *max_allocate

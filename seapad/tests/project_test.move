@@ -469,7 +469,7 @@ module seapad::project_test {
         let admin_cap = test_scenario::take_from_sender<AdminCap>(scenario);
 
         let ctx = test_scenario::ctx(scenario);
-        project::add_max_allocate(&admin_cap, user, max_allocate, &mut project, ctx);
+        project::set_max_allocate(&admin_cap, user, max_allocate, &mut project, ctx);
 
         test_scenario::return_shared(project);
         test_scenario::return_to_sender(scenario, admin_cap);
@@ -481,7 +481,7 @@ module seapad::project_test {
         let admin_cap = test_scenario::take_from_sender<AdminCap>(scenario);
 
         let ctx = test_scenario::ctx(scenario);
-        project::remove_max_allocate(&admin_cap, user, &mut project, ctx);
+        project::clear_max_allocate(&admin_cap, user, &mut project, ctx);
 
         test_scenario::return_shared(project);
         test_scenario::return_to_sender(scenario, admin_cap);
