@@ -165,13 +165,6 @@ module seapad::project {
         //        whitelist: VecSet<address> //use dynamic field
     }
 
-    ///@todo review: when change admin account, should flush all fund to all project
-    /// or should have "resource" account!
-    struct PadConfig has key, store {
-        id: UID,
-        adminAddr: address
-    }
-
     struct AdminCap has key, store {
         id: UID
     }
@@ -607,16 +600,21 @@ module seapad::project {
     }
 
     fun to_token_value<COIN>(sui_value: u64, project: &Project<COIN>): u64 {
-        let swap_ratio_sui = project.launch_state.swap_ratio_sui;
+        let swap_ratio_coin = project.launch_state.swap_ratio_sui;
         let swap_ratio_token = project.launch_state.swap_ratio_token;
-        let token_decimals = project.token_metadata.decimals;
-        let ratio_sui_value = math::pow(10, SUI_DECIMALS) / swap_ratio_token;
-        let ratio_token_value = math::pow(10, token_decimals) / swap_ratio_sui;
-        let token_value = if (ratio_token_value >= ratio_sui_value) {
-            sui_value * (ratio_token_value / ratio_sui_value)
+
+        let ratio_coin = math::pow(10, SUI_DECIMALS) / swap_ratio_coin;
+        let ratio_token = math::pow(10, project.token_metadata.decimals) / swap_ratio_token;
+
+        let token_value = if (ratio_coin >= ratio_token) {
+            sui_value * (ratio_coin / ratio_token)
         }else {
-            let delta = ratio_sui_value - ratio_token_value;
-            sui_value - (sui_value * delta) / ratio_sui_value
+            let delta = ratio_token - ratio_coin;
+            while(delta % 10 == 0 && ratio_token % 10 == 0){
+                delta = delta / 10;
+                ratio_token = ratio_token / 10;
+            };
+            sui_value - (sui_value * delta) / ratio_token
         };
 
         token_value
