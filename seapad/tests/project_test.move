@@ -7,6 +7,7 @@ module seapad::project_test {
     use sui::coin::{Self, CoinMetadata, Coin};
     use sui::sui::SUI;
     use sui::test_scenario::{Self, Scenario};
+    use sui::math;
 
     const ADMIN: address = @0xC0FFEE;
     const TOKEN_MINT_TEST: u64 = 1000000000000000;
@@ -28,6 +29,9 @@ module seapad::project_test {
     const USER9: address = @0x9;
 
     const USE_WHITELIST: bool = false;
+
+    const COIN_DECIMAL: u8 = 8;
+    const TOKEN_DECIMAL: u8 = 9;
 
 
     fun scenario(): Scenario { test_scenario::begin(@0xC0FFEE) }
@@ -121,14 +125,20 @@ module seapad::project_test {
         deposit_to_project_(OWNER_PROJECT, 5000000000000, scenario);
         start_fund_raising_(scenario);
 
-        buy_token_(USER2, 500000000000, scenario);//pass
-        buy_token_(USER3, 500000000000, scenario);//failed out of hard_card
-        buy_token_(USER4, 500000000000, scenario);//failed out of hard_card
-        buy_token_(USER5, 500000000000, scenario);//failed out of hard_card
-        buy_token_(USER6, 500000000000, scenario);//failed out of hard_card
-        buy_token_(USER7, 500000000000, scenario);//failed out of hard_card
-        buy_token_(USER8, 500000000000, scenario);//failed out of hard_card
-        buy_token_(USER9, 500000000000, scenario);//failed out of hard_card
+        let coin_buy = if(TOKEN_DECIMAL >= COIN_DECIMAL){
+            500000000000 * math::pow(10, TOKEN_DECIMAL - COIN_DECIMAL)
+        }else{
+            500000000000 / math::pow(10, COIN_DECIMAL - TOKEN_DECIMAL)
+        };
+
+        buy_token_(USER2, coin_buy, scenario);//pass
+        buy_token_(USER3, coin_buy, scenario);//failed out of hard_card
+        buy_token_(USER4, coin_buy, scenario);//failed out of hard_card
+        buy_token_(USER5, coin_buy, scenario);//failed out of hard_card
+        buy_token_(USER6, coin_buy, scenario);//failed out of hard_card
+        buy_token_(USER7, coin_buy, scenario);//failed out of hard_card
+        buy_token_(USER8, coin_buy, scenario);//failed out of hard_card
+        buy_token_(USER9, coin_buy, scenario);//failed out of hard_card
 
         test_scenario::end(scenario_val);
     }
@@ -205,19 +215,21 @@ module seapad::project_test {
         test_scenario::next_tx(scenario, USER2);
         {
             let spt = test_scenario::take_from_sender<Coin<SPT>>(scenario);
+            let project = test_scenario::take_shared<Project<SUI, SPT>>(scenario);
             let spt_value = coin::value(&spt);
 
-            let spt_value_expected = (sui_buy / SWAP_RATIO_SUI) * SWAP_RATIO_TOKEN;
+            let spt_value_expected = project::swap_token(sui_buy, &project);
             let spt_value_actual = spt_value_expected / 100 * (percent as u64);
 
             assert!(spt_value_actual == spt_value, 0);
 
             test_scenario::return_to_sender(scenario, spt);
+            test_scenario::return_shared(project);
         };
 
         test_scenario::next_tx(scenario, ADMIN);
         {
-            let project = test_scenario::take_shared<Project<SUI,SPT>>(scenario);
+            let project = test_scenario::take_shared<Project<SUI, SPT>>(scenario);
             let admin_cap = test_scenario::take_from_sender<AdminCap>(scenario);
             let ctx = test_scenario::ctx(scenario);
 
@@ -255,7 +267,7 @@ module seapad::project_test {
         //refund sui to user
         test_scenario::next_tx(scenario, USER2);
         {
-            let project = test_scenario::take_shared<Project<SUI,SPT>>(scenario);
+            let project = test_scenario::take_shared<Project<SUI, SPT>>(scenario);
             let ctx = test_scenario::ctx(scenario);
 
             project::claim_refund(&mut project, ctx);
@@ -273,7 +285,7 @@ module seapad::project_test {
         test_scenario::next_tx(scenario, ADMIN);
         {
             //refund token to owner
-            let project = test_scenario::take_shared<Project<SUI,SPT>>(scenario);
+            let project = test_scenario::take_shared<Project<SUI, SPT>>(scenario);
             let admin_cap = test_scenario::take_from_sender<AdminCap>(scenario);
             let ctx = test_scenario::ctx(scenario);
             project::refund_token_to_owner(&admin_cap, &mut project, ctx);
@@ -303,11 +315,13 @@ module seapad::project_test {
             let admin_cap = test_scenario::take_from_sender<AdminCap>(scenario);
             let coin_metadata = test_scenario::take_immutable<CoinMetadata<spt::SPT>>(scenario);
             let ctx = test_scenario::ctx(scenario);
-            project::create_project<SUI,SPT>(
+
+            project::create_project<SUI, SPT>(
                 &admin_cap,
                 OWNER_PROJECT,
                 1,
-                &coin_metadata,
+                COIN_DECIMAL,
+                TOKEN_DECIMAL,
                 ctx
             );
             test_scenario::return_to_sender(scenario, admin_cap);
@@ -321,10 +335,10 @@ module seapad::project_test {
         test_scenario::next_tx(scenario, ADMIN);
         {
             let admin_cap = test_scenario::take_from_sender<AdminCap>(scenario);
-            let project = test_scenario::take_shared<Project<SUI,SPT>>(scenario);
+            let project = test_scenario::take_shared<Project<SUI, SPT>>(scenario);
             let ctx = test_scenario::ctx(scenario);
 
-            project::setup_project<SUI,SPT>(
+            project::setup_project<SUI, SPT>(
                 &admin_cap,
                 &mut project,
                 round,
@@ -346,7 +360,7 @@ module seapad::project_test {
     fun add_milestone_(time: u64, percent: u8, scenario: &mut Scenario) {
         test_scenario::next_tx(scenario, ADMIN);
         let admin_cap = test_scenario::take_from_sender<AdminCap>(scenario);
-        let ido = test_scenario::take_shared<Project<SUI,SPT>>(scenario);
+        let ido = test_scenario::take_shared<Project<SUI, SPT>>(scenario);
         let ctx = test_scenario::ctx(scenario);
         project::add_milestone(&admin_cap, &mut ido, time, percent, ctx);
         test_scenario::return_to_sender(scenario, admin_cap);
@@ -356,7 +370,7 @@ module seapad::project_test {
     fun reset_milestone_(scenario: &mut Scenario) {
         test_scenario::next_tx(scenario, ADMIN);
         let admin_cap = test_scenario::take_from_sender<AdminCap>(scenario);
-        let ido = test_scenario::take_shared<Project<SUI,SPT>>(scenario);
+        let ido = test_scenario::take_shared<Project<SUI, SPT>>(scenario);
         let ctx = test_scenario::ctx(scenario);
         project::reset_milestone(&admin_cap, &mut ido, ctx);
         test_scenario::return_to_sender(scenario, admin_cap);
@@ -366,7 +380,7 @@ module seapad::project_test {
     fun start_fund_raising_(scenario: &mut Scenario) {
         test_scenario::next_tx(scenario, ADMIN);
         let admin_cap = test_scenario::take_from_sender<AdminCap>(scenario);
-        let ido = test_scenario::take_shared<Project<SUI,SPT>>(scenario);
+        let ido = test_scenario::take_shared<Project<SUI, SPT>>(scenario);
         let ctx = test_scenario::ctx(scenario);
 
         project::start_fund_raising(&admin_cap, &mut ido, ctx);
@@ -378,7 +392,7 @@ module seapad::project_test {
     fun end_fund_raising_(scenario: &mut Scenario) {
         test_scenario::next_tx(scenario, ADMIN);
         let admin_cap = test_scenario::take_from_sender<AdminCap>(scenario);
-        let ido = test_scenario::take_shared<Project<SUI,SPT>>(scenario);
+        let ido = test_scenario::take_shared<Project<SUI, SPT>>(scenario);
         let ctx = test_scenario::ctx(scenario);
 
         project::end_fund_raising(&admin_cap, &mut ido, ctx);
@@ -390,7 +404,7 @@ module seapad::project_test {
     fun end_refund_(scenario: &mut Scenario) {
         test_scenario::next_tx(scenario, ADMIN);
         let admin_cap = test_scenario::take_from_sender<AdminCap>(scenario);
-        let ido = test_scenario::take_shared<Project<SUI,SPT>>(scenario);
+        let ido = test_scenario::take_shared<Project<SUI, SPT>>(scenario);
         let ctx = test_scenario::ctx(scenario);
 
         project::end_refund(&admin_cap, &mut ido, ctx);
@@ -403,7 +417,7 @@ module seapad::project_test {
         test_scenario::next_tx(scenario, owner);
         {
             //deposit
-            let ido = test_scenario::take_shared<Project<SUI,SPT>>(scenario);
+            let ido = test_scenario::take_shared<Project<SUI, SPT>>(scenario);
             let ctx = test_scenario::ctx(scenario);
             let spt1 = coin::mint_for_testing<SPT>(value / 2, ctx);
             let spt2 = coin::mint_for_testing<SPT>(value / 2, ctx);
@@ -424,7 +438,7 @@ module seapad::project_test {
     fun buy_token_(user: address, value: u64, scenario: &mut Scenario) {
         test_scenario::next_tx(scenario, user);
         {
-            let project = test_scenario::take_shared<Project<SUI,SPT>>(scenario);
+            let project = test_scenario::take_shared<Project<SUI, SPT>>(scenario);
             let ctx = test_scenario::ctx(scenario);
             let sui = coin::mint_for_testing<SUI>(TOKEN_MINT_TEST, ctx);
             let suis = vector::empty<Coin<SUI>>();
@@ -439,7 +453,7 @@ module seapad::project_test {
     fun add_whitelist_(user: address, scenario: &mut Scenario) {
         test_scenario::next_tx(scenario, ADMIN);
         {
-            let project = test_scenario::take_shared<Project<SUI,SPT>>(scenario);
+            let project = test_scenario::take_shared<Project<SUI, SPT>>(scenario);
             let admin_cap = test_scenario::take_from_sender<AdminCap>(scenario);
 
             let ctx = test_scenario::ctx(scenario);
@@ -455,7 +469,7 @@ module seapad::project_test {
 
     fun receive_token_(user: address, scenario: &mut Scenario) {
         test_scenario::next_tx(scenario, user);
-        let ido = test_scenario::take_shared<Project<SUI,SPT>>(scenario);
+        let ido = test_scenario::take_shared<Project<SUI, SPT>>(scenario);
         let ctx = test_scenario::ctx(scenario);
 
         project::claim_token(&mut ido, ctx);
@@ -465,7 +479,7 @@ module seapad::project_test {
 
     fun add_max_allocate_(user: address, max_allocate: u64, scenario: &mut Scenario) {
         test_scenario::next_tx(scenario, ADMIN);
-        let project = test_scenario::take_shared<Project<SUI,SPT>>(scenario);
+        let project = test_scenario::take_shared<Project<SUI, SPT>>(scenario);
         let admin_cap = test_scenario::take_from_sender<AdminCap>(scenario);
 
         let ctx = test_scenario::ctx(scenario);
@@ -477,7 +491,7 @@ module seapad::project_test {
 
     fun remove_max_allocate_(user: address, scenario: &mut Scenario) {
         test_scenario::next_tx(scenario, ADMIN);
-        let project = test_scenario::take_shared<Project<SUI,SPT>>(scenario);
+        let project = test_scenario::take_shared<Project<SUI, SPT>>(scenario);
         let admin_cap = test_scenario::take_from_sender<AdminCap>(scenario);
 
         let ctx = test_scenario::ctx(scenario);
