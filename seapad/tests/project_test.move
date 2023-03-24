@@ -357,7 +357,7 @@ module seapad::project_test {
         };
     }
 
-    fun add_milestone_(time: u64, percent: u16, scenario: &mut Scenario) {
+    fun add_milestone_(time: u64, percent: u64, scenario: &mut Scenario) {
         test_scenario::next_tx(scenario, ADMIN);
         let admin_cap = test_scenario::take_from_sender<AdminCap>(scenario);
         let ido = test_scenario::take_shared<Project<SUI, SPT>>(scenario);
