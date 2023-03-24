@@ -421,7 +421,6 @@ module seapad::project {
         let launchstate = &mut project.launch_state;
         launchstate.total_token_sold = launchstate.total_token_sold + more_token;
 
-        assert!(launchstate.hard_cap >= launchstate.total_token_sold, EOutOfHardCap);
         let order_book = &mut launchstate.order_book;
 
         if (!table::contains(order_book, buyer_address)) {
@@ -449,8 +448,10 @@ module seapad::project {
 
         let project_id = object::uid_to_address(&project.id);
         let total_raised_ = coin::value(option::borrow(&launchstate.sui_raised));
+        assert!(launchstate.hard_cap >= total_raised_, EOutOfHardCap);
+
         let token_fund_ = coin::value(option::borrow(&launchstate.token_fund));
-        if(token_fund_ == launchstate.hard_cap){
+        if(total_raised_ == launchstate.hard_cap){
           launchstate.state = ROUND_STATE_CLAIMING;
         };
 
