@@ -5,9 +5,9 @@ module seapad::project_test {
     use seapad::project::{Self, AdminCap, Project};
     use seapad::spt::{Self, SPT};
     use sui::coin::{Self, CoinMetadata, Coin};
+    use sui::math;
     use sui::sui::SUI;
     use sui::test_scenario::{Self, Scenario};
-    use sui::math;
 
     const ADMIN: address = @0xC0FFEE;
     const TOKEN_MINT_TEST: u64 = 1000000000000000;
