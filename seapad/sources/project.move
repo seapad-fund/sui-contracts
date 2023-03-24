@@ -70,10 +70,8 @@ module seapad::project {
 
     const VESTING_TYPE_MILESTONE: u8 = 1;
     const VESTING_TYPE_LINEAR: u8 = 2;
-    const TOKEN_INFO: vector<u8> = b"token_info";
     const WHITELIST: vector<u8> = b"whitelist";
     const PROFILE: vector<u8> = b"profile";
-    const MAX_ALLOCATE: vector<u8> = b"max_allocate";
 
     struct ProjectProfile has store {
         name: vector<u8>,
@@ -90,7 +88,7 @@ module seapad::project {
         token_released: u64,
     }
 
-    struct LaunchState<phantom R, phantom F> has key, store {
+    struct LaunchState<phantom COIN, phantom TOKEN> has key, store {
         id: UID,
         soft_cap: u64,
         hard_cap: u64,
@@ -107,8 +105,8 @@ module seapad::project {
         //when project stop fund-raising and decide to refund or payout token(ready to claim)
         end_time: u64,
         //owner of project deposit token fund enough to raising fund
-        token_fund: Option<Coin<F>>,
-        coin_raised: Option<Coin<R>>,
+        token_fund: Option<Coin<TOKEN>>,
+        coin_raised: Option<Coin<COIN>>,
         order_book: Table<address, Order>,
         default_max_allocate: u64,
         max_allocations: Table<address, u64>,
@@ -439,9 +437,8 @@ module seapad::project {
         event::emit(BuyEvent {
             project: project_id,
             buyer: buyer_address,
-            total_buy_amt: bought_amt,
             order_value:more_buy,
-            order_bought: bought_amt,
+            total_bought: bought_amt,
             total_raised: total_raised_,
             sold_out: launchstate.total_token_sold == token_fund_,
             epoch: tx_context::epoch(ctx)
@@ -730,10 +727,9 @@ module seapad::project {
         project: address,
         buyer: address,
         order_value: u64,
-        order_bought: u64,
+        total_bought: u64,
         total_raised: u64,
         sold_out: bool,
-        total_buy_amt: u64,
         epoch: u64
     }
 
