@@ -143,7 +143,7 @@ module seapad::project {
 
     struct VestingMileStone has copy, drop, store {
         time: u64,
-        percent: u16
+        percent: u64
     }
 
     struct Vesting has key, store {
@@ -249,7 +249,7 @@ module seapad::project {
     public entry fun add_milestone<COIN>(_adminCap: &AdminCap,
                                          project: &mut Project<COIN>,
                                          time: u64,
-                                         percent: u16,
+                                         percent: u64,
                                          ctx: &mut TxContext) {
         let vesting = &mut project.vesting;
 

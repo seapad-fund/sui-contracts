@@ -24,7 +24,7 @@ module seapad::scripts {
     public entry fun add_milestone<COIN>(_adminCap: &AdminCap,
                                          project: &mut Project<COIN>,
                                          time: u64,
-                                         percent: u8,
+                                         percent: u64,
                                          ctx: &mut TxContext){
         project::add_milestone<COIN>(_adminCap, project, time, percent, ctx);
     }
@@ -50,19 +50,19 @@ module seapad::scripts {
 
     }
 
-    public entry fun add_max_allocate<COIN>(_admin_cap: &AdminCap,
+    public entry fun add_max_allocate<COIN>(admin_cap: &AdminCap,
                                             user: address,
                                             max_allocate: u64,
                                             project: &mut Project<COIN>,
-                                            _ctx: &mut TxContext) {
-
+                                            ctx: &mut TxContext) {
+        project::set_max_allocate<COIN>(admin_cap, user, max_allocate, project, ctx);
     }
 
     public entry fun remove_max_allocate<COIN>(_admin_cap: &AdminCap,
                                                user: address,
                                                project: &mut Project<COIN>,
                                                _ctx: &mut TxContext) {
-        project::remove_max_allocate<COIN>(_admin_cap, user, project, _ctx);
+        project::clear_max_allocate<COIN>(_admin_cap, user, project, _ctx);
     }
 
     public entry fun save_profile<COIN>(_adminCap: &AdminCap,
