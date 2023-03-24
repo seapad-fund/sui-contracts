@@ -447,10 +447,20 @@ module seapad::project {
             coin::join(option::borrow_mut(&mut launchstate.sui_raised), sui_amt);
         };
 
+        let project_id = object::uid_to_address(&project.id);
+        let total_raised_ = coin::value(option::borrow(&launchstate.sui_raised));
+        let token_fund_ = coin::value(option::borrow(&launchstate.token_fund));
+        if(token_fund_ == launchstate.hard_cap){
+          launchstate.state = ROUND_STATE_CLAIMING;
+        };
+
         event::emit(BuyEvent {
-            project: id_address(project),
+            project: project_id,
             buyer: buyer_address,
-            total_sui_amt: bought_amt,
+            order_value:more_sui,
+            order_bought: bought_amt,
+            total_raised: total_raised_,
+            sold_out: launchstate.total_token_sold == token_fund_,
             epoch: tx_context::epoch(ctx)
         })
     }
@@ -753,7 +763,10 @@ module seapad::project {
     struct BuyEvent has copy, drop {
         project: address,
         buyer: address,
-        total_sui_amt: u64,
+        order_value: u64,
+        order_bought: u64,
+        total_raised: u64,
+        sold_out: bool,
         epoch: u64
     }
 
