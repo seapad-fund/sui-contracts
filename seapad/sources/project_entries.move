@@ -1,4 +1,4 @@
-module seapad::project_entry {
+module seapad::project_entries {
     use seapad::project::{Self, AdminCap, Project};
     use sui::coin::Coin;
     use sui::tx_context::TxContext;
