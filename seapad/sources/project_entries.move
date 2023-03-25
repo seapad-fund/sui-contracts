@@ -1,4 +1,4 @@
-module seapad::scripts {
+module seapad::project_entries {
     use seapad::project::{AdminCap, Project};
     use sui::tx_context::TxContext;
     use sui::coin::{CoinMetadata, Coin};
