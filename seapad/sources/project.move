@@ -240,9 +240,10 @@ module seapad::project {
         transfer::share_object(project);
     }
 
-    public entry fun change_owner<COIN>(_admin_cap: &AdminCap, new_owner: address, project: &mut Project<COIN>){
+    public entry fun change_owner<COIN>(_admin_cap: &AdminCap, new_owner: address, project: &mut Project<COIN>) {
+        let current_owner = project.owner;
         project.owner = new_owner;
-        event::emit(ChangeProjectOwnerEvent{project: id_address(project), new_owner});
+        event::emit(ChangeProjectOwnerEvent { project: id_address(project), old_owner: current_owner, new_owner });
     }
 
     /// if you want more milestones
@@ -318,7 +319,7 @@ module seapad::project {
         };
         bag::add(max_allocation, user, max_allocate);
 
-        event::emit(AddMaxAllocateEvent { user, max_allocate })
+        event::emit(AddMaxAllocateEvent { project: id_address(project), user, max_allocate })
     }
 
     public entry fun clear_max_allocate<COIN>(_admin_cap: &AdminCap,
@@ -329,7 +330,7 @@ module seapad::project {
         if (bag::contains(max_allocation, user)) {
             bag::remove<address, u64>(max_allocation, user);
         };
-        event::emit(RemoveMaxAllocateEvent { user })
+        event::emit(RemoveMaxAllocateEvent { project: id_address(project), user })
     }
 
     public entry fun save_profile<COIN>(_adminCap: &AdminCap,
@@ -451,14 +452,14 @@ module seapad::project {
         assert!(launchstate.hard_cap >= total_raised_, EOutOfHardCap);
 
         let token_fund_ = coin::value(option::borrow(&launchstate.token_fund));
-        if(total_raised_ == launchstate.hard_cap){
-          launchstate.state = ROUND_STATE_CLAIMING;
+        if (total_raised_ == launchstate.hard_cap) {
+            launchstate.state = ROUND_STATE_CLAIMING;
         };
 
         event::emit(BuyEvent {
             project: project_id,
             buyer: buyer_address,
-            order_value:more_sui,
+            order_value: more_sui,
             order_bought: bought_amt,
             total_raised: total_raised_,
             sold_out: launchstate.total_token_sold == token_fund_,
@@ -631,7 +632,7 @@ module seapad::project {
             sui_value * (ratio_coin / ratio_token)
         }else {
             let delta = ratio_token - ratio_coin;
-            while(delta % 10 == 0 && ratio_token % 10 == 0){
+            while (delta % 10 == 0 && ratio_token % 10 == 0) {
                 delta = delta / 10;
                 ratio_token = ratio_token / 10;
             };
@@ -815,16 +816,19 @@ module seapad::project {
     }
 
     struct AddMaxAllocateEvent has copy, drop {
+        project: address,
         user: address,
         max_allocate: u64
     }
 
     struct RemoveMaxAllocateEvent has copy, drop {
+        project: address,
         user: address
     }
 
-    struct ChangeProjectOwnerEvent has copy, drop{
+    struct ChangeProjectOwnerEvent has copy, drop {
         project: address,
+        old_owner: address,
         new_owner: address
     }
 
