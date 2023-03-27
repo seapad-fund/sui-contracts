@@ -665,12 +665,7 @@ module seapad::project {
         let launchstate = &project.launch_state;
         let state = launchstate.state;
 
-        assert!(
-            (state >= ROUND_STATE_INIT && state < ROUND_STATE_RASING)
-                || state >= ROUND_STATE_CLAIMING
-                || state == ROUND_STATE_END_REFUND,
-            EInvalidRoundState
-        );
+        assert!(state == ROUND_STATE_INIT, EInvalidRoundState);
 
         let total_token = if (option::is_none(&project.launch_state.token_fund)) {
             0
