@@ -155,12 +155,12 @@ module seapad::project {
     /// share pad config
     fun init(_witness: PROJECT, ctx: &mut TxContext) {
         let adminCap = AdminCap { id: object::new(ctx) };
-        transfer::transfer(adminCap, sender(ctx));
+        transfer::public_transfer(adminCap, sender(ctx));
     }
 
     ///change admin
-    public fun change_admin(adminCap: AdminCap, to: address) {
-        transfer::transfer(adminCap, to);
+    public entry fun change_admin(adminCap: AdminCap, to: address) {
+        transfer::public_transfer(adminCap, to);
     }
 
     /// add one project
@@ -448,17 +448,18 @@ module seapad::project {
         let total_raised_ = coin::value(option::borrow(&launchstate.coin_raised));
         assert!(launchstate.hard_cap >= total_raised_, EOutOfHardCap);
 
+        let token_fund_ = coin::value(option::borrow(&launchstate.token_fund));
         if (total_raised_ == launchstate.hard_cap) {
             launchstate.state = ROUND_STATE_CLAIMING;
         };
-
-        let token_fund_ = coin::value(option::borrow(&launchstate.token_fund));
 
         event::emit(BuyEvent {
             project: project_id,
             buyer: buyer_address,
             order_value: more_buy,
             total_bought: bought_amt,
+            order_value: more_sui,
+            order_bought: bought_amt,
             total_raised: total_raised_,
             sold_out: launchstate.total_token_sold == token_fund_,
             epoch: tx_context::epoch(ctx)
@@ -511,7 +512,7 @@ module seapad::project {
     ) {
         validate_allocate_budget(project);
         let budget = option::extract(&mut project.launch_state.coin_raised);
-        transfer::transfer(budget, project.owner);
+        transfer::public_transfer(budget, project.owner);
 
         event::emit(DistributeRaisedFundEvent {
             project: id_address(project),
@@ -528,7 +529,7 @@ module seapad::project {
     ) {
         validate_allocate_budget(project);
         let budget = option::extract(&mut project.launch_state.token_fund);
-        transfer::transfer(budget, project.owner);
+        transfer::public_transfer(budget, project.owner);
     }
 
 
@@ -593,7 +594,7 @@ module seapad::project {
         assert!(more_token_actual > 0, EClaimDone);
         order.token_released = order.token_released + more_token_actual;
         let token = coin::split<TOKEN>(option::borrow_mut(&mut launchstate.token_fund), more_token_actual, ctx);
-        transfer::transfer(token, sender);
+        transfer::public_transfer(token, sender);
     }
 
     public fun claim_refund<COIN, TOKEN>(project: &mut Project<COIN, TOKEN>, ctx: &mut TxContext) {
@@ -603,7 +604,7 @@ module seapad::project {
         let order = table::borrow_mut(order_book, sender);
         let amount_fund = order.coin_amount;
         let coin_fund = coin::split(option::borrow_mut(&mut project.launch_state.coin_raised), amount_fund, ctx);
-        transfer::transfer(coin_fund, sender);
+        transfer::public_transfer(coin_fund, sender);
     }
 
     fun get_max_allocate<COIN, TOKEN>(user: address, launchstate: &LaunchState<COIN, TOKEN>): u64 {

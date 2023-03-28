@@ -1,18 +1,19 @@
 [package]
 name = "SeaPad"
 version = "0.0.1"
+published-at = "0x1cc5f6b2f8a821e9d5d69284314de4137d1063bc07e708cdf1754d16aed2952a"
 
 [dependencies]
-Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework", rev = "devnet" }
-W3libs = { local = "../../w3libs" }
+Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "devnet" }
+W3libs = { git = "https://github.com/seapad-fund/w3libs", rev = "0x27ae5" }
 
 [addresses]
 seapad =  "0x00"
 sui =  "0x02"
 
 # staking admin
-treasury_admin = "0x928b28cd70cb832e50c6da65ccdb839850bb9a7f"
-stake_emergency_admin = "0x928b28cd70cb832e50c6da65ccdb839850bb9a7f"
+treasury_admin = "0x9d6f2e34e937842df89642cd96fba8509d4e47d297f716ce3a44df3070a79851"
+stake_emergency_admin = "0x9d6f2e34e937842df89642cd96fba8509d4e47d297f716ce3a44df3070a79851"
 
 # staking test addresses.
 treasury = "0x13"

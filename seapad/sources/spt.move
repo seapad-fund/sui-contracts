@@ -32,8 +32,8 @@ module seapad::spt {
             option::some(url::new_unsafe(string(ICON_URL))),
             ctx);
 
-        transfer::freeze_object(spt_metadata);
-        transfer::transfer(treasury_cap, sender(ctx));
+        transfer::public_freeze_object(spt_metadata);
+        transfer::public_transfer(treasury_cap, sender(ctx));
     }
 
     public entry fun minto(treasury_cap: &mut TreasuryCap<SPT>, to: address, amount: u64, ctx: &mut TxContext) {
@@ -61,7 +61,7 @@ module seapad::spt {
                           value: u64,
                           ctx: &mut TxContext) {
         let take = payment::take_from(coins, value, ctx);
-        coin::burn_(treasury_cap, take);
+        coin::burn(treasury_cap, take);
     }
 
     #[test_only]
