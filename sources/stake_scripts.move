@@ -42,7 +42,7 @@ module seapad::stake_scripts {
                                    system_clock: &Clock,
                                    ctx: &mut TxContext) {
         let coins = stake::unstake<S, R>(pool, stake_amount, global_config, clock::timestamp_ms(system_clock), ctx);
-        transfer::transfer(coins, sender(ctx));
+        transfer::public_transfer(coins, sender(ctx));
     }
 
     /// Collect `user` rewards on the pool at the `pool_addr`.
@@ -52,7 +52,7 @@ module seapad::stake_scripts {
                                    system_clock: &Clock,
                                    ctx: &mut TxContext) {
         let rewards = stake::harvest<S, R>(pool, global_config, clock::timestamp_ms(system_clock), ctx);
-        transfer::transfer( rewards, sender(ctx));
+        transfer::public_transfer( rewards, sender(ctx));
     }
 
     /// Deposit more `Coin<R>` rewards to the pool.
@@ -84,7 +84,7 @@ module seapad::stake_scripts {
                                              global_config: &GlobalConfig,
                                              ctx: &mut TxContext) {
         let stake_coins = stake::emergency_unstake<S, R>(pool, global_config, ctx);
-        transfer::transfer(stake_coins, sender(ctx));
+        transfer::public_transfer(stake_coins, sender(ctx));
     }
 
     /// Withdraw and deposit rewards to treasury.
@@ -97,6 +97,6 @@ module seapad::stake_scripts {
                                                        ctx: &mut TxContext) {
         let treasury_addr = sender(ctx);
         let rewards = stake::withdraw_to_treasury<S, R>(pool, amount, global_config, clock::timestamp_ms(system_clock), ctx);
-        transfer::transfer(rewards, treasury_addr);
+        transfer::public_transfer(rewards, treasury_addr);
     }
 }

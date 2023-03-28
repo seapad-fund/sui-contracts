@@ -208,7 +208,7 @@ module seapad::project_test {
             let spt_value = coin::value(&spt);
 
             let spt_value_expected = (sui_buy / SWAP_RATIO_SUI) * SWAP_RATIO_TOKEN;
-            let spt_value_actual = spt_value_expected / 1000 * (percent as u64);
+            let spt_value_actual = spt_value_expected / 1000 * (percent);
 
             assert!(spt_value_actual == spt_value, 0);
 

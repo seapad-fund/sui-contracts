@@ -37,8 +37,8 @@ module seapad::spt_dex {
                 b"infinity dex token",
                 option::none(),
                 ctx);
-        transfer::freeze_object(metadata);
-        transfer::transfer(treasury_cap, sender(ctx));
+        transfer::public_freeze_object(metadata);
+        transfer::public_transfer(treasury_cap, sender(ctx));
     }
 
     /// Create new pool
@@ -46,23 +46,23 @@ module seapad::spt_dex {
         //create pool & save lsp
         let liquidToken = coin::mint(treasuryCap, 1000000000, ctx);
         let lsp = dex::create_pool(INFI_POOL {}, liquidToken, liquidSui, 1, ctx);
-        transfer::transfer(lsp, sender(ctx));
+        transfer::public_transfer(lsp, sender(ctx));
     }
 
     entry fun mintToken(_adminCap : &mut AdminCap, treasuryCap : &mut TreasuryCap<SPT_DEX>, to: address, amt: u64, ctx: &mut TxContext){
         let token = coin::mint(treasuryCap, amt, ctx);
-        transfer::transfer(token, to);
+        transfer::public_transfer(token, to);
     }
 
     entry fun addLiquid(xpool: &mut Pool<INFI_POOL, SPT_DEX>, token: Coin<SPT_DEX>, sui: Coin<SUI>, ctx: &mut TxContext){
-        transfer::transfer(dex::add_liquidity(xpool, sui, token, ctx), sender(ctx));
+        transfer::public_transfer(dex::add_liquidity(xpool, sui, token, ctx), sender(ctx));
     }
 
     entry fun swapSui(xpool: &mut Pool<INFI_POOL, SPT_DEX>, sui: Coin<SUI>, ctx: &mut TxContext){
-        transfer::transfer(dex::swap_sui(xpool, sui, ctx), sender(ctx));
+        transfer::public_transfer(dex::swap_sui(xpool, sui, ctx), sender(ctx));
     }
 
     entry fun swapToken(xpool: &mut Pool<INFI_POOL, SPT_DEX>, sui: Coin<SPT_DEX>, ctx: &mut TxContext){
-        transfer::transfer(dex::swap_token(xpool, sui, ctx), sender(ctx));
+        transfer::public_transfer(dex::swap_token(xpool, sui, ctx), sender(ctx));
     }
 }

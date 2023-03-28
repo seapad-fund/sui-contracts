@@ -100,7 +100,7 @@ module seapad::dex {
     entry fun swap_sui_<P, T>(
         pool: &mut Pool<P, T>, sui: Coin<SUI>, ctx: &mut TxContext
     ) {
-        transfer::transfer(
+        transfer::public_transfer(
             swap_sui(pool, sui, ctx),
             tx_context::sender(ctx)
         )
@@ -136,7 +136,7 @@ module seapad::dex {
     entry fun swap_token_<P, T>(
         pool: &mut Pool<P, T>, token: Coin<T>, ctx: &mut TxContext
     ) {
-        transfer::transfer(
+        transfer::public_transfer(
             swap_token(pool, token, ctx),
             tx_context::sender(ctx)
         )
@@ -173,7 +173,7 @@ module seapad::dex {
         token: Coin<T>,
         ctx: &mut TxContext
     ) {
-        transfer::transfer(
+        transfer::public_transfer(
             add_liquidity(pool, sui, token, ctx),
             tx_context::sender(ctx)
         );
@@ -221,8 +221,8 @@ module seapad::dex {
         let (sui, token) = remove_liquidity(pool, lsp, ctx);
         let sender = tx_context::sender(ctx);
 
-        transfer::transfer(sui, sender);
-        transfer::transfer(token, sender);
+        transfer::public_transfer(sui, sender);
+        transfer::public_transfer(token, sender);
     }
 
     /// Remove liquidity from the `Pool` by burning `Coin<LSP>`.
