@@ -177,12 +177,12 @@ module seapad::project {
     /// share pad config
     fun init(_witness: PROJECT, ctx: &mut TxContext) {
         let adminCap = AdminCap { id: object::new(ctx) };
-        transfer::transfer(adminCap, sender(ctx));
+        transfer::public_transfer(adminCap, sender(ctx));
     }
 
     ///change admin
     public entry fun change_admin(adminCap: AdminCap, to: address) {
-        transfer::transfer(adminCap, to);
+        transfer::public_transfer(adminCap, to);
     }
 
     /// add one project
@@ -509,7 +509,7 @@ module seapad::project {
     ) {
         validate_allocate_budget(project);
         let budget = option::extract(&mut project.launch_state.sui_raised);
-        transfer::transfer(budget, project.owner);
+        transfer::public_transfer(budget, project.owner);
 
         event::emit(DistributeRaisedFundEvent {
             project: id_address(project),
@@ -522,7 +522,7 @@ module seapad::project {
     public entry fun refund_token_to_owner<COIN>(_cap: &AdminCap, project: &mut Project<COIN>, _ctx: &mut TxContext) {
         validate_allocate_budget(project);
         let budget = option::extract(&mut project.launch_state.token_fund);
-        transfer::transfer(budget, project.owner);
+        transfer::public_transfer(budget, project.owner);
     }
 
 
@@ -587,7 +587,7 @@ module seapad::project {
         assert!(more_token_actual > 0, EClaimDone);
         order.token_released = order.token_released + more_token_actual;
         let token = coin::split<COIN>(option::borrow_mut(&mut launchstate.token_fund), more_token_actual, ctx);
-        transfer::transfer(token, sender);
+        transfer::public_transfer(token, sender);
     }
 
     public entry fun claim_refund<COIN>(project: &mut Project<COIN>, ctx: &mut TxContext) {
@@ -597,7 +597,7 @@ module seapad::project {
         let order = table::borrow_mut(order_book, sender);
         let amount_fund = order.sui_amount;
         let coin_fund = coin::split(option::borrow_mut(&mut project.launch_state.sui_raised), amount_fund, ctx);
-        transfer::transfer(coin_fund, sender);
+        transfer::public_transfer(coin_fund, sender);
     }
 
     public entry fun vote<COIN>(project: &mut Project<COIN>, ctx: &mut TxContext) {
