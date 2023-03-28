@@ -458,8 +458,6 @@ module seapad::project {
             buyer: buyer_address,
             order_value: more_buy,
             total_bought: bought_amt,
-            order_value: more_sui,
-            order_bought: bought_amt,
             total_raised: total_raised_,
             sold_out: launchstate.total_token_sold == token_fund_,
             epoch: tx_context::epoch(ctx)
