@@ -200,6 +200,7 @@ module seapad::project_test {
 
         let percent = 500;
         add_milestone_(0, percent, scenario);
+        active_milestone_(0, scenario);
         receive_token_(USER2, scenario);
 
         test_scenario::next_tx(scenario, USER2);
@@ -347,8 +348,16 @@ module seapad::project_test {
         test_scenario::next_tx(scenario, ADMIN);
         let admin_cap = test_scenario::take_from_sender<AdminCap>(scenario);
         let ido = test_scenario::take_shared<Project<SPT>>(scenario);
-        let ctx = test_scenario::ctx(scenario);
-        project::add_milestone(&admin_cap, &mut ido, time, percent, ctx);
+        project::add_milestone(&admin_cap, &mut ido, time, percent);
+        test_scenario::return_to_sender(scenario, admin_cap);
+        test_scenario::return_shared(ido);
+    }
+
+    fun active_milestone_(time: u64, scenario: &mut Scenario) {
+        test_scenario::next_tx(scenario, ADMIN);
+        let admin_cap = test_scenario::take_from_sender<AdminCap>(scenario);
+        let ido = test_scenario::take_shared<Project<SPT>>(scenario);
+        project::active_milestone(&admin_cap, time, &mut ido);
         test_scenario::return_to_sender(scenario, admin_cap);
         test_scenario::return_shared(ido);
     }
@@ -357,8 +366,7 @@ module seapad::project_test {
         test_scenario::next_tx(scenario, ADMIN);
         let admin_cap = test_scenario::take_from_sender<AdminCap>(scenario);
         let ido = test_scenario::take_shared<Project<SPT>>(scenario);
-        let ctx = test_scenario::ctx(scenario);
-        project::reset_milestone(&admin_cap, &mut ido, ctx);
+        project::reset_milestone(&admin_cap, &mut ido);
         test_scenario::return_to_sender(scenario, admin_cap);
         test_scenario::return_shared(ido);
     }

@@ -25,15 +25,17 @@ module seapad::project_entries {
     public entry fun add_milestone<COIN>(_adminCap: &AdminCap,
                                          project: &mut Project<COIN>,
                                          time: u64,
-                                         percent: u64,
-                                         ctx: &mut TxContext){
-        project::add_milestone<COIN>(_adminCap, project, time, percent, ctx);
+                                         percent: u64){
+        project::add_milestone<COIN>(_adminCap, project, time, percent);
     }
 
-    public entry fun reset_milestone<COIN>(_adminCap: &AdminCap, project: &mut Project<COIN>, _ctx: &mut TxContext) {
-        project::reset_milestone<COIN>(_adminCap, project, _ctx);
+    public entry fun reset_milestone<COIN>(_adminCap: &AdminCap, project: &mut Project<COIN>) {
+        project::reset_milestone<COIN>(_adminCap, project);
     }
 
+    public fun active_milestone<COIN>(_adminCap: &AdminCap, time: u64, project: &mut Project<COIN>){
+        project::active_milestone<COIN>(_adminCap, time, project);
+    }
 
     public entry fun setup_project<COIN>(_adminCap: &AdminCap,
                                          project: &mut Project<COIN>,

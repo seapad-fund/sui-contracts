@@ -37,7 +37,7 @@ module seapad::project {
     const EMaxAllocate: u64 = 1003;
     const EOutOfHardCap: u64 = 1004;
     const EVoted: u64 = 1005;
-    const EClaimDone: u64 = 1006;
+    const EClaimZero: u64 = 1006;
     const EProjectNotWhitelist: u64 = 1007;
     const EExistsInWhitelist: u64 = 1008;
     const ENotWhitelist: u64 = 1009;
@@ -139,7 +139,8 @@ module seapad::project {
 
     struct VestingMileStone has copy, drop, store {
         time: u64,
-        percent: u64
+        percent: u64,
+        active: bool
     }
 
     struct Vesting has key, store {
@@ -246,8 +247,7 @@ module seapad::project {
     public fun add_milestone<COIN>(_adminCap: &AdminCap,
                                    project: &mut Project<COIN>,
                                    time: u64,
-                                   percent: u64,
-                                   ctx: &mut TxContext) {
+                                   percent: u64) {
         let vesting = &mut project.vesting;
 
         assert!(vesting.type == VESTING_TYPE_MILESTONE, EInvalidVestingType);
@@ -255,11 +255,23 @@ module seapad::project {
         if (vector::is_empty(milestones)) {
             vesting.init_release_time = time;
         };
-        vector::push_back(milestones, VestingMileStone { time, percent });
-        validate_mile_stones(milestones, tx_context::epoch(ctx));
+        vector::push_back(milestones, VestingMileStone { time, percent, active: false });
+        validate_mile_stones(milestones);
     }
 
-    public fun reset_milestone<COIN>(_adminCap: &AdminCap, project: &mut Project<COIN>, _ctx: &mut TxContext) {
+    public fun active_milestone<COIN>(_adminCap: &AdminCap, time: u64, project: &mut Project<COIN>) {
+        let milestones = &mut project.vesting.milestones;
+        let (i, n) = (0, vector::length(milestones));
+        while (i < n) {
+            let milestone = vector::borrow_mut(milestones, i);
+            if (milestone.time == time && !milestone.active) {
+                milestone.active = true;
+            };
+            i = i + 1;
+        };
+    }
+
+    public fun reset_milestone<COIN>(_adminCap: &AdminCap, project: &mut Project<COIN>) {
         let vesting = &mut project.vesting;
         vesting.milestones = vector::empty<VestingMileStone>();
     }
@@ -436,7 +448,10 @@ module seapad::project {
 
         let bought_amt = order.sui_amount;
         let table_allocation = &launchstate.max_allocations;
-        assert!(bought_amt <= get_max_allocate<COIN>(buyer_address, table_allocation,&launchstate.default_max_allocate), EMaxAllocate);
+        assert!(
+            bought_amt <= get_max_allocate<COIN>(buyer_address, table_allocation, &launchstate.default_max_allocate),
+            EMaxAllocate
+        );
 
         if (option::is_none(&launchstate.sui_raised)) {
             option::fill(&mut launchstate.sui_raised, sui_amt);
@@ -565,13 +580,12 @@ module seapad::project {
         let total_percent = if (vector::is_empty(milestones)) {
             1000
         }else {
-            let i = 0;
-            let n = vector::length(milestones);
+            let (i, n) = (0, vector::length(milestones));
             let sum = 0;
 
             while (i < n) {
                 let milestone = vector::borrow(milestones, i);
-                if (tx_context::epoch(ctx) >= milestone.time) {
+                if (milestone.active) {
                     sum = sum + milestone.percent;
                 }else {
                     break
@@ -584,7 +598,7 @@ module seapad::project {
         let more_token = order.token_amount / 1000 * (total_percent as u64);
         let more_token_actual = more_token - order.token_released;
 
-        assert!(more_token_actual > 0, EClaimDone);
+        assert!(more_token_actual > 0, EClaimZero);
         order.token_released = order.token_released + more_token_actual;
         let token = coin::split<COIN>(option::borrow_mut(&mut launchstate.token_fund), more_token_actual, ctx);
         transfer::public_transfer(token, sender);
@@ -667,13 +681,12 @@ module seapad::project {
 
     /// -make sure that sum of all milestone is <= 100%
     /// -time is ordered min --> max, is valid, should be offset
-    fun validate_mile_stones(milestones: &vector<VestingMileStone>, now: u64) {
+    fun validate_mile_stones(milestones: &vector<VestingMileStone>) {
         let total_percent = 0;
         let (i, n) = (0, vector::length(milestones));
         while (i < n) {
             let milestone = vector::borrow(milestones, i);
             assert!(milestone.percent <= 1000, EInvalidPercent);
-            assert!(milestone.time >= now, EInvalidTimeVest);
             if (i < n - 1) {
                 let next = vector::borrow(milestones, i + 1);
                 assert!(milestone.time < next.time, ETimeGENext);
