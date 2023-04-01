@@ -426,9 +426,9 @@ module seapad::project_test {
         {
             let project = test_scenario::take_shared<Project<SPT>>(scenario);
             let ctx = test_scenario::ctx(scenario);
-            let sui = coin::mint_for_testing<SUI>(TOKEN_MINT_TEST, ctx);
             let suis = vector::empty<Coin<SUI>>();
-            vector::push_back(&mut suis, sui);
+            vector::push_back(&mut suis, coin::mint_for_testing<SUI>(TOKEN_MINT_TEST, ctx));
+            vector::push_back(&mut suis, coin::mint_for_testing<SUI>(0, ctx));
 
             project::buy(suis, value, &mut project, ctx);
 

@@ -4,6 +4,7 @@ module seapad::project_entries {
     use sui::coin::{CoinMetadata, Coin};
     use seapad::project;
     use sui::sui::SUI;
+    use std::vector;
 
     public entry fun change_admin(adminCap: AdminCap, to: address) {
         project::change_admin(adminCap, to);
@@ -95,7 +96,9 @@ module seapad::project_entries {
 
     }
 
-    public entry fun buy<COIN>(suis: vector<Coin<SUI>>, amount: u64, project: &mut Project<COIN>, ctx: &mut TxContext) {
+    public entry fun buy<COIN>(sui: Coin<SUI>, amount: u64, project: &mut Project<COIN>, ctx: &mut TxContext) {
+        let suis = vector::empty<Coin<SUI>>();
+        vector::push_back(&mut suis, sui);
         project::buy<COIN>(suis, amount, project, ctx);
     }
 
@@ -115,7 +118,9 @@ module seapad::project_entries {
         project::refund_token_to_owner<COIN>(_adminCap, project, ctx);
     }
 
-    public entry fun deposit_by_owner<COIN>(coins: vector<Coin<COIN>>, value: u64, project: &mut Project<COIN>, ctx: &mut TxContext) {
+    public entry fun deposit_by_owner<COIN>(coin: Coin<COIN>, value: u64, project: &mut Project<COIN>, ctx: &mut TxContext) {
+        let coins = vector::empty<Coin<COIN>>();
+        vector::push_back(&mut coins, coin);
         project::deposit_by_owner<COIN>(coins, value, project, ctx);
     }
 
