@@ -603,7 +603,7 @@ module seapad::project {
         let token = coin::split<COIN>(option::borrow_mut(&mut launchstate.token_fund), more_token_actual, ctx);
         transfer::public_transfer(token, user_);
 
-        event::emit(ClaimTokenEvent{project: object::id_address(project), user: user_, token_amt: more_token_actual})
+        event::emit(ClaimTokenEvent{project: object::id_address(project), user: user_, token_amount: more_token_actual})
     }
 
     public fun claim_refund<COIN>(project: &mut Project<COIN>, ctx: &mut TxContext) {
@@ -614,6 +614,7 @@ module seapad::project {
         let amount_fund = order.coin_amount;
         let coin_fund = coin::split(option::borrow_mut(&mut project.launch_state.coin_raised), amount_fund, ctx);
         transfer::public_transfer(coin_fund, sender);
+        event::emit(ClaimRefundEvent{project: object::id_address(project), user: sender, coin_fund: amount_fund})
     }
 
     public fun vote<COIN>(project: &mut Project<COIN>, ctx: &mut TxContext) {
@@ -839,7 +840,13 @@ module seapad::project {
     struct ClaimTokenEvent has copy, drop {
         project: address,
         user: address,
-        token_amt: u64
+        token_amount: u64
+    }
+
+    struct ClaimRefundEvent has copy, drop {
+        project: address,
+        user: address,
+        coin_fund: u64
     }
 
 
