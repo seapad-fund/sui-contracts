@@ -603,7 +603,7 @@ module seapad::project {
         let token = coin::split<COIN>(option::borrow_mut(&mut launchstate.token_fund), more_token_actual, ctx);
         transfer::public_transfer(token, user_);
 
-        event::emit(ClaimTokenEvent{project: user_(project), user: user_, token_amt: more_token_actual})
+        event::emit(ClaimTokenEvent{project: object::id_address(project), user: user_, token_amt: more_token_actual})
     }
 
     public fun claim_refund<COIN>(project: &mut Project<COIN>, ctx: &mut TxContext) {
