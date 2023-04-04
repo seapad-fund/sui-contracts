@@ -3,138 +3,183 @@ module seapad::project_entries {
     use sui::tx_context::TxContext;
     use sui::coin::{CoinMetadata, Coin};
     use seapad::project;
-    use sui::sui::SUI;
     use std::vector;
 
     public entry fun change_admin(adminCap: AdminCap, to: address) {
         project::change_admin(adminCap, to);
     }
 
-    public entry fun create_project<COIN>(_adminCap: &AdminCap,
-                                          owner: address,
-                                          vesting_type: u8,
-                                          coin_metadata: &CoinMetadata<COIN>,
-                                          ctx: &mut TxContext) {
-        project::create_project(_adminCap, owner, vesting_type, coin_metadata, ctx);
+    public entry fun create_project<COIN, TOKEN>(_adminCap: &AdminCap,
+                                                 owner: address,
+                                                 vesting_type: u8,
+                                                 coin_metadata: &CoinMetadata<COIN>,
+                                                 token_metadata: &CoinMetadata<TOKEN>,
+                                                 ctx: &mut TxContext) {
+        project::create_project(_adminCap, owner, vesting_type, coin_metadata, token_metadata, ctx);
     }
 
-    public entry fun change_owner<COIN>(admin_cap: &AdminCap, new_owner: address, project: &mut Project<COIN>){
-        project::change_owner<COIN>(admin_cap, new_owner, project);
+    public entry fun change_owner<COIN, TOKEN>(
+        admin_cap: &AdminCap,
+        new_owner: address,
+        project: &mut Project<COIN, TOKEN>
+    ) {
+        project::change_owner<COIN, TOKEN>(admin_cap, new_owner, project);
     }
 
-    public entry fun add_milestone<COIN>(_adminCap: &AdminCap,
-                                         project: &mut Project<COIN>,
-                                         time: u64,
-                                         percent: u64){
-        project::add_milestone<COIN>(_adminCap, project, time, percent);
+    public entry fun add_milestone<COIN, TOKEN>(_adminCap: &AdminCap,
+                                                project: &mut Project<COIN, TOKEN>,
+                                                time: u64,
+                                                percent: u64) {
+        project::add_milestone<COIN, TOKEN>(_adminCap, project, time, percent);
     }
 
-    public entry fun reset_milestone<COIN>(_adminCap: &AdminCap, project: &mut Project<COIN>) {
-        project::reset_milestone<COIN>(_adminCap, project);
+    public entry fun reset_milestone<COIN, TOKEN>(_adminCap: &AdminCap, project: &mut Project<COIN, TOKEN>) {
+        project::reset_milestone<COIN, TOKEN>(_adminCap, project);
     }
 
-    public fun active_milestone<COIN>(_adminCap: &AdminCap, time: u64, project: &mut Project<COIN>){
-        project::active_milestone<COIN>(_adminCap, time, project);
+    public fun active_milestone<COIN, TOKEN>(_adminCap: &AdminCap, time: u64, project: &mut Project<COIN, TOKEN>) {
+        project::active_milestone<COIN, TOKEN>(_adminCap, time, project);
     }
 
-    public entry fun setup_project<COIN>(_adminCap: &AdminCap,
-                                         project: &mut Project<COIN>,
-                                         round: u8,
-                                         usewhitelist: bool,
-                                         swap_ratio_sui: u64,
-                                         swap_ratio_token: u64,
-                                         max_allocate: u64,
-                                         start_time: u64,
-                                         end_time: u64,
-                                         soft_cap: u64,
-                                         hard_cap: u64,
-                                         _ctx: &mut TxContext) {
-        project::setup_project<COIN>(_adminCap, project, round, usewhitelist, swap_ratio_sui, swap_ratio_token, max_allocate, start_time, end_time, soft_cap, hard_cap, _ctx);
-
+    public entry fun setup_project<COIN, TOKEN>(_adminCap: &AdminCap,
+                                                project: &mut Project<COIN, TOKEN>,
+                                                round: u8,
+                                                usewhitelist: bool,
+                                                swap_ratio_sui: u64,
+                                                swap_ratio_token: u64,
+                                                max_allocate: u64,
+                                                start_time: u64,
+                                                end_time: u64,
+                                                soft_cap: u64,
+                                                hard_cap: u64,
+                                                _ctx: &mut TxContext) {
+        project::setup_project<COIN, TOKEN>(
+            _adminCap,
+            project,
+            round,
+            usewhitelist,
+            swap_ratio_sui,
+            swap_ratio_token,
+            max_allocate,
+            start_time,
+            end_time,
+            soft_cap,
+            hard_cap,
+            _ctx
+        );
     }
 
-    public entry fun add_max_allocate<COIN>(admin_cap: &AdminCap,
-                                            user: address,
-                                            max_allocate: u64,
-                                            project: &mut Project<COIN>,
-                                            ctx: &mut TxContext) {
-        project::set_max_allocate<COIN>(admin_cap, user, max_allocate, project, ctx);
+    public entry fun add_max_allocate<COIN, TOKEN>(admin_cap: &AdminCap,
+                                                   user: address,
+                                                   max_allocate: u64,
+                                                   project: &mut Project<COIN, TOKEN>,
+                                                   ctx: &mut TxContext) {
+        project::set_max_allocate<COIN, TOKEN>(admin_cap, user, max_allocate, project, ctx);
     }
 
-    public entry fun remove_max_allocate<COIN>(_admin_cap: &AdminCap,
-                                               user: address,
-                                               project: &mut Project<COIN>,
+    public entry fun remove_max_allocate<COIN, TOKEN>(_admin_cap: &AdminCap,
+                                                      user: address,
+                                                      project: &mut Project<COIN, TOKEN>,
+                                                      _ctx: &mut TxContext) {
+        project::clear_max_allocate<COIN, TOKEN>(_admin_cap, user, project, _ctx);
+    }
+
+    public entry fun save_profile<COIN, TOKEN>(_adminCap: &AdminCap,
+                                               project: &mut Project<COIN, TOKEN>,
+                                               name: vector<u8>,
+                                               twitter: vector<u8>,
+                                               discord: vector<u8>,
+                                               telegram: vector<u8>,
+                                               website: vector<u8>,
                                                _ctx: &mut TxContext) {
-        project::clear_max_allocate<COIN>(_admin_cap, user, project, _ctx);
+        project::save_profile<COIN, TOKEN>(_adminCap, project, name, twitter, discord, telegram, website, _ctx);
     }
 
-    public entry fun save_profile<COIN>(_adminCap: &AdminCap,
-                                        project: &mut Project<COIN>,
-                                        name: vector<u8>,
-                                        twitter: vector<u8>,
-                                        discord: vector<u8>,
-                                        telegram: vector<u8>,
-                                        website: vector<u8>,
-                                        _ctx: &mut TxContext) {
-        project::save_profile<COIN>(_adminCap, project, name, twitter, discord, telegram, website, _ctx);
+    public entry fun add_whitelist<COIN, TOKEN>(_adminCap: &AdminCap,
+                                                project: &mut Project<COIN, TOKEN>,
+                                                user_list: vector<address>,
+                                                _ctx: &mut TxContext) {
+        project::add_whitelist<COIN, TOKEN>(_adminCap, project, user_list, _ctx);
     }
 
-    public entry fun add_whitelist<COIN>(_adminCap: &AdminCap,
-                                         project: &mut Project<COIN>,
-                                         user_list: vector<address>,
-                                         _ctx: &mut TxContext) {
-        project::add_whitelist<COIN>(_adminCap, project, user_list, _ctx);
+    public entry fun remove_whitelist<COIN, TOKEN>(_adminCap: &AdminCap,
+                                                   project: &mut Project<COIN, TOKEN>,
+                                                   user_list: vector<address>,
+                                                   _ctx: &mut TxContext) {
+        project::remove_whitelist<COIN, TOKEN>(_adminCap, project, user_list, _ctx);
     }
 
-    public entry fun remove_whitelist<COIN>(_adminCap: &AdminCap,
-                                            project: &mut Project<COIN>,
-                                            user_list: vector<address>,
-                                            _ctx: &mut TxContext) {
-        project::remove_whitelist<COIN>(_adminCap, project, user_list, _ctx);
+    public entry fun start_fund_raising<COIN, TOKEN>(
+        _adminCap: &AdminCap,
+        project: &mut Project<COIN, TOKEN>,
+        ctx: &mut TxContext
+    ) {
+        project::start_fund_raising<COIN, TOKEN>(_adminCap, project, ctx);
     }
 
-    public entry fun start_fund_raising<COIN>(_adminCap: &AdminCap, project: &mut Project<COIN>, ctx: &mut TxContext) {
-        project::start_fund_raising<COIN>(_adminCap, project, ctx);
-
-    }
-
-    public entry fun buy<COIN>(sui: Coin<SUI>, amount: u64, project: &mut Project<COIN>, ctx: &mut TxContext) {
-        let suis = vector::empty<Coin<SUI>>();
-        vector::push_back(&mut suis, sui);
-        project::buy<COIN>(suis, amount, project, ctx);
-    }
-
-    public entry fun end_fund_raising<COIN>(_adminCap: &AdminCap, project: &mut Project<COIN>, ctx: &mut TxContext) {
-        project::end_fund_raising<COIN>(_adminCap, project, ctx);
-    }
-
-    public entry fun end_refund<COIN>(_adminCap: &AdminCap, project: &mut Project<COIN>, ctx: &mut TxContext) {
-        project::end_refund<COIN>(_adminCap, project, ctx);
-    }
-
-    public entry fun distribute_raised_fund<COIN>(_adminCap: &AdminCap, project: &mut Project<COIN>, ctx: &mut TxContext) {
-        project::distribute_raised_fund<COIN>(_adminCap, project, ctx);
-    }
-
-    public entry fun refund_token_to_owner<COIN>(_adminCap: &AdminCap, project: &mut Project<COIN>, ctx: &mut TxContext) {
-        project::refund_token_to_owner<COIN>(_adminCap, project, ctx);
-    }
-
-    public entry fun deposit_by_owner<COIN>(coin: Coin<COIN>, value: u64, project: &mut Project<COIN>, ctx: &mut TxContext) {
+    public entry fun buy<COIN, TOKEN>(
+        coin: Coin<COIN>,
+        amount: u64,
+        project: &mut Project<COIN, TOKEN>,
+        ctx: &mut TxContext
+    ) {
         let coins = vector::empty<Coin<COIN>>();
         vector::push_back(&mut coins, coin);
-        project::deposit_by_owner<COIN>(coins, value, project, ctx);
+        project::buy<COIN, TOKEN>(coins, amount, project, ctx);
     }
 
-    public entry fun claim_token<COIN>(project: &mut Project<COIN>, ctx: &mut TxContext) {
-        project::claim_token<COIN>(project, ctx);
+    public entry fun end_fund_raising<COIN, TOKEN>(
+        _adminCap: &AdminCap,
+        project: &mut Project<COIN, TOKEN>,
+        ctx: &mut TxContext
+    ) {
+        project::end_fund_raising<COIN, TOKEN>(_adminCap, project, ctx);
     }
 
-    public entry fun claim_refund<COIN>(project: &mut Project<COIN>, ctx: &mut TxContext){
-        project::claim_refund<COIN>(project, ctx);
+    public entry fun end_refund<COIN, TOKEN>(
+        _adminCap: &AdminCap,
+        project: &mut Project<COIN, TOKEN>,
+        ctx: &mut TxContext
+    ) {
+        project::end_refund<COIN, TOKEN>(_adminCap, project, ctx);
     }
 
-    public entry fun vote<COIN>(project: &mut Project<COIN>, ctx: &mut TxContext) {
-        project::vote<COIN>(project, ctx);
+    public entry fun distribute_raised_fund<COIN, TOKEN>(
+        _adminCap: &AdminCap,
+        project: &mut Project<COIN, TOKEN>,
+        ctx: &mut TxContext
+    ) {
+        project::distribute_raised_fund<COIN, TOKEN>(_adminCap, project, ctx);
+    }
+
+    public entry fun refund_token_to_owner<COIN, TOKEN>(
+        _adminCap: &AdminCap,
+        project: &mut Project<COIN, TOKEN>,
+        ctx: &mut TxContext
+    ) {
+        project::refund_token_to_owner<COIN, TOKEN>(_adminCap, project, ctx);
+    }
+
+    public entry fun deposit_by_owner<COIN, TOKEN>(
+        token: Coin<TOKEN>,
+        value: u64,
+        project: &mut Project<COIN, TOKEN>,
+        ctx: &mut TxContext
+    ) {
+        let tokens = vector::empty<Coin<TOKEN>>();
+        vector::push_back(&mut tokens, token);
+        project::deposit_by_owner<COIN, TOKEN>(tokens, value, project, ctx);
+    }
+
+    public entry fun claim_token<COIN, TOKEN>(project: &mut Project<COIN, TOKEN>, ctx: &mut TxContext) {
+        project::claim_token<COIN, TOKEN>(project, ctx);
+    }
+
+    public entry fun claim_refund<COIN, TOKEN>(project: &mut Project<COIN, TOKEN>, ctx: &mut TxContext) {
+        project::claim_refund<COIN, TOKEN>(project, ctx);
+    }
+
+    public entry fun vote<COIN, TOKEN>(project: &mut Project<COIN, TOKEN>, ctx: &mut TxContext) {
+        project::vote<COIN, TOKEN>(project, ctx);
     }
 }
