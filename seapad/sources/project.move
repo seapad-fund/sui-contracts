@@ -6,33 +6,38 @@
 /// - support vesting token, claim token
 /// - many round
 module seapad::project {
+    use std::ascii;
     use std::option::{Self, Option};
+    use std::string;
     use std::vector;
 
     use w3libs::payment;
 
-    use sui::coin::{Self, Coin};
+    use sui::coin::{Self, Coin, CoinMetadata};
     use sui::dynamic_field;
     use sui::event;
     use sui::math;
     use sui::object::{Self, UID, id_address};
+    use sui::sui::SUI;
     use sui::table::{Self, Table};
     use sui::transfer;
     use sui::tx_context::{Self, TxContext, sender};
+    use sui::url;
     use sui::vec_set::{Self, VecSet};
 
     ///Define model first
 
-    struct SPT_PAD has drop {}
-
     struct PROJECT has drop {}
 
+    const SUI_DECIMALS: u8 = 9;
+
     const EInvalidVestingType: u64 = 1000;
+    const EInvalidRound: u64 = 1001;
     const EInvalidRoundState: u64 = 1002;
     const EMaxAllocate: u64 = 1003;
     const EOutOfHardCap: u64 = 1004;
     const EVoted: u64 = 1005;
-    const EClaimDone: u64 = 1006;
+    const EClaimZero: u64 = 1006;
     const EProjectNotWhitelist: u64 = 1007;
     const EExistsInWhitelist: u64 = 1008;
     const ENotWhitelist: u64 = 1009;
@@ -40,11 +45,13 @@ module seapad::project {
     const EExceedPercent: u64 = 1011;
     const ETimeGENext: u64 = 1012;
     const EInvalidTimeVest: u64 = 1013;
-    const ENotEnoughTokenFund: u64 = 1014;
-    const ENoOrder: u64 = 1015;
-    const ENotOwner: u64 = 1016;
-    const EExistsCoinMetadata: u64 = 1017;
-    const ENotExistsInWhitelist: u64 = 1018;
+    const EInvalidSwapRatioToken: u64 = 1014;
+    const EInvalidSwapRatioSui: u64 = 1015;
+    const ENotEnoughTokenFund: u64 = 1016;
+    const ENoOrder: u64 = 1017;
+    const ENotOwner: u64 = 1018;
+    const EExistsCoinMetadata: u64 = 1019;
+    const ENotExistsInWhitelist: u64 = 1020;
 
 
     const ROUND_SEED: u8 = 1;
@@ -70,8 +77,10 @@ module seapad::project {
 
     const VESTING_TYPE_MILESTONE: u8 = 1;
     const VESTING_TYPE_LINEAR: u8 = 2;
+    const TOKEN_INFO: vector<u8> = b"token_info";
     const WHITELIST: vector<u8> = b"whitelist";
     const PROFILE: vector<u8> = b"profile";
+    const MAX_ALLOCATE: vector<u8> = b"max_allocate";
 
     struct ProjectProfile has store {
         name: vector<u8>,
@@ -88,7 +97,7 @@ module seapad::project {
         token_released: u64,
     }
 
-    struct LaunchState<phantom COIN, phantom TOKEN> has key, store {
+    struct LaunchState<phantom COIN> has key, store {
         id: UID,
         soft_cap: u64,
         hard_cap: u64,
@@ -100,16 +109,25 @@ module seapad::project {
         swap_ratio_coin: u64,
         swap_ratio_token: u64,
         participants: u64,
-        //in sui
         start_time: u64,
         //when project stop fund-raising and decide to refund or payout token(ready to claim)
         end_time: u64,
         //owner of project deposit token fund enough to raising fund
-        token_fund: Option<Coin<TOKEN>>,
-        coin_raised: Option<Coin<COIN>>,
+        token_fund: Option<Coin<COIN>>,
+        coin_raised: Option<Coin<SUI>>,
         order_book: Table<address, Order>,
         default_max_allocate: u64,
         max_allocations: Table<address, u64>,
+    }
+
+    ///should refer to object
+    struct TokenMetadata has store {
+        coin_metadata: address,
+        symbol: vector<u8>,
+        name: vector<u8>,
+        description: vector<u8>,
+        icon_url: vector<u8>,
+        decimals: u8,
     }
 
     struct Community has key, store {
@@ -120,7 +138,8 @@ module seapad::project {
 
     struct VestingMileStone has copy, drop, store {
         time: u64,
-        percent: u64
+        percent: u64,
+        active: bool
     }
 
     struct Vesting has key, store {
@@ -131,14 +150,13 @@ module seapad::project {
         milestones: vector<VestingMileStone>
     }
 
-    struct Project<phantom COIN, phantom TOKEN> has key, store {
+    struct Project<phantom COIN> has key, store {
         id: UID,
-        launch_state: LaunchState<COIN, TOKEN>,
+        launch_state: LaunchState<COIN>,
         community: Community,
         use_whitelist: bool,
         owner: address,
-        decimal_coin: u8,
-        decimal_token: u8,
+        token_metadata: TokenMetadata,
         vesting: Vesting
         //        profile: //use dynamic field
         //        whitelist: VecSet<address> //use dynamic field
@@ -159,18 +177,17 @@ module seapad::project {
     }
 
     ///change admin
-    public entry fun change_admin(adminCap: AdminCap, to: address) {
+    public fun change_admin(adminCap: AdminCap, to: address) {
         transfer::public_transfer(adminCap, to);
     }
 
     /// add one project
-    public fun create_project<COIN, TOKEN>(_adminCap: &AdminCap,
-                                           owner: address,
-                                           vesting_type: u8,
-                                           decimal_coin: u8,
-                                           decimal_token: u8,
-                                           ctx: &mut TxContext) {
-        let launchstate = LaunchState<COIN, TOKEN> {
+    public fun create_project<COIN>(_adminCap: &AdminCap,
+                                    owner: address,
+                                    vesting_type: u8,
+                                    coin_metadata: &CoinMetadata<COIN>,
+                                    ctx: &mut TxContext) {
+        let launchstate = LaunchState<COIN> {
             id: object::new(ctx),
             soft_cap: 0,
             hard_cap: 0,
@@ -182,8 +199,8 @@ module seapad::project {
             participants: 0,
             start_time: 0,
             end_time: 0,
-            token_fund: option::none<Coin<TOKEN>>(),
-            coin_raised: option::none<Coin<COIN>>(),
+            token_fund: option::none<Coin<COIN>>(),
+            coin_raised: option::none<Coin<SUI>>(),
             order_book: table::new(ctx),
             default_max_allocate: 0,
             max_allocations: table::new(ctx)
@@ -211,8 +228,7 @@ module seapad::project {
             launch_state: launchstate,
             community,
             use_whitelist: false,
-            decimal_coin,
-            decimal_token,
+            token_metadata: flat_token_metadata(coin_metadata),
             vesting: vesting_obj
         };
 
@@ -220,22 +236,17 @@ module seapad::project {
         transfer::share_object(project);
     }
 
-    public fun change_owner<COIN, TOKEN>(
-        _admin_cap: &AdminCap,
-        new_owner: address,
-        project: &mut Project<COIN, TOKEN>
-    ) {
+    public fun change_owner<COIN>(_admin_cap: &AdminCap, new_owner: address, project: &mut Project<COIN>) {
         let current_owner = project.owner;
         project.owner = new_owner;
         event::emit(ChangeProjectOwnerEvent { project: id_address(project), old_owner: current_owner, new_owner });
     }
 
     /// if you want more milestones
-    public fun add_milestone<COIN, TOKEN>(_adminCap: &AdminCap,
-                                          project: &mut Project<COIN, TOKEN>,
-                                          time: u64,
-                                          percent: u64,
-                                          ctx: &mut TxContext) {
+    public fun add_milestone<COIN>(_adminCap: &AdminCap,
+                                   project: &mut Project<COIN>,
+                                   time: u64,
+                                   percent: u64) {
         let vesting = &mut project.vesting;
 
         assert!(vesting.type == VESTING_TYPE_MILESTONE, EInvalidVestingType);
@@ -243,31 +254,39 @@ module seapad::project {
         if (vector::is_empty(milestones)) {
             vesting.init_release_time = time;
         };
-        vector::push_back(milestones, VestingMileStone { time, percent });
-        validate_mile_stones(milestones, tx_context::epoch(ctx));
+        vector::push_back(milestones, VestingMileStone { time, percent, active: false });
+        validate_mile_stones(milestones);
     }
 
-    public fun reset_milestone<COIN, TOKEN>(
-        _adminCap: &AdminCap,
-        project: &mut Project<COIN, TOKEN>,
-        _ctx: &mut TxContext
-    ) {
+    public fun active_milestone<COIN>(_adminCap: &AdminCap, time: u64, project: &mut Project<COIN>) {
+        let milestones = &mut project.vesting.milestones;
+        let (i, n) = (0, vector::length(milestones));
+        while (i < n) {
+            let milestone = vector::borrow_mut(milestones, i);
+            if (milestone.time == time && !milestone.active) {
+                milestone.active = true;
+            };
+            i = i + 1;
+        };
+    }
+
+    public fun reset_milestone<COIN>(_adminCap: &AdminCap, project: &mut Project<COIN>) {
         let vesting = &mut project.vesting;
         vesting.milestones = vector::empty<VestingMileStone>();
     }
 
-    public fun setup_project<COIN, TOKEN>(_adminCap: &AdminCap,
-                                          project: &mut Project<COIN, TOKEN>,
-                                          round: u8,
-                                          usewhitelist: bool,
-                                          swap_ratio_coin_: u64,
-                                          swap_ratio_token_: u64,
-                                          max_allocate: u64,
-                                          start_time: u64,
-                                          end_time: u64,
-                                          soft_cap: u64,
-                                          hard_cap: u64,
-                                          _ctx: &mut TxContext) {
+    public fun setup_project<COIN>(_adminCap: &AdminCap,
+                                   project: &mut Project<COIN>,
+                                   round: u8,
+                                   usewhitelist: bool,
+                                   swap_ratio_coin: u64,
+                                   swap_ratio_token: u64,
+                                   max_allocate: u64,
+                                   start_time: u64,
+                                   end_time: u64,
+                                   soft_cap: u64,
+                                   hard_cap: u64,
+                                   _ctx: &mut TxContext) {
         project.use_whitelist = usewhitelist;
         if (usewhitelist) {
             dynamic_field::add(&mut project.id, WHITELIST, vec_set::empty<address>());
@@ -275,8 +294,8 @@ module seapad::project {
         let launchstate = &mut project.launch_state;
         launchstate.default_max_allocate = max_allocate;
         launchstate.round = round;
-        launchstate.swap_ratio_coin = swap_ratio_coin_;
-        launchstate.swap_ratio_token = swap_ratio_token_;
+        launchstate.swap_ratio_coin = swap_ratio_coin;
+        launchstate.swap_ratio_token = swap_ratio_token;
         launchstate.start_time = start_time;
         launchstate.end_time = end_time;
         launchstate.soft_cap = soft_cap;
@@ -286,8 +305,8 @@ module seapad::project {
             project: id_address(project),
             usewhitelist,
             round,
-            swap_ratio_coin: swap_ratio_coin_,
-            swap_ratio_token: swap_ratio_token_,
+            swap_ratio_coin,
+            swap_ratio_token,
             max_allocate,
             start_time,
             end_time,
@@ -296,11 +315,11 @@ module seapad::project {
         });
     }
 
-    public fun set_max_allocate<COIN, TOKEN>(_admin_cap: &AdminCap,
-                                             user: address,
-                                             max_allocate: u64,
-                                             project: &mut Project<COIN, TOKEN>,
-                                             _ctx: &mut TxContext) {
+    public fun set_max_allocate<COIN>(_admin_cap: &AdminCap,
+                                      user: address,
+                                      max_allocate: u64,
+                                      project: &mut Project<COIN>,
+                                      _ctx: &mut TxContext) {
         let max_allocation = &mut project.launch_state.max_allocations;
         if (table::contains(max_allocation, user)) {
             table::remove<address, u64>(max_allocation, user);
@@ -310,10 +329,10 @@ module seapad::project {
         event::emit(AddMaxAllocateEvent { project: id_address(project), user, max_allocate })
     }
 
-    public fun clear_max_allocate<COIN, TOKEN>(_admin_cap: &AdminCap,
-                                               user: address,
-                                               project: &mut Project<COIN, TOKEN>,
-                                               _ctx: &mut TxContext) {
+    public fun clear_max_allocate<COIN>(_admin_cap: &AdminCap,
+                                        user: address,
+                                        project: &mut Project<COIN>,
+                                        _ctx: &mut TxContext) {
         let max_allocation = &mut project.launch_state.max_allocations;
         if (table::contains(max_allocation, user)) {
             table::remove<address, u64>(max_allocation, user);
@@ -321,14 +340,14 @@ module seapad::project {
         event::emit(RemoveMaxAllocateEvent { project: id_address(project), user })
     }
 
-    public fun save_profile<COIN, TOKEN>(_adminCap: &AdminCap,
-                                         project: &mut Project<COIN, TOKEN>,
-                                         name: vector<u8>,
-                                         twitter: vector<u8>,
-                                         discord: vector<u8>,
-                                         telegram: vector<u8>,
-                                         website: vector<u8>,
-                                         _ctx: &mut TxContext) {
+    public fun save_profile<COIN>(_adminCap: &AdminCap,
+                                  project: &mut Project<COIN>,
+                                  name: vector<u8>,
+                                  twitter: vector<u8>,
+                                  discord: vector<u8>,
+                                  telegram: vector<u8>,
+                                  website: vector<u8>,
+                                  _ctx: &mut TxContext) {
         let exists = dynamic_field::exists_with_type<vector<u8>, ProjectProfile>(&project.id, PROFILE);
         if (exists) {
             let profile = dynamic_field::borrow_mut<vector<u8>, ProjectProfile>(&mut project.id, PROFILE);
@@ -348,10 +367,10 @@ module seapad::project {
         }
     }
 
-    public fun add_whitelist<COIN, TOKEN>(_adminCap: &AdminCap,
-                                          project: &mut Project<COIN, TOKEN>,
-                                          user_list: vector<address>,
-                                          _ctx: &mut TxContext) {
+    public fun add_whitelist<COIN>(_adminCap: &AdminCap,
+                                   project: &mut Project<COIN>,
+                                   user_list: vector<address>,
+                                   _ctx: &mut TxContext) {
         assert!(project.use_whitelist, EProjectNotWhitelist);
         let whitelist = dynamic_field::borrow_mut<vector<u8>, VecSet<address>>(&mut project.id, WHITELIST);
         let temp_list = vector::empty<address>();
@@ -369,10 +388,10 @@ module seapad::project {
         event::emit(AddWhiteListEvent { project: id_address(project), users: temp_list });
     }
 
-    public fun remove_whitelist<COIN, TOKEN>(_adminCap: &AdminCap,
-                                             project: &mut Project<COIN, TOKEN>,
-                                             user_list: vector<address>,
-                                             _ctx: &mut TxContext) {
+    public fun remove_whitelist<COIN>(_adminCap: &AdminCap,
+                                      project: &mut Project<COIN>,
+                                      user_list: vector<address>,
+                                      _ctx: &mut TxContext) {
         assert!(project.use_whitelist, EProjectNotWhitelist);
         let whitelist = dynamic_field::borrow_mut<vector<u8>, VecSet<address>>(&mut project.id, WHITELIST);
         let temp_list = vector::empty<address>();
@@ -389,11 +408,7 @@ module seapad::project {
         event::emit(RemoveWhiteListEvent { project: id_address(project), users: temp_list });
     }
 
-    public fun start_fund_raising<COIN, TOKEN>(
-        _adminCap: &AdminCap,
-        project: &mut Project<COIN, TOKEN>,
-        ctx: &mut TxContext
-    ) {
+    public fun start_fund_raising<COIN>(_adminCap: &AdminCap, project: &mut Project<COIN>, ctx: &mut TxContext) {
         validate_start_fund_raising(project);
         project.launch_state.total_token_sold = 0;
         project.launch_state.participants = 0;
@@ -404,20 +419,15 @@ module seapad::project {
         })
     }
 
-    public fun buy<COIN, TOKEN>(
-        coins: vector<Coin<COIN>>,
-        amount: u64,
-        project: &mut Project<COIN, TOKEN>,
-        ctx: &mut TxContext
-    ) {
-        let buy_amt = payment::take_from(coins, amount, ctx);
-        let buyer_address = sender(ctx);
+    public fun buy<COIN>(coins: vector<Coin<SUI>>, amount: u64, project: &mut Project<COIN>, ctx: &mut TxContext) {
+        let coin_amt = payment::take_from(coins, amount, ctx);
+        let buyer_address = tx_context::sender(ctx);
         validate_state_for_buy(project, buyer_address);
-        let more_buy = coin::value(&buy_amt);
-        let more_token = swap_token(more_buy, project);
+        let more_coin = coin::value(&coin_amt);
+        let more_token_ = swap_token(more_coin, project);
 
         let launchstate = &mut project.launch_state;
-        launchstate.total_token_sold = launchstate.total_token_sold + more_token;
+        launchstate.total_token_sold = launchstate.total_token_sold + more_token_;
 
         let order_book = &mut launchstate.order_book;
 
@@ -432,16 +442,20 @@ module seapad::project {
             launchstate.participants = launchstate.participants + 1;
         };
         let order = table::borrow_mut(order_book, buyer_address);
-        order.coin_amount = order.coin_amount + more_buy;
-        order.token_amount = order.token_amount + more_token;
+        order.coin_amount = order.coin_amount + more_coin;
+        order.token_amount = order.token_amount + more_token_;
 
         let bought_amt = order.coin_amount;
-        assert!(bought_amt <= get_max_allocate<COIN, TOKEN>(buyer_address, launchstate), EMaxAllocate);
+        let table_allocation = &launchstate.max_allocations;
+        assert!(
+            bought_amt <= get_max_allocate<COIN>(buyer_address, table_allocation, &launchstate.default_max_allocate),
+            EMaxAllocate
+        );
 
         if (option::is_none(&launchstate.coin_raised)) {
-            option::fill(&mut launchstate.coin_raised, buy_amt);
+            option::fill(&mut launchstate.coin_raised, coin_amt);
         }else {
-            coin::join(option::borrow_mut(&mut launchstate.coin_raised), buy_amt);
+            coin::join(option::borrow_mut(&mut launchstate.coin_raised), coin_amt);
         };
 
         let project_id = object::uid_to_address(&project.id);
@@ -456,19 +470,19 @@ module seapad::project {
         event::emit(BuyEvent {
             project: project_id,
             buyer: buyer_address,
-            order_value: more_buy,
-            total_bought: bought_amt,
+            order_value: more_coin,
+            order_bought: bought_amt,
             total_raised: total_raised_,
+            more_token: more_token_,
+            token_bought: order.token_amount,
+            participants: launchstate.participants,
             sold_out: launchstate.total_token_sold == token_fund_,
             epoch: tx_context::epoch(ctx)
         })
     }
 
-    public fun end_fund_raising<COIN, TOKEN>(
-        _adminCap: &AdminCap,
-        project: &mut Project<COIN, TOKEN>,
-        ctx: &mut TxContext
-    ) {
+    public fun end_fund_raising<COIN>(_adminCap: &AdminCap, project: &mut Project<COIN>, ctx: &mut TxContext) {
+        validate_end_fund_rasing(project);
         let total_coin_raised = coin::value(option::borrow(&project.launch_state.coin_raised));
 
         if (total_coin_raised < project.launch_state.soft_cap) {
@@ -489,11 +503,11 @@ module seapad::project {
     /// - stop refund process
     /// - set state to end with refund
     /// - clear state ?
-    public fun end_refund<COIN, TOKEN>(_adminCap: &AdminCap, project: &mut Project<COIN, TOKEN>, ctx: &mut TxContext) {
+    public fun end_refund<COIN>(_adminCap: &AdminCap, project: &mut Project<COIN>, ctx: &mut TxContext) {
         project.launch_state.state = ROUND_STATE_END_REFUND;
         event::emit(RefundClosedEvent {
             project: id_address(project),
-            token_refunded: project.launch_state.total_token_sold,
+            coin_refunded: project.launch_state.total_token_sold,
             epoch: tx_context::epoch(ctx)
         })
     }
@@ -503,9 +517,9 @@ module seapad::project {
     ///     *transfer all to project owner
     ///     *charge fee
     ///     *add liquidity
-    public fun distribute_raised_fund<COIN, TOKEN>(
+    public fun distribute_raised_fund<COIN>(
         _adminCap: &AdminCap,
-        project: &mut Project<COIN, TOKEN>,
+        project: &mut Project<COIN>,
         ctx: &mut TxContext
     ) {
         validate_allocate_budget(project);
@@ -520,11 +534,7 @@ module seapad::project {
 
 
     /// - refund token to owner when failed to make fund-raising
-    public fun refund_token_to_owner<COIN, TOKEN>(
-        _cap: &AdminCap,
-        project: &mut Project<COIN, TOKEN>,
-        _ctx: &mut TxContext
-    ) {
+    public fun refund_token_to_owner<COIN>(_cap: &AdminCap, project: &mut Project<COIN>, _ctx: &mut TxContext) {
         validate_allocate_budget(project);
         let budget = option::extract(&mut project.launch_state.token_fund);
         transfer::public_transfer(budget, project.owner);
@@ -532,10 +542,10 @@ module seapad::project {
 
 
     /// - make sure token deposit match the market cap & swap ratio
-    public fun deposit_by_owner<COIN, TOKEN>(coins: vector<Coin<TOKEN>>,
-                                             value: u64,
-                                             project: &mut Project<COIN, TOKEN>,
-                                             ctx: &mut TxContext) {
+    public fun deposit_by_owner<COIN>(coins: vector<Coin<COIN>>,
+                                      value: u64,
+                                      project: &mut Project<COIN>,
+                                      ctx: &mut TxContext) {
         validate_deposit(project, ctx);
 
         let launchstate = &mut project.launch_state;
@@ -555,14 +565,14 @@ module seapad::project {
         })
     }
 
-    public fun claim_token<COIN, TOKEN>(project: &mut Project<COIN, TOKEN>, ctx: &mut TxContext) {
+    public fun claim_token<COIN>(project: &mut Project<COIN>, ctx: &mut TxContext) {
         validate_vest_token(project);
-        let sender = sender(ctx);
+        let user_ = sender(ctx);
         let launchstate = &mut project.launch_state;
         let order_book = &mut launchstate.order_book;
 
-        assert!(table::contains(order_book, sender), ENoOrder);
-        let order = table::borrow_mut(order_book, sender);
+        assert!(table::contains(order_book, user_), ENoOrder);
+        let order = table::borrow_mut(order_book, user_);
 
         let vesting = &mut project.vesting;
         let milestones = &vesting.milestones;
@@ -570,13 +580,12 @@ module seapad::project {
         let total_percent = if (vector::is_empty(milestones)) {
             1000
         }else {
-            let i = 0;
-            let n = vector::length(milestones);
+            let (i, n) = (0, vector::length(milestones));
             let sum = 0;
 
             while (i < n) {
                 let milestone = vector::borrow(milestones, i);
-                if (tx_context::epoch(ctx) >= milestone.time) {
+                if (milestone.active) {
                     sum = sum + milestone.percent;
                 }else {
                     break
@@ -589,13 +598,15 @@ module seapad::project {
         let more_token = order.token_amount / 1000 * (total_percent as u64);
         let more_token_actual = more_token - order.token_released;
 
-        assert!(more_token_actual > 0, EClaimDone);
+        assert!(more_token_actual > 0, EClaimZero);
         order.token_released = order.token_released + more_token_actual;
-        let token = coin::split<TOKEN>(option::borrow_mut(&mut launchstate.token_fund), more_token_actual, ctx);
-        transfer::public_transfer(token, sender);
+        let token = coin::split<COIN>(option::borrow_mut(&mut launchstate.token_fund), more_token_actual, ctx);
+        transfer::public_transfer(token, user_);
+
+        event::emit(ClaimTokenEvent{project: object::id_address(project), user: user_, token_amount: more_token_actual})
     }
 
-    public fun claim_refund<COIN, TOKEN>(project: &mut Project<COIN, TOKEN>, ctx: &mut TxContext) {
+    public fun claim_refund<COIN>(project: &mut Project<COIN>, ctx: &mut TxContext) {
         validate_refund(project);
         let sender = sender(ctx);
         let order_book = &mut project.launch_state.order_book;
@@ -603,53 +614,60 @@ module seapad::project {
         let amount_fund = order.coin_amount;
         let coin_fund = coin::split(option::borrow_mut(&mut project.launch_state.coin_raised), amount_fund, ctx);
         transfer::public_transfer(coin_fund, sender);
+        event::emit(ClaimRefundEvent{project: object::id_address(project), user: sender, coin_fund: amount_fund})
     }
 
-    fun get_max_allocate<COIN, TOKEN>(user: address, launchstate: &LaunchState<COIN, TOKEN>): u64 {
-        let max_allocation = &launchstate.max_allocations;
-        let max_allocate = if (table::contains(max_allocation, user)) {
-            table::borrow<address, u64>(max_allocation, user)
-        }else {
-            &launchstate.default_max_allocate
-        };
-
-        *max_allocate
-    }
-
-    public fun swap_token<COIN, TOKEN>(coin_value: u64, project: &Project<COIN, TOKEN>): u64 {
-        let swap_ratio_coin = project.launch_state.swap_ratio_coin;
-        let swap_ratio_token = project.launch_state.swap_ratio_token;
-
-        let ratio_coin = math::pow(10, project.decimal_coin) / swap_ratio_coin;
-        let ratio_token = math::pow(10, project.decimal_token) / swap_ratio_token;
-
-        let token_value = if (ratio_coin >= ratio_token) {
-            coin_value * (ratio_coin / ratio_token)
-        }else {
-            let delta = ratio_token - ratio_coin;
-            while (delta % 10 == 0 && ratio_token % 10 == 0) {
-                delta = delta / 10;
-                ratio_token = ratio_token / 10;
-            };
-            coin_value - (coin_value * delta) / ratio_token
-        };
-
-        token_value
-    }
-
-    //==========================================Start Community Area=======================================
-    public fun vote<COIN, TOKEN>(project: &mut Project<COIN, TOKEN>, ctx: &mut TxContext) {
+    public fun vote<COIN>(project: &mut Project<COIN>, ctx: &mut TxContext) {
         let com = &mut project.community;
         let voter_address = sender(ctx);
         assert!(vec_set::contains(&mut com.voters, &voter_address), EVoted);
         com.total_vote = com.total_vote + 1;
         vec_set::insert(&mut com.voters, voter_address);
     }
-    //==========================================End Community Area=========================================
 
 
-    //==========================================Start Validate Area========================================
-    fun validate_start_fund_raising<COIN, TOKEN>(project: &mut Project<COIN, TOKEN>) {
+    // internal functions
+    fun get_max_allocate<COIN>(user: address, max_allocation: &Table<address, u64>, default: &u64): u64 {
+        let max_allocate = if (table::contains(max_allocation, user)) {
+            table::borrow<address, u64>(max_allocation, user)
+        }else {
+            default
+        };
+
+        *max_allocate
+    }
+
+    fun swap_token<COIN>(coin_value: u64, project: &Project<COIN>): u64 {
+        let swap_ratio_coin = project.launch_state.swap_ratio_coin;
+        let swap_ratio_token = project.launch_state.swap_ratio_token;
+
+        let ratio_coin = math::pow(10, SUI_DECIMALS) / swap_ratio_coin;
+        let ratio_token = math::pow(10, project.token_metadata.decimals) / swap_ratio_token;
+        let token_value = (coin_value as u128) * (ratio_coin as u128) / (ratio_token as u128);
+
+        (token_value as u64)
+    }
+
+    fun flat_token_metadata<COIN>(coin_metadata: &CoinMetadata<COIN>): TokenMetadata {
+        let icon_opt = coin::get_icon_url(coin_metadata);
+        let icon = vector::empty<u8>();
+        if (option::is_some(&icon_opt)) {
+            let url = *ascii::as_bytes(&url::inner_url(&option::extract(&mut icon_opt)));
+            vector::append(&mut icon, url);
+        };
+
+        TokenMetadata {
+            coin_metadata: object::id_address(coin_metadata),
+            name: *string::bytes(&mut coin::get_name(coin_metadata)),
+            symbol: *ascii::as_bytes(&mut coin::get_symbol(coin_metadata)),
+            description: *string::bytes(&mut coin::get_description(coin_metadata)),
+            decimals: coin::get_decimals(coin_metadata),
+            icon_url: icon
+        }
+    }
+
+
+    fun validate_start_fund_raising<COIN>(project: &mut Project<COIN>) {
         let launchstate = &project.launch_state;
         let state = launchstate.state;
 
@@ -666,15 +684,12 @@ module seapad::project {
 
     /// -make sure that sum of all milestone is <= 100%
     /// -time is ordered min --> max, is valid, should be offset
-    fun validate_mile_stones(milestones: &vector<VestingMileStone>, now: u64) {
-        let i = 0;
-        let n = vector::length(milestones);
+    fun validate_mile_stones(milestones: &vector<VestingMileStone>) {
         let total_percent = 0;
-
+        let (i, n) = (0, vector::length(milestones));
         while (i < n) {
             let milestone = vector::borrow(milestones, i);
             assert!(milestone.percent <= 1000, EInvalidPercent);
-            assert!(milestone.time >= now, EInvalidTimeVest);
             if (i < n - 1) {
                 let next = vector::borrow(milestones, i + 1);
                 assert!(milestone.time < next.time, ETimeGENext);
@@ -685,7 +700,7 @@ module seapad::project {
         assert!(total_percent <= 1000, EExceedPercent);
     }
 
-    fun validate_state_for_buy<COIN, TOKEN>(project: &mut Project<COIN, TOKEN>, senderAddr: address) {
+    fun validate_state_for_buy<COIN>(project: &mut Project<COIN>, senderAddr: address) {
         assert!(project.launch_state.state == ROUND_STATE_RASING, EInvalidRoundState);
         if (project.use_whitelist) {
             let whitelist = dynamic_field::borrow<vector<u8>, VecSet<address>>(&project.id, WHITELIST);
@@ -693,35 +708,39 @@ module seapad::project {
         }
     }
 
-    fun validate_vest_token<COIN, TOKEN>(project: &mut Project<COIN, TOKEN>) {
+    fun validate_vest_token<COIN>(project: &mut Project<COIN>) {
         assert!(project.launch_state.state == ROUND_STATE_CLAIMING, EInvalidRoundState);
     }
 
-    fun validate_refund<COIN, TOKEN>(project: &mut Project<COIN, TOKEN>) {
+    fun validate_refund<COIN>(project: &mut Project<COIN>) {
         assert!(project.launch_state.state == ROUND_STATE_REFUNDING, EInvalidRoundState);
     }
 
-    fun validate_allocate_budget<COIN, TOKEN>(project: &mut Project<COIN, TOKEN>) {
+    fun validate_end_fund_rasing<COIN>(project: &mut Project<COIN>){
+        assert!(project.launch_state.state == ROUND_STATE_RASING, EInvalidRoundState);
+    }
+
+    fun validate_allocate_budget<COIN>(project: &mut Project<COIN>) {
         let state = project.launch_state.state;
         assert!(state == ROUND_STATE_END_REFUND || state == ROUND_STATE_CLAIMING, EInvalidRoundState);
     }
 
-    fun validate_deposit<COIN, TOKEN>(project: &mut Project<COIN, TOKEN>, ctx: &mut TxContext) {
+    fun validate_deposit<COIN>(project: &mut Project<COIN>, ctx: &mut TxContext) {
         let state = project.launch_state.state;
         assert!(state == ROUND_STATE_INIT, EInvalidRoundState);
         assert!(sender(ctx) == project.owner, ENotOwner);
     }
-    //==========================================End Validate Area==========================================
 
 
-    //==========================================Start Event Area===========================================
-    fun build_event_create_project<COIN, TOKEN>(project: &Project<COIN, TOKEN>): ProjectCreatedEvent {
+    // Events
+    fun build_event_create_project<COIN>(project: &Project<COIN>): ProjectCreatedEvent {
         let event = ProjectCreatedEvent {
             project: id_address(project),
             state: project.launch_state.state,
             usewhitelist: project.use_whitelist,
             vesting_type: project.vesting.type,
             vesting_milestones: project.vesting.milestones,
+            token_info: project.token_metadata.coin_metadata
         };
 
         event
@@ -749,9 +768,12 @@ module seapad::project {
         project: address,
         buyer: address,
         order_value: u64,
-        total_bought: u64,
+        order_bought: u64,
+        token_bought: u64,
+        more_token: u64,
         total_raised: u64,
         sold_out: bool,
+        participants: u64,
         epoch: u64
     }
 
@@ -779,7 +801,7 @@ module seapad::project {
 
     struct RefundClosedEvent has copy, drop {
         project: address,
-        token_refunded: u64,
+        coin_refunded: u64,
         epoch: u64
     }
 
@@ -795,6 +817,7 @@ module seapad::project {
         usewhitelist: bool,
         vesting_type: u8,
         vesting_milestones: vector<VestingMileStone>,
+        token_info: address
     }
 
     struct AddMaxAllocateEvent has copy, drop {
@@ -813,7 +836,18 @@ module seapad::project {
         old_owner: address,
         new_owner: address
     }
-    //==========================================Start Event Area==========================================
+
+    struct ClaimTokenEvent has copy, drop {
+        project: address,
+        user: address,
+        token_amount: u64
+    }
+
+    struct ClaimRefundEvent has copy, drop {
+        project: address,
+        user: address,
+        coin_fund: u64
+    }
 
 
     // For testing

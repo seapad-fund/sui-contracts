@@ -17,7 +17,7 @@ module seapad::spt {
     const NAME: vector<u8> = b"SPT";
     const DESCRIPTION: vector<u8> = b"Seapad launchpad foundation token";
     const DECIMAL: u8 = 9;
-    const ICON_URL: vector<u8> = b"https://docs.seapad.fund/icon.png";
+    const ICON_URL: vector<u8> = b"https://seapad.s3.ap-southeast-1.amazonaws.com/uploads/TEST/public/media/images/logo_1679906850804.png";
 
     struct SPT has drop {}
 
