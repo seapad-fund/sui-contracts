@@ -483,8 +483,11 @@ module seapad::project {
 
     public fun end_fund_raising<COIN>(_adminCap: &AdminCap, project: &mut Project<COIN>, ctx: &mut TxContext) {
         validate_end_fund_rasing(project);
-        let total_coin_raised = coin::value(option::borrow(&project.launch_state.coin_raised));
-
+        let total_coin_raised = if(option::is_none(&project.launch_state.coin_raised)) {
+            0;
+        } else {
+           coin::value(option::borrow(&project.launch_state.coin_raised));
+        }
         if (total_coin_raised < project.launch_state.soft_cap) {
             project.launch_state.state = ROUND_STATE_REFUNDING; //start refund
         }else {
