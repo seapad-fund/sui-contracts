@@ -4,6 +4,7 @@ module seapad::project_entries {
     use sui::coin::{CoinMetadata, Coin};
     use seapad::project;
     use std::vector;
+    use sui::clock::Clock;
 
     public entry fun change_admin(adminCap: AdminCap, to: address) {
         project::change_admin(adminCap, to);
@@ -29,16 +30,13 @@ module seapad::project_entries {
     public entry fun add_milestone<COIN, TOKEN>(_adminCap: &AdminCap,
                                                 project: &mut Project<COIN, TOKEN>,
                                                 time: u64,
-                                                percent: u64) {
-        project::add_milestone<COIN, TOKEN>(_adminCap, project, time, percent);
+                                                percent: u64,
+                                                clock: &Clock) {
+        project::add_milestone<COIN, TOKEN>(_adminCap, project, time, percent, clock);
     }
 
     public entry fun reset_milestone<COIN, TOKEN>(_adminCap: &AdminCap, project: &mut Project<COIN, TOKEN>) {
         project::reset_milestone<COIN, TOKEN>(_adminCap, project);
-    }
-
-    public fun active_milestone<COIN, TOKEN>(_adminCap: &AdminCap, time: u64, project: &mut Project<COIN, TOKEN>) {
-        project::active_milestone<COIN, TOKEN>(_adminCap, time, project);
     }
 
     public entry fun setup_project<COIN, TOKEN>(_adminCap: &AdminCap,
@@ -52,7 +50,7 @@ module seapad::project_entries {
                                                 end_time: u64,
                                                 soft_cap: u64,
                                                 hard_cap: u64,
-                                                _ctx: &mut TxContext) {
+                                                clock: &Clock) {
         project::setup_project<COIN, TOKEN>(
             _adminCap,
             project,
@@ -65,7 +63,7 @@ module seapad::project_entries {
             end_time,
             soft_cap,
             hard_cap,
-            _ctx
+            clock
         );
     }
 
@@ -112,28 +110,31 @@ module seapad::project_entries {
     public entry fun start_fund_raising<COIN, TOKEN>(
         _adminCap: &AdminCap,
         project: &mut Project<COIN, TOKEN>,
+        clock: &Clock,
         ctx: &mut TxContext
     ) {
-        project::start_fund_raising<COIN, TOKEN>(_adminCap, project, ctx);
+        project::start_fund_raising<COIN, TOKEN>(_adminCap, project, clock, ctx);
     }
 
     public entry fun buy<COIN, TOKEN>(
         coin: Coin<COIN>,
         amount: u64,
         project: &mut Project<COIN, TOKEN>,
+        clock: &Clock,
         ctx: &mut TxContext
     ) {
         let coins = vector::empty<Coin<COIN>>();
         vector::push_back(&mut coins, coin);
-        project::buy<COIN, TOKEN>(coins, amount, project, ctx);
+        project::buy<COIN, TOKEN>(coins, amount, project, clock, ctx);
     }
 
     public entry fun end_fund_raising<COIN, TOKEN>(
         _adminCap: &AdminCap,
         project: &mut Project<COIN, TOKEN>,
+        clock: &Clock,
         ctx: &mut TxContext
     ) {
-        project::end_fund_raising<COIN, TOKEN>(_adminCap, project, ctx);
+        project::end_fund_raising<COIN, TOKEN>(_adminCap, project, clock, ctx);
     }
 
     public entry fun end_refund<COIN, TOKEN>(
@@ -171,8 +172,8 @@ module seapad::project_entries {
         project::deposit_by_owner<COIN, TOKEN>(tokens, value, project, ctx);
     }
 
-    public entry fun claim_token<COIN, TOKEN>(project: &mut Project<COIN, TOKEN>, ctx: &mut TxContext) {
-        project::claim_token<COIN, TOKEN>(project, ctx);
+    public entry fun claim_token<COIN, TOKEN>(project: &mut Project<COIN, TOKEN>, clock: &Clock, ctx: &mut TxContext) {
+        project::claim_token<COIN, TOKEN>(project, clock, ctx);
     }
 
     public entry fun claim_refund<COIN, TOKEN>(project: &mut Project<COIN, TOKEN>, ctx: &mut TxContext) {

@@ -158,20 +158,20 @@ module seapad::project_test {
         deposit_to_project_(OWNER_PROJECT, 5000000000000, scenario);
         start_fund_raising_(scenario, &clock);
 
-        let coin_buy = if(TOKEN_DECIMAL >= COIN_DECIMAL){
+        let coin_buy = if (TOKEN_DECIMAL >= COIN_DECIMAL) {
             500000000000 * math::pow(10, TOKEN_DECIMAL - COIN_DECIMAL)
-        }else{
+        }else {
             500000000000 / math::pow(10, COIN_DECIMAL - TOKEN_DECIMAL)
         };
 
-        buy_token_(USER2, 500000000000, scenario, &clock);//pass
-        buy_token_(USER3, 500000000000, scenario, &clock);//failed out of hard_card
-        buy_token_(USER4, 500000000000, scenario, &clock);//failed out of hard_card
-        buy_token_(USER5, 500000000000, scenario, &clock);//failed out of hard_card
-        buy_token_(USER6, 500000000000, scenario, &clock);//failed out of hard_card
-        buy_token_(USER7, 500000000000, scenario, &clock);//failed out of hard_card
-        buy_token_(USER8, 500000000000, scenario, &clock);//failed out of hard_card
-        buy_token_(USER9, 500000000000, scenario, &clock);//failed out of hard_card
+        buy_token_(USER2, coin_buy, scenario, &clock);//pass
+        buy_token_(USER3, coin_buy, scenario, &clock);//failed out of hard_card
+        buy_token_(USER4, coin_buy, scenario, &clock);//failed out of hard_card
+        buy_token_(USER5, coin_buy, scenario, &clock);//failed out of hard_card
+        buy_token_(USER6, coin_buy, scenario, &clock);//failed out of hard_card
+        buy_token_(USER7, coin_buy, scenario, &clock);//failed out of hard_card
+        buy_token_(USER8, coin_buy, scenario, &clock);//failed out of hard_card
+        buy_token_(USER9, coin_buy, scenario, &clock);//failed out of hard_card
 
         test_scenario::return_shared(clock);
 
@@ -336,7 +336,7 @@ module seapad::project_test {
         let coin_buy = 500000000000;
         clock::increment_for_testing(&mut clock, 1000);
         buy_token_(USER2, coin_buy, scenario, &clock);
-        end_fund_raising_(scenario,&clock);
+        end_fund_raising_(scenario, &clock);
 
         //refund coin to user
         test_scenario::next_tx(scenario, USER2);
@@ -415,7 +415,6 @@ module seapad::project_test {
         {
             let admin_cap = test_scenario::take_from_sender<AdminCap>(scenario);
             let project = test_scenario::take_shared<Project<USDT, SPT>>(scenario);
-            let ctx = test_scenario::ctx(scenario);
 
             project::setup_project<USDT, SPT>(
                 &admin_cap,
@@ -448,7 +447,7 @@ module seapad::project_test {
     fun reset_milestone_(scenario: &mut Scenario) {
         test_scenario::next_tx(scenario, ADMIN);
         let admin_cap = test_scenario::take_from_sender<AdminCap>(scenario);
-        let ido = test_scenario::take_shared<Project<SPT>>(scenario);
+        let ido = test_scenario::take_shared<Project<USDT, SPT>>(scenario);
         project::reset_milestone(&admin_cap, &mut ido);
         test_scenario::return_to_sender(scenario, admin_cap);
         test_scenario::return_shared(ido);
@@ -544,7 +543,7 @@ module seapad::project_test {
         }
     }
 
-    fun receive_token_(user: address, scenario: &mut Scenario) {
+    fun receive_token_(user: address, scenario: &mut Scenario, clock: &Clock) {
         test_scenario::next_tx(scenario, user);
         let ido = test_scenario::take_shared<Project<USDT, SPT>>(scenario);
         let ctx = test_scenario::ctx(scenario);
