@@ -7,6 +7,8 @@ module seapad::project_test {
     use sui::coin::{Self, CoinMetadata, Coin};
     use sui::sui::SUI;
     use sui::test_scenario::{Self, Scenario};
+    use sui::clock;
+    use sui::clock::Clock;
 
     const ADMIN: address = @0xC0FFEE;
     const TOKEN_MINT_TEST: u64 = 1000000000000000;
@@ -45,8 +47,12 @@ module seapad::project_test {
     fun test_update_project() {
         let scenario_val = scenario();
         let scenario = &mut scenario_val;
+        create_clock_time_(scenario);
+        test_scenario::next_tx(scenario, ADMIN);
+        let clock = test_scenario::take_shared<Clock>(scenario);
         create_project_(scenario);
-        setup_launch_state_(scenario, 1, true);
+        setup_launch_state_(scenario, 1, true, &clock);
+        test_scenario::return_shared(clock);
         test_scenario::end(scenario_val);
     }
 
@@ -54,16 +60,20 @@ module seapad::project_test {
     fun test_add_milestone() {
         let scenario_val = scenario();
         let scenario = &mut scenario_val;
-        create_project_(scenario);
-        setup_launch_state_(scenario, 1, true);
+        create_clock_time_(scenario);
+        test_scenario::next_tx(scenario, ADMIN);
 
-        add_milestone_(1000, 750, scenario);//alway pass
-        add_milestone_(2000, 250, scenario);//must pass
+        let clock = test_scenario::take_shared<Clock>(scenario);
+        create_project_(scenario);
+        setup_launch_state_(scenario, 1, true, &clock);
+
+        add_milestone_(3500, 750, scenario, &clock);//alway pass
+        add_milestone_(4000, 250, scenario, &clock);//must pass
 
         reset_milestone_(scenario);
-        add_milestone_(1000, 1000, scenario);//alway pass
+        add_milestone_(3500, 1000, scenario, &clock);//alway pass
 
-
+        test_scenario::return_shared(clock);
         test_scenario::end(scenario_val);
     }
 
@@ -72,14 +82,19 @@ module seapad::project_test {
     fun test_add_milestone_must_failure() {
         let scenario_val = scenario();
         let scenario = &mut scenario_val;
+        create_clock_time_(scenario);
+        test_scenario::next_tx(scenario, ADMIN);
+
+        let clock = test_scenario::take_shared<Clock>(scenario);
         create_project_(scenario);
-        setup_launch_state_(scenario, 1, true);
+        setup_launch_state_(scenario, 1, true, &clock);
 
-        add_milestone_(1000, 750, scenario);//alway pass
-        add_milestone_(2000, 250, scenario);//must pass
-        add_milestone_(900, 250, scenario);//must failed
-        add_milestone_(2000, 300, scenario);//must failed
+        add_milestone_(1000, 750, scenario, &clock);//alway pass
+        add_milestone_(2000, 250, scenario, &clock);//must pass
+        add_milestone_(900, 250, scenario, &clock);//must failed
+        add_milestone_(2000, 300, scenario, &clock);//must failed
 
+        test_scenario::return_shared(clock);
         test_scenario::end(scenario_val);
     }
 
@@ -87,11 +102,18 @@ module seapad::project_test {
     fun test_fundraising_project() {
         let scenario_val = scenario();
         let scenario = &mut scenario_val;
-        create_project_(scenario);
-        setup_launch_state_(scenario, 1, false);
-        deposit_to_project_(OWNER_PROJECT, 5000000000000, scenario);
-        start_fund_raising_(scenario);
+        create_clock_time_(scenario);
+        test_scenario::next_tx(scenario, ADMIN);
 
+        let clock = test_scenario::take_shared<Clock>(scenario);
+
+        create_project_(scenario);
+        setup_launch_state_(scenario, 1, false, &clock);
+        deposit_to_project_(OWNER_PROJECT, 5000000000000, scenario);
+        clock::increment_for_testing(&mut clock, 1000);
+        start_fund_raising_(scenario, &clock);
+
+        test_scenario::return_shared(clock);
         test_scenario::end(scenario_val);
     }
 
@@ -99,15 +121,20 @@ module seapad::project_test {
     fun test_buy_token() {
         let scenario_val = scenario();
         let scenario = &mut scenario_val;
+        create_clock_time_(scenario);
+        test_scenario::next_tx(scenario, ADMIN);
+        let clock = test_scenario::take_shared<Clock>(scenario);
+
         create_project_(scenario);
-        setup_launch_state_(scenario, 1, false);
+        setup_launch_state_(scenario, 1, false, &clock);
         deposit_to_project_(OWNER_PROJECT, 5000000000000, scenario);
-        start_fund_raising_(scenario);
 
-        buy_token_(OWNER_PROJECT, 500000000000, scenario);//pass
-        buy_token_(USER2, 500000000000, scenario);//pass
+        clock::increment_for_testing(&mut clock, 1000);
+        start_fund_raising_(scenario, &clock);
+        buy_token_(OWNER_PROJECT, 500000000000, scenario, &clock);//pass
+        buy_token_(USER2, 500000000000, scenario, &clock);//pass
 
-
+        test_scenario::return_shared(clock);
         test_scenario::end(scenario_val);
     }
 
@@ -116,19 +143,26 @@ module seapad::project_test {
     fun test_buy_token_out_of_hardcap() {
         let scenario_val = scenario();
         let scenario = &mut scenario_val;
-        create_project_(scenario);
-        setup_launch_state_(scenario, 1, false);
-        deposit_to_project_(OWNER_PROJECT, 5000000000000, scenario);
-        start_fund_raising_(scenario);
+        create_clock_time_(scenario);
+        test_scenario::next_tx(scenario, ADMIN);
 
-        buy_token_(USER2, 500000000000, scenario);//pass
-        buy_token_(USER3, 500000000000, scenario);//failed out of hard_card
-        buy_token_(USER4, 500000000000, scenario);//failed out of hard_card
-        buy_token_(USER5, 500000000000, scenario);//failed out of hard_card
-        buy_token_(USER6, 500000000000, scenario);//failed out of hard_card
-        buy_token_(USER7, 500000000000, scenario);//failed out of hard_card
-        buy_token_(USER8, 500000000000, scenario);//failed out of hard_card
-        buy_token_(USER9, 500000000000, scenario);//failed out of hard_card
+        let clock = test_scenario::take_shared<Clock>(scenario);
+
+        create_project_(scenario);
+        setup_launch_state_(scenario, 1, false, &clock);
+        deposit_to_project_(OWNER_PROJECT, 5000000000000, scenario);
+        start_fund_raising_(scenario, &clock);
+
+        buy_token_(USER2, 500000000000, scenario, &clock);//pass
+        buy_token_(USER3, 500000000000, scenario, &clock);//failed out of hard_card
+        buy_token_(USER4, 500000000000, scenario, &clock);//failed out of hard_card
+        buy_token_(USER5, 500000000000, scenario, &clock);//failed out of hard_card
+        buy_token_(USER6, 500000000000, scenario, &clock);//failed out of hard_card
+        buy_token_(USER7, 500000000000, scenario, &clock);//failed out of hard_card
+        buy_token_(USER8, 500000000000, scenario, &clock);//failed out of hard_card
+        buy_token_(USER9, 500000000000, scenario, &clock);//failed out of hard_card
+
+        test_scenario::return_shared(clock);
 
         test_scenario::end(scenario_val);
     }
@@ -138,15 +172,22 @@ module seapad::project_test {
     fun test_buy_token_exceed_max_allocate() {
         let scenario_val = scenario();
         let scenario = &mut scenario_val;
+        create_clock_time_(scenario);
+        test_scenario::next_tx(scenario, ADMIN);
+
+        let clock = test_scenario::take_shared<Clock>(scenario);
+
         create_project_(scenario);
-        setup_launch_state_(scenario, 1, false);
+        setup_launch_state_(scenario, 1, false, &clock);
         deposit_to_project_(OWNER_PROJECT, 5000000000000, scenario);
-        start_fund_raising_(scenario);
+        start_fund_raising_(scenario, &clock);
 
         add_max_allocate_(USER2, MAX_ALLOCATE * 2, scenario);
         remove_max_allocate_(USER2, scenario);
-        buy_token_(OWNER_PROJECT, 500000000000, scenario);//pass
-        buy_token_(OWNER_PROJECT, 500000000000, scenario);//failed cause max allocate
+        buy_token_(OWNER_PROJECT, 500000000000, scenario, &clock);//pass
+        buy_token_(OWNER_PROJECT, 500000000000, scenario, &clock);//failed cause max allocate
+
+        test_scenario::return_shared(clock);
 
         test_scenario::end(scenario_val);
     }
@@ -155,16 +196,24 @@ module seapad::project_test {
     fun test_buy_token_max_allocate() {
         let scenario_val = scenario();
         let scenario = &mut scenario_val;
+        create_clock_time_(scenario);
+        test_scenario::next_tx(scenario, ADMIN);
+
+        let clock = test_scenario::take_shared<Clock>(scenario);
+
         create_project_(scenario);
-        setup_launch_state_(scenario, 1, false);
+        setup_launch_state_(scenario, 1, false, &clock);
         deposit_to_project_(OWNER_PROJECT, 5000000000000, scenario);
-        start_fund_raising_(scenario);
+
+        clock::increment_for_testing(&mut clock, 1000);
+        start_fund_raising_(scenario, &clock);
 
         add_max_allocate_(USER2, MAX_ALLOCATE * 2, scenario);
 
-        buy_token_(USER2, MAX_ALLOCATE, scenario);//pass
-        buy_token_(USER2, MAX_ALLOCATE, scenario);//pass
+        buy_token_(USER2, MAX_ALLOCATE, scenario, &clock);//pass
+        buy_token_(USER2, MAX_ALLOCATE, scenario, &clock);//pass
 
+        test_scenario::return_shared(clock);
         test_scenario::end(scenario_val);
     }
 
@@ -173,12 +222,21 @@ module seapad::project_test {
     fun test_buy_token_use_whitelist() {
         let scenario_val = scenario();
         let scenario = &mut scenario_val;
+        create_clock_time_(scenario);
+        test_scenario::next_tx(scenario, ADMIN);
+
+        let clock = test_scenario::take_shared<Clock>(scenario);
+
         create_project_(scenario);
-        setup_launch_state_(scenario, 1, true);
+        setup_launch_state_(scenario, 1, true, &clock);
         deposit_to_project_(OWNER_PROJECT, 5000000000000, scenario);
-        start_fund_raising_(scenario);
+
+        clock::increment_for_testing(&mut clock, 1000);
+        start_fund_raising_(scenario, &clock);
         add_whitelist_(USER2, scenario);
-        buy_token_(USER2, 500000000000, scenario);
+        buy_token_(USER2, 500000000000, scenario, &clock);
+
+        test_scenario::return_shared(clock);
 
         test_scenario::end(scenario_val);
     }
@@ -187,21 +245,29 @@ module seapad::project_test {
     fun test_claim_project() {
         let scenario_val = scenario();
         let scenario = &mut scenario_val;
+        create_clock_time_(scenario);
+        test_scenario::next_tx(scenario, ADMIN);
+
+        let clock = test_scenario::take_shared<Clock>(scenario);
+
         create_project_(scenario);
-        setup_launch_state_(scenario, 1, false);
+        setup_launch_state_(scenario, 1, false, &clock);
         deposit_to_project_(OWNER_PROJECT, 5000000000000, scenario);
-        start_fund_raising_(scenario);
+
+        clock::increment_for_testing(&mut clock, 1000);
+        start_fund_raising_(scenario, &clock);
 
         // add_whitelist_(USER1, scenario);
         let sui_buy = 500000000000;
-        buy_token_(USER2, sui_buy, scenario);
-        buy_token_(USER3, sui_buy, scenario);
-        end_fund_raising_(scenario);
+        buy_token_(USER2, sui_buy, scenario, &clock);
+        buy_token_(USER3, sui_buy, scenario, &clock);
+        end_fund_raising_(scenario, &clock);
 
         let percent = 500;
-        add_milestone_(0, percent, scenario);
-        active_milestone_(0, scenario);
-        receive_token_(USER2, scenario);
+        add_milestone_(4000, percent, scenario, &clock);
+
+        clock::increment_for_testing(&mut clock, 5000);
+        receive_token_(USER2, scenario, &clock);
 
         test_scenario::next_tx(scenario, USER2);
         {
@@ -233,7 +299,7 @@ module seapad::project_test {
             assert!(sui_value == 500000000000 * 2, 0);
             test_scenario::return_to_sender(scenario, sui_raised);
         };
-
+        test_scenario::return_shared(clock);
         test_scenario::end(scenario_val);
     }
 
@@ -241,17 +307,23 @@ module seapad::project_test {
     fun test_refund_project() {
         let scenario_val = scenario();
         let scenario = &mut scenario_val;
+        create_clock_time_(scenario);
+        test_scenario::next_tx(scenario, ADMIN);
+
+        let clock = test_scenario::take_shared<Clock>(scenario);
         create_project_(scenario);
-        setup_launch_state_(scenario, 1, false);
+        setup_launch_state_(scenario, 1, false, &clock);
 
         let deposit_value = 5000000000000;
         deposit_to_project_(OWNER_PROJECT, deposit_value, scenario);
-        start_fund_raising_(scenario);
+        clock::increment_for_testing(&mut clock, 1000);
+        start_fund_raising_(scenario, &clock);
 
         // add_whitelist_(USER1, scenario);
         let sui_buy = 500000000000;
-        buy_token_(USER2, sui_buy, scenario);
-        end_fund_raising_(scenario);
+        clock::increment_for_testing(&mut clock, 1000);
+        buy_token_(USER2, sui_buy, scenario, &clock);
+        end_fund_raising_(scenario,&clock);
 
         //refund sui to user
         test_scenario::next_tx(scenario, USER2);
@@ -288,6 +360,8 @@ module seapad::project_test {
             test_scenario::return_to_sender(scenario, stp_from_refund);
         };
 
+        test_scenario::return_shared(clock);
+
         test_scenario::end(scenario_val);
     }
 
@@ -316,14 +390,13 @@ module seapad::project_test {
         };
     }
 
-    fun setup_launch_state_(scenario: &mut Scenario, round: u8, usewhitelist: bool) {
+    fun setup_launch_state_(scenario: &mut Scenario, round: u8, usewhitelist: bool, clock: &Clock) {
         create_project_(scenario);
 
         test_scenario::next_tx(scenario, ADMIN);
         {
             let admin_cap = test_scenario::take_from_sender<AdminCap>(scenario);
             let project = test_scenario::take_shared<Project<SPT>>(scenario);
-            let ctx = test_scenario::ctx(scenario);
 
             project::setup_project<SPT>(
                 &admin_cap,
@@ -333,31 +406,22 @@ module seapad::project_test {
                 SWAP_RATIO_SUI,
                 SWAP_RATIO_TOKEN,
                 MAX_ALLOCATE,
-                0,
-                0,
+                1000,
+                3000,
                 SOFT_CAP,
                 HARD_CAP,
-                ctx);
+                clock);
 
             test_scenario::return_to_sender(scenario, admin_cap);
             test_scenario::return_shared(project);
         };
     }
 
-    fun add_milestone_(time: u64, percent: u64, scenario: &mut Scenario) {
+    fun add_milestone_(time: u64, percent: u64, scenario: &mut Scenario, clock: &Clock) {
         test_scenario::next_tx(scenario, ADMIN);
         let admin_cap = test_scenario::take_from_sender<AdminCap>(scenario);
         let ido = test_scenario::take_shared<Project<SPT>>(scenario);
-        project::add_milestone(&admin_cap, &mut ido, time, percent);
-        test_scenario::return_to_sender(scenario, admin_cap);
-        test_scenario::return_shared(ido);
-    }
-
-    fun active_milestone_(time: u64, scenario: &mut Scenario) {
-        test_scenario::next_tx(scenario, ADMIN);
-        let admin_cap = test_scenario::take_from_sender<AdminCap>(scenario);
-        let ido = test_scenario::take_shared<Project<SPT>>(scenario);
-        project::active_milestone(&admin_cap, time, &mut ido);
+        project::add_milestone(&admin_cap, &mut ido, time, percent, clock);
         test_scenario::return_to_sender(scenario, admin_cap);
         test_scenario::return_shared(ido);
     }
@@ -371,25 +435,25 @@ module seapad::project_test {
         test_scenario::return_shared(ido);
     }
 
-    fun start_fund_raising_(scenario: &mut Scenario) {
+    fun start_fund_raising_(scenario: &mut Scenario, clock: &Clock) {
         test_scenario::next_tx(scenario, ADMIN);
         let admin_cap = test_scenario::take_from_sender<AdminCap>(scenario);
         let ido = test_scenario::take_shared<Project<SPT>>(scenario);
         let ctx = test_scenario::ctx(scenario);
 
-        project::start_fund_raising(&admin_cap, &mut ido, ctx);
+        project::start_fund_raising(&admin_cap, &mut ido, clock, ctx);
 
         test_scenario::return_to_sender(scenario, admin_cap);
         test_scenario::return_shared(ido);
     }
 
-    fun end_fund_raising_(scenario: &mut Scenario) {
+    fun end_fund_raising_(scenario: &mut Scenario, clock: &Clock) {
         test_scenario::next_tx(scenario, ADMIN);
         let admin_cap = test_scenario::take_from_sender<AdminCap>(scenario);
         let ido = test_scenario::take_shared<Project<SPT>>(scenario);
         let ctx = test_scenario::ctx(scenario);
 
-        project::end_fund_raising(&admin_cap, &mut ido, ctx);
+        project::end_fund_raising(&admin_cap, &mut ido, clock, ctx);
 
         test_scenario::return_to_sender(scenario, admin_cap);
         test_scenario::return_shared(ido);
@@ -429,7 +493,7 @@ module seapad::project_test {
         };
     }
 
-    fun buy_token_(user: address, value: u64, scenario: &mut Scenario) {
+    fun buy_token_(user: address, value: u64, scenario: &mut Scenario, clock: &Clock) {
         test_scenario::next_tx(scenario, user);
         {
             let project = test_scenario::take_shared<Project<SPT>>(scenario);
@@ -438,7 +502,7 @@ module seapad::project_test {
             vector::push_back(&mut suis, coin::mint_for_testing<SUI>(TOKEN_MINT_TEST, ctx));
             vector::push_back(&mut suis, coin::mint_for_testing<SUI>(0, ctx));
 
-            project::buy(suis, value, &mut project, ctx);
+            project::buy(suis, value, &mut project, clock, ctx);
 
             test_scenario::return_shared(project);
         };
@@ -461,12 +525,12 @@ module seapad::project_test {
         }
     }
 
-    fun receive_token_(user: address, scenario: &mut Scenario) {
+    fun receive_token_(user: address, scenario: &mut Scenario, clock: &Clock) {
         test_scenario::next_tx(scenario, user);
         let ido = test_scenario::take_shared<Project<SPT>>(scenario);
         let ctx = test_scenario::ctx(scenario);
 
-        project::claim_token(&mut ido, ctx);
+        project::claim_token(&mut ido, clock, ctx);
 
         test_scenario::return_shared(ido);
     }
@@ -493,6 +557,12 @@ module seapad::project_test {
 
         test_scenario::return_shared(project);
         test_scenario::return_to_sender(scenario, admin_cap);
+    }
+
+    fun create_clock_time_(scenario: &mut Scenario) {
+        test_scenario::next_tx(scenario, ADMIN);
+        let ctx = test_scenario::ctx(scenario);
+        clock::create_for_testing(ctx);
     }
 }
 

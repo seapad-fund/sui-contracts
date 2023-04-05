@@ -5,6 +5,7 @@ module seapad::project_entries {
     use seapad::project;
     use sui::sui::SUI;
     use std::vector;
+    use sui::clock::Clock;
 
     public entry fun change_admin(adminCap: AdminCap, to: address) {
         project::change_admin(adminCap, to);
@@ -18,24 +19,22 @@ module seapad::project_entries {
         project::create_project(_adminCap, owner, vesting_type, coin_metadata, ctx);
     }
 
-    public entry fun change_owner<COIN>(admin_cap: &AdminCap, new_owner: address, project: &mut Project<COIN>){
+    public entry fun change_owner<COIN>(admin_cap: &AdminCap, new_owner: address, project: &mut Project<COIN>) {
         project::change_owner<COIN>(admin_cap, new_owner, project);
     }
 
     public entry fun add_milestone<COIN>(_adminCap: &AdminCap,
                                          project: &mut Project<COIN>,
                                          time: u64,
-                                         percent: u64){
-        project::add_milestone<COIN>(_adminCap, project, time, percent);
+                                         percent: u64,
+                                         clock: &Clock) {
+        project::add_milestone<COIN>(_adminCap, project, time, percent, clock);
     }
 
     public entry fun reset_milestone<COIN>(_adminCap: &AdminCap, project: &mut Project<COIN>) {
         project::reset_milestone<COIN>(_adminCap, project);
     }
 
-    public fun active_milestone<COIN>(_adminCap: &AdminCap, time: u64, project: &mut Project<COIN>){
-        project::active_milestone<COIN>(_adminCap, time, project);
-    }
 
     public entry fun setup_project<COIN>(_adminCap: &AdminCap,
                                          project: &mut Project<COIN>,
@@ -48,9 +47,20 @@ module seapad::project_entries {
                                          end_time: u64,
                                          soft_cap: u64,
                                          hard_cap: u64,
-                                         _ctx: &mut TxContext) {
-        project::setup_project<COIN>(_adminCap, project, round, usewhitelist, swap_ratio_sui, swap_ratio_token, max_allocate, start_time, end_time, soft_cap, hard_cap, _ctx);
-
+                                         clock: &Clock) {
+        project::setup_project<COIN>(
+            _adminCap,
+            project,
+            round,
+            usewhitelist,
+            swap_ratio_sui,
+            swap_ratio_token,
+            max_allocate,
+            start_time,
+            end_time,
+            soft_cap,
+            hard_cap,
+            clock);
     }
 
     public entry fun add_max_allocate<COIN>(admin_cap: &AdminCap,
@@ -88,49 +98,76 @@ module seapad::project_entries {
 
     public entry fun remove_whitelist<COIN>(_adminCap: &AdminCap,
                                             project: &mut Project<COIN>,
-                                            user_list: vector<address>,
-                                            _ctx: &mut TxContext) {
-        project::remove_whitelist<COIN>(_adminCap, project, user_list, _ctx);
+                                            user_list: vector<address>) {
+        project::remove_whitelist<COIN>(_adminCap, project, user_list);
     }
 
-    public entry fun start_fund_raising<COIN>(_adminCap: &AdminCap, project: &mut Project<COIN>, ctx: &mut TxContext) {
-        project::start_fund_raising<COIN>(_adminCap, project, ctx);
-
+    public entry fun start_fund_raising<COIN>(
+        _adminCap: &AdminCap,
+        project: &mut Project<COIN>,
+        clock: &Clock,
+        ctx: &mut TxContext
+    ) {
+        project::start_fund_raising<COIN>(_adminCap, project, clock, ctx);
     }
 
-    public entry fun buy<COIN>(sui: Coin<SUI>, amount: u64, project: &mut Project<COIN>, ctx: &mut TxContext) {
+    public entry fun buy<COIN>(
+        sui: Coin<SUI>,
+        amount: u64,
+        project: &mut Project<COIN>,
+        clock: &Clock,
+        ctx: &mut TxContext
+    ) {
         let suis = vector::empty<Coin<SUI>>();
         vector::push_back(&mut suis, sui);
-        project::buy<COIN>(suis, amount, project, ctx);
+        project::buy<COIN>(suis, amount, project, clock, ctx);
     }
 
-    public entry fun end_fund_raising<COIN>(_adminCap: &AdminCap, project: &mut Project<COIN>, ctx: &mut TxContext) {
-        project::end_fund_raising<COIN>(_adminCap, project, ctx);
+    public entry fun end_fund_raising<COIN>(
+        _adminCap: &AdminCap,
+        project: &mut Project<COIN>,
+        clock: &Clock,
+        ctx: &mut TxContext
+    ) {
+        project::end_fund_raising<COIN>(_adminCap, project, clock, ctx);
     }
 
     public entry fun end_refund<COIN>(_adminCap: &AdminCap, project: &mut Project<COIN>, ctx: &mut TxContext) {
         project::end_refund<COIN>(_adminCap, project, ctx);
     }
 
-    public entry fun distribute_raised_fund<COIN>(_adminCap: &AdminCap, project: &mut Project<COIN>, ctx: &mut TxContext) {
+    public entry fun distribute_raised_fund<COIN>(
+        _adminCap: &AdminCap,
+        project: &mut Project<COIN>,
+        ctx: &mut TxContext
+    ) {
         project::distribute_raised_fund<COIN>(_adminCap, project, ctx);
     }
 
-    public entry fun refund_token_to_owner<COIN>(_adminCap: &AdminCap, project: &mut Project<COIN>, ctx: &mut TxContext) {
+    public entry fun refund_token_to_owner<COIN>(
+        _adminCap: &AdminCap,
+        project: &mut Project<COIN>,
+        ctx: &mut TxContext
+    ) {
         project::refund_token_to_owner<COIN>(_adminCap, project, ctx);
     }
 
-    public entry fun deposit_by_owner<COIN>(coin: Coin<COIN>, value: u64, project: &mut Project<COIN>, ctx: &mut TxContext) {
+    public entry fun deposit_by_owner<COIN>(
+        coin: Coin<COIN>,
+        value: u64,
+        project: &mut Project<COIN>,
+        ctx: &mut TxContext
+    ) {
         let coins = vector::empty<Coin<COIN>>();
         vector::push_back(&mut coins, coin);
         project::deposit_by_owner<COIN>(coins, value, project, ctx);
     }
 
-    public entry fun claim_token<COIN>(project: &mut Project<COIN>, ctx: &mut TxContext) {
-        project::claim_token<COIN>(project, ctx);
+    public entry fun claim_token<COIN>(project: &mut Project<COIN>, clock: &Clock, ctx: &mut TxContext) {
+        project::claim_token<COIN>(project, clock, ctx);
     }
 
-    public entry fun claim_refund<COIN>(project: &mut Project<COIN>, ctx: &mut TxContext){
+    public entry fun claim_refund<COIN>(project: &mut Project<COIN>, ctx: &mut TxContext) {
         project::claim_refund<COIN>(project, ctx);
     }
 
