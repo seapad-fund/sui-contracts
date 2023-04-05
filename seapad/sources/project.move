@@ -24,6 +24,8 @@ module seapad::project {
     use sui::url;
     use sui::vec_set::{Self, VecSet};
     use std::ascii::String;
+    use sui::clock::{Clock};
+    use sui::clock;
 
     ///Define model first
 
@@ -42,9 +44,8 @@ module seapad::project {
     const EInvalidPercent: u64 = 1010;
     const EExceedPercent: u64 = 1011;
     const ETimeGENext: u64 = 1012;
-    const EInvalidTimeVest: u64 = 1013;
-    const EInvalidSwapRatioToken: u64 = 1014;
-    const EInvalidSwapRatioSui: u64 = 1015;
+    const EInvalidTime: u64 = 1013;
+    const EPercentZero: u64 = 1014;
     const ENotEnoughTokenFund: u64 = 1016;
     const ENoOrder: u64 = 1017;
     const ENotOwner: u64 = 1018;
@@ -135,7 +136,6 @@ module seapad::project {
     struct VestingMileStone has copy, drop, store {
         time: u64,
         percent: u64,
-        active: bool
     }
 
     struct Vesting has key, store {
@@ -247,30 +247,20 @@ module seapad::project {
 
     /// if you want more milestones
     public fun add_milestone<COIN, TOKEN>(_adminCap: &AdminCap,
-                                          project: &mut Project<COIN, TOKEN>,
-                                          time: u64,
-                                          percent: u64) {
+                                   project: &mut Project<COIN, TOKEN>,
+                                   time: u64,
+                                   percent: u64,
+                                   clock: &Clock) {
         let vesting = &mut project.vesting;
+        let end_time = project.launch_state.end_time;
 
         assert!(vesting.type == VESTING_TYPE_MILESTONE, EInvalidVestingType);
         let milestones = &mut vesting.milestones;
         if (vector::is_empty(milestones)) {
             vesting.init_release_time = time;
         };
-        vector::push_back(milestones, VestingMileStone { time, percent, active: false });
-        validate_mile_stones(milestones);
-    }
-
-    public fun active_milestone<COIN, TOKEN>(_adminCap: &AdminCap, time: u64, project: &mut Project<COIN, TOKEN>) {
-        let milestones = &mut project.vesting.milestones;
-        let (i, n) = (0, vector::length(milestones));
-        while (i < n) {
-            let milestone = vector::borrow_mut(milestones, i);
-            if (milestone.time == time && !milestone.active) {
-                milestone.active = true;
-            };
-            i = i + 1;
-        };
+        vector::push_back(milestones, VestingMileStone { time, percent });
+        validate_mile_stones(milestones, end_time, clock::timestamp_ms(clock));
     }
 
     public fun reset_milestone<COIN, TOKEN>(_adminCap: &AdminCap, project: &mut Project<COIN, TOKEN>) {
@@ -279,17 +269,18 @@ module seapad::project {
     }
 
     public fun setup_project<COIN, TOKEN>(_adminCap: &AdminCap,
-                                          project: &mut Project<COIN, TOKEN>,
-                                          round: u8,
-                                          usewhitelist: bool,
-                                          swap_ratio_coin: u64,
-                                          swap_ratio_token: u64,
-                                          max_allocate: u64,
-                                          start_time: u64,
-                                          end_time: u64,
-                                          soft_cap: u64,
-                                          hard_cap: u64,
-                                          _ctx: &mut TxContext) {
+                                   project: &mut Project<COIN, TOKEN>,
+                                   round: u8,
+                                   usewhitelist: bool,
+                                   swap_ratio_coin: u64,
+                                   swap_ratio_token: u64,
+                                   max_allocate: u64,
+                                   start_time: u64,
+                                   end_time: u64,
+                                   soft_cap: u64,
+                                   hard_cap: u64,
+                                   clock: &Clock) {
+        assert!(end_time > start_time && start_time > clock::timestamp_ms(clock), EInvalidTime);
         project.use_whitelist = usewhitelist;
         if (usewhitelist) {
             dynamic_field::add(&mut project.id, WHITELIST, vec_set::empty<address>());
@@ -411,15 +402,18 @@ module seapad::project {
         event::emit(RemoveWhiteListEvent { project: id_address(project), users: temp_list });
     }
 
-    public fun start_fund_raising<COIN, TOKEN>(
+    public fun start_fund_raising<COIN,TOKEN>(
         _adminCap: &AdminCap,
-        project: &mut Project<COIN, TOKEN>,
+        project: &mut Project<COIN,TOKEN>,
+        clock: &Clock,
         ctx: &mut TxContext
     ) {
         validate_start_fund_raising(project);
         project.launch_state.total_token_sold = 0;
         project.launch_state.participants = 0;
         project.launch_state.state = ROUND_STATE_RASING;
+        project.launch_state.start_time = clock::timestamp_ms(clock);
+
         event::emit(StartFundRaisingEvent {
             project: id_address(project),
             epoch: tx_context::epoch(ctx)
@@ -430,11 +424,12 @@ module seapad::project {
         coins: vector<Coin<COIN>>,
         amount: u64,
         project: &mut Project<COIN, TOKEN>,
+        clock: &Clock,
         ctx: &mut TxContext
     ) {
         let coin_amt = payment::take_from(coins, amount, ctx);
         let buyer_address = tx_context::sender(ctx);
-        validate_state_for_buy(project, buyer_address);
+        validate_state_for_buy(project, buyer_address, clock::timestamp_ms(clock));
         let more_coin = coin::value(&coin_amt);
         let more_token_ = swap_token(more_coin, project);
 
@@ -500,16 +495,21 @@ module seapad::project {
     public fun end_fund_raising<COIN, TOKEN>(
         _adminCap: &AdminCap,
         project: &mut Project<COIN, TOKEN>,
+        clock: &Clock,
         ctx: &mut TxContext
     ) {
         validate_end_fund_rasing(project);
-        let total_coin_raised = coin::value(option::borrow(&project.launch_state.coin_raised));
-
+        let total_coin_raised = if (option::is_none(&project.launch_state.coin_raised)) {
+            0
+        } else {
+            coin::value(option::borrow(&project.launch_state.coin_raised))
+        };
         if (total_coin_raised < project.launch_state.soft_cap) {
             project.launch_state.state = ROUND_STATE_REFUNDING; //start refund
         }else {
             project.launch_state.state = ROUND_STATE_CLAIMING;
         };
+        project.launch_state.end_time = clock::timestamp_ms(clock);
 
         event::emit(LaunchStateEvent {
             project: id_address(project),
@@ -589,7 +589,7 @@ module seapad::project {
         })
     }
 
-    public fun claim_token<COIN, TOKEN>(project: &mut Project<COIN, TOKEN>, ctx: &mut TxContext) {
+    public fun claim_token<COIN, TOKEN>(project: &mut Project<COIN, TOKEN>, clock: &Clock, ctx: &mut TxContext) {
         validate_vest_token(project);
         let user_ = sender(ctx);
         let launchstate = &mut project.launch_state;
@@ -598,28 +598,13 @@ module seapad::project {
         assert!(table::contains(order_book, user_), ENoOrder);
         let order = table::borrow_mut(order_book, user_);
 
-        let vesting = &mut project.vesting;
-        let milestones = &vesting.milestones;
-
-        let total_percent = if (vector::is_empty(milestones)) {
-            1000
-        }else {
-            let (i, n) = (0, vector::length(milestones));
-            let sum = 0;
-
-            while (i < n) {
-                let milestone = vector::borrow(milestones, i);
-                if (milestone.active) {
-                    sum = sum + milestone.percent;
-                }else {
-                    break
-                };
-                i = i + 1;
-            };
-            sum
-        };
-
-        let more_token = order.token_amount / 1000 * (total_percent as u64);
+        let total_percent = cal_claim_percent(
+            &project.vesting,
+            launchstate.end_time,
+            clock::timestamp_ms(clock)
+        );
+        assert!(total_percent > 0, EPercentZero);
+        let more_token = order.token_amount / 1000 * (total_percent);
         let more_token_actual = more_token - order.token_released;
 
         assert!(more_token_actual > 0, EClaimZero);
@@ -692,6 +677,31 @@ module seapad::project {
         }
     }
 
+    fun cal_claim_percent(vesting: &Vesting, end_time: u64, now: u64): u64 {
+        let milestones = &vesting.milestones;
+        let total_percent = 1000;
+        if (vesting.type == VESTING_TYPE_MILESTONE) {
+            let (i, n) = (0, vector::length(milestones));
+            let sum = 0;
+
+            while (i < n) {
+                let milestone = vector::borrow(milestones, i);
+                if (now >= milestone.time) {
+                    sum = sum + milestone.percent;
+                }else {
+                    break
+                };
+                i = i + 1;
+            };
+            total_percent = sum;
+        };
+        if (vesting.type == VESTING_TYPE_LINEAR) {
+            let delta = now - end_time;
+            total_percent = delta * 1000 / 31536000000;
+        };
+        total_percent
+    }
+
 
     fun validate_start_fund_raising<COIN, TOKEN>(project: &mut Project<COIN, TOKEN>) {
         let launchstate = &project.launch_state;
@@ -710,12 +720,13 @@ module seapad::project {
 
     /// -make sure that sum of all milestone is <= 100%
     /// -time is ordered min --> max, is valid, should be offset
-    fun validate_mile_stones(milestones: &vector<VestingMileStone>) {
+    fun validate_mile_stones(milestones: &vector<VestingMileStone>, end_time: u64, now: u64) {
         let total_percent = 0;
         let (i, n) = (0, vector::length(milestones));
         while (i < n) {
             let milestone = vector::borrow(milestones, i);
             assert!(milestone.percent <= 1000, EInvalidPercent);
+            assert!(milestone.time > now && milestone.time > end_time, EInvalidTime);
             if (i < n - 1) {
                 let next = vector::borrow(milestones, i + 1);
                 assert!(milestone.time < next.time, ETimeGENext);
@@ -726,8 +737,9 @@ module seapad::project {
         assert!(total_percent <= 1000, EExceedPercent);
     }
 
-    fun validate_state_for_buy<COIN, TOKEN>(project: &mut Project<COIN, TOKEN>, senderAddr: address) {
+    fun validate_state_for_buy<COIN, TOKEN>(project: &mut Project<COIN, TOKEN>, senderAddr: address, now: u64) {
         assert!(project.launch_state.state == ROUND_STATE_RASING, EInvalidRoundState);
+        assert!(project.launch_state.end_time >= now, EInvalidTime);
         if (project.use_whitelist) {
             let whitelist = dynamic_field::borrow<vector<u8>, VecSet<address>>(&project.id, WHITELIST);
             assert!(vec_set::contains(whitelist, &senderAddr), ENotWhitelist);
