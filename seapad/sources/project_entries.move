@@ -1,7 +1,7 @@
 module seapad::project_entries {
     use seapad::project::{AdminCap, Project};
     use sui::tx_context::TxContext;
-    use sui::coin::{CoinMetadata, Coin};
+    use sui::coin::{Coin};
     use seapad::project;
     use std::vector;
     use sui::clock::Clock;
@@ -10,13 +10,13 @@ module seapad::project_entries {
         project::change_admin(adminCap, to);
     }
 
-    public entry fun create_project<COIN, TOKEN>(_adminCap: &AdminCap,
+    public entry fun create_project<COIN, TOKEN>(adminCap: &AdminCap,
                                                  owner: address,
                                                  vesting_type: u8,
-                                                 coin_metadata: &CoinMetadata<COIN>,
-                                                 token_metadata: &CoinMetadata<TOKEN>,
+                                                 coin_decimals: u8,
+                                                 token_decimals: u8,
                                                  ctx: &mut TxContext) {
-        project::create_project(_adminCap, owner, vesting_type, coin_metadata, token_metadata, ctx);
+        project::create_project<COIN, TOKEN>(adminCap, owner, vesting_type, coin_decimals, token_decimals, ctx);
     }
 
     public entry fun change_owner<COIN, TOKEN>(

@@ -6,14 +6,12 @@
 /// - support vesting token, claim token
 /// - many round
 module seapad::project {
-    use std::ascii;
     use std::option::{Self, Option};
-    use std::string;
     use std::vector;
 
     use w3libs::payment;
 
-    use sui::coin::{Self, Coin, CoinMetadata};
+    use sui::coin::{Self, Coin};
     use sui::dynamic_field;
     use sui::event;
     use sui::math;
@@ -21,9 +19,7 @@ module seapad::project {
     use sui::table::{Self, Table};
     use sui::transfer;
     use sui::tx_context::{Self, TxContext, sender};
-    use sui::url;
     use sui::vec_set::{Self, VecSet};
-    use std::ascii::String;
     use sui::clock::{Clock};
     use sui::clock;
 
@@ -117,16 +113,6 @@ module seapad::project {
         max_allocations: Table<address, u64>,
     }
 
-    ///should refer to object
-    struct TokenMetadata has store {
-        coin_metadata: address,
-        symbol: ascii::String,
-        name: string::String,
-        description: string::String,
-        icon_url: Option<String>,
-        decimals: u8,
-    }
-
     struct Community has key, store {
         id: UID,
         total_vote: u64,
@@ -152,8 +138,8 @@ module seapad::project {
         community: Community,
         use_whitelist: bool,
         owner: address,
-        token_metadata: TokenMetadata,
-        coin_metadata: TokenMetadata,
+        coin_decimals: u8,
+        token_decimals: u8,
         vesting: Vesting
         //        profile: //use dynamic field
         //        whitelist: VecSet<address> //use dynamic field
@@ -182,8 +168,8 @@ module seapad::project {
     public fun create_project<COIN, TOKEN>(_adminCap: &AdminCap,
                                            owner: address,
                                            vesting_type: u8,
-                                           coin_metadata: &CoinMetadata<COIN>,
-                                           token_metadata: &CoinMetadata<TOKEN>,
+                                           coin_decimals_: u8,
+                                           token_decimals_: u8,
                                            ctx: &mut TxContext) {
         let launchstate = LaunchState<COIN, TOKEN> {
             id: object::new(ctx),
@@ -226,8 +212,8 @@ module seapad::project {
             launch_state: launchstate,
             community,
             use_whitelist: false,
-            coin_metadata: flat_token_metadata(coin_metadata),
-            token_metadata: flat_token_metadata(token_metadata),
+            coin_decimals: coin_decimals_,
+            token_decimals: token_decimals_,
             vesting: vesting_obj
         };
 
@@ -652,29 +638,11 @@ module seapad::project {
         let swap_ratio_coin = project.launch_state.swap_ratio_coin;
         let swap_ratio_token = project.launch_state.swap_ratio_token;
 
-        let ratio_coin = math::pow(10, project.coin_metadata.decimals) / swap_ratio_coin;
-        let ratio_token = math::pow(10, project.token_metadata.decimals) / swap_ratio_token;
+        let ratio_coin = math::pow(10, project.coin_decimals) / swap_ratio_coin;
+        let ratio_token = math::pow(10, project.token_decimals) / swap_ratio_token;
         let token_value = (coin_value as u128) * (ratio_coin as u128) / (ratio_token as u128);
 
         (token_value as u64)
-    }
-
-    fun flat_token_metadata<TYPE>(coin_metadata: &CoinMetadata<TYPE>): TokenMetadata {
-        let icon_opt = coin::get_icon_url(coin_metadata);
-        let icon = option::none<String>();
-        if (option::is_some(&icon_opt)) {
-            let url = url::inner_url(&option::extract(&mut icon_opt));
-            option::fill(&mut icon, url);
-        };
-
-        TokenMetadata {
-            coin_metadata: object::id_address(coin_metadata),
-            name: coin::get_name(coin_metadata),
-            symbol: coin::get_symbol(coin_metadata),
-            description: coin::get_description(coin_metadata),
-            decimals: coin::get_decimals(coin_metadata),
-            icon_url: icon
-        }
     }
 
     fun cal_claim_percent(vesting: &Vesting, end_time: u64, now: u64): u64 {
@@ -778,7 +746,6 @@ module seapad::project {
             usewhitelist: project.use_whitelist,
             vesting_type: project.vesting.type,
             vesting_milestones: project.vesting.milestones,
-            token_info: project.token_metadata.coin_metadata
         };
 
         event
@@ -855,7 +822,6 @@ module seapad::project {
         usewhitelist: bool,
         vesting_type: u8,
         vesting_milestones: vector<VestingMileStone>,
-        token_info: address
     }
 
     struct AddMaxAllocateEvent has copy, drop {

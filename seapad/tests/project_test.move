@@ -4,7 +4,7 @@ module seapad::project_test {
 
     use seapad::project::{Self, AdminCap, Project};
     use seapad::spt::{Self, SPT};
-    use sui::coin::{Self, CoinMetadata, Coin};
+    use sui::coin::{Self, Coin};
     use sui::math;
     use sui::test_scenario::{Self, Scenario};
     use seapad::usdt;
@@ -390,21 +390,17 @@ module seapad::project_test {
         test_scenario::next_tx(scenario, ADMIN);
         {
             let admin_cap = test_scenario::take_from_sender<AdminCap>(scenario);
-            let coin_metadata = test_scenario::take_immutable<CoinMetadata<usdt::USDT>>(scenario);
-            let token_metadata = test_scenario::take_immutable<CoinMetadata<spt::SPT>>(scenario);
             let ctx = test_scenario::ctx(scenario);
 
             project::create_project<USDT, SPT>(
                 &admin_cap,
                 OWNER_PROJECT,
                 1,
-                &coin_metadata,
-                &token_metadata,
+                COIN_DECIMAL,
+                TOKEN_DECIMAL,
                 ctx
             );
             test_scenario::return_to_sender(scenario, admin_cap);
-            test_scenario::return_immutable(coin_metadata);
-            test_scenario::return_immutable(token_metadata);
         };
     }
 
