@@ -42,6 +42,7 @@ module seapad::project {
     const ETimeGENext: u64 = 1012;
     const EInvalidTime: u64 = 1013;
     const EPercentZero: u64 = 1014;
+    const EDepositHardcap: u64 = 1015;
     const ENotEnoughTokenFund: u64 = 1016;
     const ENoOrder: u64 = 1017;
     const ENotOwner: u64 = 1018;
@@ -459,7 +460,6 @@ module seapad::project {
         let total_raised_ = coin::value(option::borrow(&launchstate.coin_raised));
         assert!(launchstate.hard_cap >= total_raised_, EOutOfHardCap);
 
-        let token_fund_ = coin::value(option::borrow(&launchstate.token_fund));
         if (total_raised_ == launchstate.hard_cap) {
             launchstate.state = ROUND_STATE_CLAIMING;
         };
@@ -473,7 +473,7 @@ module seapad::project {
             more_token: more_token_,
             token_bought: order.token_amount,
             participants: launchstate.participants,
-            sold_out: launchstate.total_token_sold == token_fund_,
+            sold_out: total_raised_ == launchstate.hard_cap,
             epoch: tx_context::epoch(ctx)
         })
     }
@@ -552,14 +552,14 @@ module seapad::project {
 
 
     /// - make sure token deposit match the market cap & swap ratio
-    public fun deposit_by_owner<COIN, TOKEN>(coins: vector<Coin<TOKEN>>,
+    public fun deposit_by_owner<COIN, TOKEN>(tokens: vector<Coin<TOKEN>>,
                                              value: u64,
                                              project: &mut Project<COIN, TOKEN>,
                                              ctx: &mut TxContext) {
-        validate_deposit(project, ctx);
+        validate_deposit(value, project, ctx);
 
         let launchstate = &mut project.launch_state;
-        let token_fund = payment::take_from(coins, value, ctx);
+        let token_fund = payment::take_from(tokens, value, ctx);
 
         if (option::is_some(&launchstate.token_fund)) {
             let before = option::borrow_mut(&mut launchstate.token_fund);
@@ -682,7 +682,7 @@ module seapad::project {
         }else {
             coin::value(option::borrow(&project.launch_state.token_fund))
         };
-        let token_amt_expect = swap_token(launchstate.soft_cap, project);
+        let token_amt_expect = swap_token(launchstate.hard_cap, project);
         assert!(total_token >= token_amt_expect, ENotEnoughTokenFund);
     }
 
@@ -731,7 +731,9 @@ module seapad::project {
         assert!(state == ROUND_STATE_END_REFUND || state == ROUND_STATE_CLAIMING, EInvalidRoundState);
     }
 
-    fun validate_deposit<COIN, TOKEN>(project: &mut Project<COIN, TOKEN>, ctx: &mut TxContext) {
+    fun validate_deposit<COIN, TOKEN>(value_deposit: u64, project: &mut Project<COIN, TOKEN>, ctx: &mut TxContext) {
+        let token_hard_cap = swap_token(project.launch_state.hard_cap, project);
+        assert!(value_deposit >= token_hard_cap, EDepositHardcap);
         let state = project.launch_state.state;
         assert!(state == ROUND_STATE_INIT, EInvalidRoundState);
         assert!(sender(ctx) == project.owner, ENotOwner);
