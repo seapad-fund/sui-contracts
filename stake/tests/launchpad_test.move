@@ -11,7 +11,7 @@
 /// ```
 module seapad::dex_tests {
     use sui::sui::SUI;
-    use sui::coin::{mint_for_testing as mint, destroy_for_testing as burn};
+    use sui::coin::{mint_for_testing as mint, burn_for_testing as burn};
     use sui::test_scenario::{Self as test, Scenario, next_tx, ctx}
     ;
     use seapad::dex::{Self, Pool, LSP};
