@@ -1,0 +1,8 @@
+[addresses]
+rpc =  "https://fullnode.devnet.sui.io"
+faucet =  "https://faucet.devnet.sui.io/gas"
+
+SPT= 0xc826e201930cdcdffcfb705a225f548bf3ebd8e6641827de4eeb5653acf104c1
+USDT= 0xd3bd5f81752e4bfd80d6a3d33a4668040be5fecf844635f1861d3d5a7e3a60ca
+Admin= 0x86a71c50c740fe639b65e85c37aca66e5ba632c2fa36b54378fbfbc4fae4c85c
+PackageID= 0x22b377a53d5e111432a2c7159bf3051e0dc2862759ab1e0ba6d11518164bf832

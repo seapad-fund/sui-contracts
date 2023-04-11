@@ -1,0 +1,8 @@
+[addresses]
+rpc =  "https://sui-rpc.web3lab.network"
+faucet =  "https://sui-faucet.web3lab.network/gas"
+
+SPT= 0x69c7bc25fb349f647f1298753d594dc1e858850feaebe9858a23fed6ea9715a1
+USDT= 0xfb15a95ca4ea388324fad2643a214be6da3688f96ef97c80cc952a91f2320a51
+Admin= 0xf715c0ecb885b4dadd3a4e3173e16f9dfe849b3d6fc3b4d733b8267f911bfa21
+PackageID= 0x5386675e2214e661af7fffbbac5c02b5c0e4f7c5a0f2c66db158542533ac63e7
