@@ -1,4 +1,3 @@
-[addresses]
 rpc =  "https://sui-rpc.web3lab.network"
 faucet =  "https://sui-faucet.web3lab.network/gas"
 

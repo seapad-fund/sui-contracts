@@ -1,4 +1,3 @@
-[addresses]
 rpc =  "https://fullnode.devnet.sui.io"
 faucet =  "https://faucet.devnet.sui.io/gas"
 
