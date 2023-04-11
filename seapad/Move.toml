@@ -3,8 +3,8 @@ name = "Seapad"
 version = "0.0.1"
 
 [dependencies]
-Sui = { git = "https://github.com/MystenLabs/sui", subdir = "crates/sui-framework/packages/sui-framework", rev = "testnet" }
-W3libs = { git = "https://github.com/seapad-fund/w3libs", rev = "testnet" }
+Sui = { git = "https://github.com/MystenLabs/sui", subdir = "crates/sui-framework/packages/sui-framework", rev = "devnet" }
+W3libs = { git = "https://github.com/seapad-fund/w3libs", rev = "devnet" }
 
 [addresses]
 seapad =  "0x00"
