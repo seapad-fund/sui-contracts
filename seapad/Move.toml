@@ -4,8 +4,19 @@ version = "0.0.1"
 
 [dependencies]
 Sui = { git = "https://github.com/MystenLabs/sui", subdir = "crates/sui-framework/packages/sui-framework", rev = "devnet" }
-W3libs = { git = "https://github.com/seapad-fund/w3libs", rev = "dev" }
+W3libs = { git = "https://github.com/seapad-fund/w3libs", rev = "local0x4d10" }
 
 [addresses]
 seapad =  "0x00"
+staking =  "0x00"
 sui =  "0x02"
+
+stake_admin = "0x9d6f2e34e937842df89642cd96fba8509d4e47d297f716ce3a44df3070a79851"
+treasury_admin = "0x9d6f2e34e937842df89642cd96fba8509d4e47d297f716ce3a44df3070a79851"
+escrow_admin = "0x9d6f2e34e937842df89642cd96fba8509d4e47d297f716ce3a44df3070a79851"
+
+# Test addresses.
+treasury = "0x13"
+emergency = "0x14"
+alice = "0x15"
+bob = "0x16"
