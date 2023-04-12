@@ -7,6 +7,7 @@ module staking::stake_scripts {
     use staking::stake_config::{GlobalConfig};
     use staking::stake::StakePool;
     use sui::transfer;
+    use sui::clock::Clock;
 
     /// Register new staking pool with staking coin `S` and reward coin `R`.
     ///     * `rewards` - reward amount in R coins.
@@ -19,9 +20,9 @@ module staking::stake_scripts {
         global_config: &GlobalConfig,
         coin_metadata_s: &CoinMetadata<S>,
         coin_metadata_r: &CoinMetadata<R>,
-        system_clock_ms: u64,
+        clock: &Clock,
         ctx: &mut TxContext) {
-        stake::register_pool<S, R>(name, rewards, duration_seconds, global_config, coin_metadata_s, coin_metadata_r, system_clock_ms, ctx);
+        stake::register_pool<S, R>(name, rewards, duration_seconds, global_config, coin_metadata_s, coin_metadata_r, clock, ctx);
     }
 
     /// Stake an `amount` of `Coin<S>` to the pool of stake coin `S` and reward coin `R` on the address `pool_addr`.
@@ -31,9 +32,9 @@ module staking::stake_scripts {
     public entry fun stake<S, R>(pool: &mut StakePool<S, R>,
                                  coins: Coin<S>,
                                  global_config: &GlobalConfig,
-                                 system_clock_ms: u64,
+                                 clock: &Clock,
                                  ctx: &mut TxContext) {
-        stake::stake<S, R>(pool, coins, global_config, system_clock_ms, ctx);
+        stake::stake<S, R>(pool, coins, global_config, clock, ctx);
     }
 
     /// Unstake an `amount` of `Coin<S>` from a pool of stake coin `S` and reward coin `R` `pool`.
@@ -43,9 +44,9 @@ module staking::stake_scripts {
     public entry fun unstake<S, R>(pool: &mut StakePool<S, R>,
                                    stake_amount: u64,
                                    global_config: &GlobalConfig,
-                                   system_clock_ms: u64,
+                                   clock: &Clock,
                                    ctx: &mut TxContext) {
-        let coins = stake::unstake<S, R>(pool, stake_amount, global_config, system_clock_ms, ctx);
+        let coins = stake::unstake<S, R>(pool, stake_amount, global_config, clock, ctx);
         transfer::public_transfer(coins, sender(ctx));
     }
 
@@ -54,9 +55,9 @@ module staking::stake_scripts {
     /// @fixme due to devnet not supported to inject &Clock opject, just mock timestamp now for devnet
     public entry fun harvest<S, R>(pool: &mut StakePool<S, R>,
                                    global_config: &GlobalConfig,
-                                   system_clock_ms: u64,
+                                   clock: &Clock,
                                    ctx: &mut TxContext) {
-        let rewards = stake::harvest<S, R>(pool, global_config, system_clock_ms, ctx);
+        let rewards = stake::harvest<S, R>(pool, global_config, clock, ctx);
         transfer::public_transfer(rewards, sender(ctx));
     }
 
@@ -68,9 +69,9 @@ module staking::stake_scripts {
     public entry fun deposit_reward_coins<S, R>(pool: &mut StakePool<S, R>,
                                                 reward_coins: Coin<R>,
                                                 global_config: &GlobalConfig,
-                                                system_clock_ms: u64,
+                                                clock: &Clock,
                                                 ctx: &mut TxContext) {
-        stake::deposit_reward_coins<S, R>(pool, reward_coins, global_config, system_clock_ms, ctx);
+        stake::deposit_reward_coins<S, R>(pool, reward_coins, global_config, clock, ctx);
     }
 
     /// Enable "emergency state" for a pool on a `pool_addr` address. This state cannot be disabled
@@ -103,10 +104,10 @@ module staking::stake_scripts {
     public entry fun withdraw_reward_to_treasury<S, R>(pool: &mut StakePool<S, R>,
                                                        amount: u64,
                                                        global_config: &GlobalConfig,
-                                                       system_clock: u64,
+                                                       clock: &Clock,
                                                        ctx: &mut TxContext) {
         let treasury_addr = sender(ctx);
-        let rewards = stake::withdraw_to_treasury<S, R>(pool, amount, global_config, system_clock, ctx);
+        let rewards = stake::withdraw_to_treasury<S, R>(pool, amount, global_config, clock, ctx);
         transfer::public_transfer(rewards, treasury_addr);
     }
 

@@ -143,7 +143,7 @@ module staking::stake {
         global_config: &GlobalConfig,
         coin_metadata_s: &CoinMetadata<S>,
         coin_metadata_r: &CoinMetadata<R>,
-        system_clock: u64,
+        clock: &Clock,
         ctx: &mut TxContext
     ) {
         assert!(sender(ctx) == stake_config::get_escrow_admin_address(global_config), ERR_NOT_ESCROW_ADMIN);
@@ -155,7 +155,7 @@ module staking::stake {
 
         assert!(reward_per_sec > 0, ERR_REWARD_CANNOT_BE_ZERO);
 
-        let current_time= system_clock/1000; //@todo review math div
+        let current_time= clock::timestamp_ms(clock)/1000; //@todo review math div
         let end_timestamp = current_time + duration_second;
 
         let origin_decimals = (coin::get_decimals(coin_metadata_r) as u128);
@@ -201,14 +201,14 @@ module staking::stake {
     public fun deposit_reward_coins<S, R>(pool: &mut StakePool<S, R>,
                                           coins: Coin<R>,
                                           global_config: &GlobalConfig,
-                                          system_clock: u64,
+                                          clock: &Clock,
                                           ctx: &mut TxContext) {
 
         assert!(!is_emergency_inner(pool, global_config), ERR_EMERGENCY);
 
         // it's forbidden to deposit more rewards (extend pool duration) after previous pool duration passed
         // preventing unfair reward distribution
-        assert!(!is_finished_inner(pool, system_clock), ERR_HARVEST_FINISHED);
+        assert!(!is_finished_inner(pool, clock::timestamp_ms(clock)), ERR_HARVEST_FINISHED);
 
         let amount = coin::value(&coins);
         assert!(amount > 0, ERR_AMOUNT_CANNOT_BE_ZERO);
@@ -238,13 +238,14 @@ module staking::stake {
         pool: &mut StakePool<S, R>,
         coins: Coin<S>,
         global_config: &GlobalConfig,
-        system_clock: u64,
+        clock: &Clock,
         ctx: &mut TxContext
     ) {
         let amount = coin::value(&coins);
         assert!(amount > 0, ERR_AMOUNT_CANNOT_BE_ZERO);
 
         assert!(!is_emergency_inner(pool, global_config), ERR_EMERGENCY);
+        let system_clock = clock::timestamp_ms(clock);
         assert!(!is_finished_inner(pool, system_clock), ERR_HARVEST_FINISHED);
 
         // update pool accum_reward and timestamp
@@ -296,7 +297,7 @@ module staking::stake {
         pool: &mut StakePool<S, R>,
         amount: u64,
         global_config: &GlobalConfig,
-        system_clock: u64,
+        clock: &Clock,
         ctx: &mut TxContext
     ): Coin<S> {
         assert!(amount > 0, ERR_AMOUNT_CANNOT_BE_ZERO);
@@ -307,6 +308,7 @@ module staking::stake {
         assert!(table::contains(&pool.stakes, user_address), ERR_NO_STAKE);
 
         // update pool accum_reward and timestamp
+        let system_clock = clock::timestamp_ms(clock);
         update_accum_reward(pool, system_clock);
 
         let user_stake = table::borrow_mut(&mut pool.stakes, user_address);
@@ -340,7 +342,7 @@ module staking::stake {
     /// Returns R coins: `Coin<R>`.
     public fun harvest<S, R>(pool: &mut StakePool<S, R>,
                              global_config: &GlobalConfig,
-                             system_clock: u64,
+                             clock: &Clock,
                              ctx: &mut TxContext): Coin<R> {
 
         assert!(!is_emergency_inner(pool, global_config), ERR_EMERGENCY);
@@ -349,6 +351,7 @@ module staking::stake {
         assert!(table::contains(&pool.stakes, user_address), ERR_NO_STAKE);
 
         // update pool accum_reward and timestamp
+        let system_clock = clock::timestamp_ms(clock);
         update_accum_reward(pool, system_clock);
 
         let user_stake = table::borrow_mut(&mut pool.stakes, user_address);
@@ -419,12 +422,12 @@ module staking::stake {
     public fun withdraw_to_treasury<S, R>(pool: &mut StakePool<S, R>,
                                           amount: u64,
                                           global_config: &GlobalConfig,
-                                          system_clock: u64,
+                                          clock: &Clock,
                                           ctx: &mut TxContext): Coin<R> {
         assert!(sender(ctx) == stake_config::get_treasury_admin_address(global_config), ERR_NOT_TREASURY);
 
         if (!is_emergency_inner(pool, global_config)) {
-            let now = system_clock/1000; //@todo review math
+            let now = clock::timestamp_ms(clock)/1000; //@todo review math
             assert!(now >= (pool.end_timestamp + WITHDRAW_REWARD_PERIOD_IN_SECONDS), ERR_NOT_WITHDRAW_PERIOD);
         };
 
@@ -445,8 +448,8 @@ module staking::stake {
     /// Checks if harvest on the pool finished.
     ///     * `pool_addr` - address under which pool are stored.
     /// Returns true if harvest finished for the pool.
-    public fun is_finished<S, R>(pool: &StakePool<S, R>, system_clock: u64): bool {
-        is_finished_inner(pool, system_clock)
+    public fun is_finished<S, R>(pool: &StakePool<S, R>, clock: &Clock): bool {
+        is_finished_inner(pool, clock::timestamp_ms(clock))
     }
 
     /// Gets timestamp when harvest will be finished for the pool.
@@ -484,12 +487,12 @@ module staking::stake {
     ///     * `pool_addr` - address under which pool are stored.
     ///     * `user_addr` - stake owner address.
     /// Returns reward amount that can be harvested by stake owner.
-    public fun get_pending_user_rewards<S, R>(pool: &StakePool<S, R>, user_addr: address, system_clock: u64): u64 {
+    public fun get_pending_user_rewards<S, R>(pool: &StakePool<S, R>, user_addr: address, clock: &Clock): u64 {
 
         assert!(table::contains(&pool.stakes, user_addr), ERR_NO_STAKE);
 
         let user_stake = table::borrow(&pool.stakes, user_addr);
-        let current_time = get_time_for_last_update(pool, system_clock);
+        let current_time = get_time_for_last_update(pool, clock::timestamp_ms(clock));
         let new_accum_rewards = accum_rewards_since_last_updated(pool, current_time);
 
         let earned_since_last_update = user_earned_since_last_update(
@@ -515,11 +518,11 @@ module staking::stake {
     ///     * `pool_addr` - address under which pool are stored.
     ///     * `user_addr` - stake owner address.
     /// Returns true if user can unstake.
-    public fun is_unlocked<S, R>(pool: &StakePool<S, R>, user_addr: address, system_clock: &Clock): bool {
+    public fun is_unlocked<S, R>(pool: &StakePool<S, R>, user_addr: address, clock: &Clock): bool {
 
         assert!(table::contains(&pool.stakes, user_addr), ERR_NO_STAKE);
 
-        let current_time = clock::timestamp_ms(system_clock);
+        let current_time = clock::timestamp_ms(clock);
         let unlock_time = math::min(pool.end_timestamp, table::borrow(&pool.stakes, user_addr).unlock_time);
 
         current_time >= unlock_time
