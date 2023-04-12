@@ -392,14 +392,14 @@ module seapad::project {
     public fun start_fund_raising<COIN,TOKEN>(
         _adminCap: &AdminCap,
         project: &mut Project<COIN,TOKEN>,
-        clock: &Clock,
+        _clock: &Clock,
         ctx: &mut TxContext
     ) {
         validate_start_fund_raising(project);
         project.launch_state.total_token_sold = 0;
         project.launch_state.participants = 0;
         project.launch_state.state = ROUND_STATE_RASING;
-        project.launch_state.start_time = clock::timestamp_ms(clock);
+        // project.launch_state.start_time = clock::timestamp_ms(clock);
 
         event::emit(StartFundRaisingEvent {
             project: id_address(project),
@@ -484,7 +484,7 @@ module seapad::project {
         clock: &Clock,
         ctx: &mut TxContext
     ) {
-        validate_end_fund_rasing(project);
+        validate_end_fund_rasing(project, clock::timestamp_ms(clock));
         let total_coin_raised = if (option::is_none(&project.launch_state.coin_raised)) {
             0
         } else {
@@ -495,7 +495,6 @@ module seapad::project {
         }else {
             project.launch_state.state = ROUND_STATE_CLAIMING;
         };
-        project.launch_state.end_time = clock::timestamp_ms(clock);
 
         event::emit(LaunchStateEvent {
             project: id_address(project),
@@ -505,10 +504,6 @@ module seapad::project {
         })
     }
 
-    ///@todo
-    /// - stop refund process
-    /// - set state to end with refund
-    /// - clear state ?
     public fun end_refund<COIN, TOKEN>(_adminCap: &AdminCap, project: &mut Project<COIN, TOKEN>, ctx: &mut TxContext) {
         project.launch_state.state = ROUND_STATE_END_REFUND;
         event::emit(RefundClosedEvent {
@@ -518,11 +513,6 @@ module seapad::project {
         })
     }
 
-    ///@todo
-    /// - allocate raised budget, maybe:
-    ///     *transfer all to project owner
-    ///     *charge fee
-    ///     *add liquidity
     public fun distribute_raised_fund<COIN, TOKEN>(
         _adminCap: &AdminCap,
         project: &mut Project<COIN, TOKEN>,
@@ -707,7 +697,7 @@ module seapad::project {
 
     fun validate_state_for_buy<COIN, TOKEN>(project: &mut Project<COIN, TOKEN>, senderAddr: address, now: u64) {
         assert!(project.launch_state.state == ROUND_STATE_RASING, EInvalidRoundState);
-        assert!(project.launch_state.end_time >= now, EInvalidTime);
+        assert!(project.launch_state.start_time < now && project.launch_state.end_time >= now, EInvalidTime);
         if (project.use_whitelist) {
             let whitelist = dynamic_field::borrow<vector<u8>, VecSet<address>>(&project.id, WHITELIST);
             assert!(vec_set::contains(whitelist, &senderAddr), ENotWhitelist);
@@ -722,7 +712,8 @@ module seapad::project {
         assert!(project.launch_state.state == ROUND_STATE_REFUNDING, EInvalidRoundState);
     }
 
-    fun validate_end_fund_rasing<COIN, TOKEN>(project: &mut Project<COIN, TOKEN>) {
+    fun validate_end_fund_rasing<COIN, TOKEN>(project: &mut Project<COIN, TOKEN>, now: u64) {
+        assert!(project.launch_state.end_time <= now, EInvalidTime);
         assert!(project.launch_state.state == ROUND_STATE_RASING, EInvalidRoundState);
     }
 

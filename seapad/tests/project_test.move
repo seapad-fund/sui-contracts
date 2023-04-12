@@ -134,7 +134,7 @@ module seapad::project_test {
         setup_launch_state_(scenario, 1, false, &clock);
         deposit_to_project_(OWNER_PROJECT, 5000000000000, scenario);
 
-        clock::increment_for_testing(&mut clock, 1000);
+        clock::increment_for_testing(&mut clock, 1500);
         start_fund_raising_(scenario, &clock);
         buy_token_(OWNER_PROJECT, 500000000000, scenario, &clock);//pass
         buy_token_(USER2, 500000000000, scenario, &clock);//pass
@@ -216,7 +216,7 @@ module seapad::project_test {
         setup_launch_state_(scenario, 1, false, &clock);
         deposit_to_project_(OWNER_PROJECT, 5000000000000, scenario);
 
-        clock::increment_for_testing(&mut clock, 1000);
+        clock::increment_for_testing(&mut clock, 1500);
         start_fund_raising_(scenario, &clock);
 
         add_max_allocate_(USER2, MAX_ALLOCATE * 2, scenario);
@@ -242,7 +242,7 @@ module seapad::project_test {
         setup_launch_state_(scenario, 1, true, &clock);
         deposit_to_project_(OWNER_PROJECT, 5000000000000, scenario);
 
-        clock::increment_for_testing(&mut clock, 1000);
+        clock::increment_for_testing(&mut clock, 1500);
         start_fund_raising_(scenario, &clock);
         add_whitelist_(USER2, scenario);
         buy_token_(USER2, 500000000000, scenario, &clock);
@@ -265,13 +265,14 @@ module seapad::project_test {
         setup_launch_state_(scenario, 1, false, &clock);
         deposit_to_project_(OWNER_PROJECT, 5000000000000, scenario);
 
-        clock::increment_for_testing(&mut clock, 1000);
+        clock::increment_for_testing(&mut clock, 1500);
         start_fund_raising_(scenario, &clock);
 
         // add_whitelist_(USER1, scenario);
         let coin_buy = 500000000000;
         buy_token_(USER2, coin_buy, scenario, &clock);
         buy_token_(USER3, coin_buy, scenario, &clock);
+        clock::increment_for_testing(&mut clock, 1500);
         end_fund_raising_(scenario, &clock);
 
         let percent = 500;
@@ -336,6 +337,7 @@ module seapad::project_test {
         let coin_buy = 500000000000;
         clock::increment_for_testing(&mut clock, 1000);
         buy_token_(USER2, coin_buy, scenario, &clock);
+        clock::increment_for_testing(&mut clock, 1000);
         end_fund_raising_(scenario, &clock);
 
         //refund coin to user
@@ -576,7 +578,7 @@ module seapad::project_test {
     fun create_clock_time_(scenario: &mut Scenario) {
         test_scenario::next_tx(scenario, ADMIN);
         let ctx = test_scenario::ctx(scenario);
-        clock::create_for_testing(ctx);
+        clock::share_for_testing(clock::create_for_testing(ctx));
     }
 }
 
