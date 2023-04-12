@@ -1,7 +1,7 @@
 rpc =  "https://fullnode.testnet.sui.io"
 faucet =  "https://faucet.testnet.sui.io/gas"
 
-SPT= 0xd79bf1dc75505a19804d6b674bcf9cfceeb90aeb122f9243c5823a2ba9c82682
-USDT= 0xce5a1689805590bbad2d0c06ea967e68a229809f4e3e96ad2fc7c1165775d311
-Admin= 0xd8cc06248a0f46f9f0044ef65cab381af69808b48939533680b20db4c12cda54
-PackageID= 0xa582b9e002abd321e006f1633dea73fd7fd4adb57fbb696ce2aabb073ae0beb0
+SPT=0xc3d2ee32d9fb3cd24b8703f29a6fe8d538eef8bb7e74de91c858c369ce33a8f3
+USDT=0x4f4d15044dcf2c41ffda57851b4170a886eea4de1f7cd6e75fe9c7856e9a956c
+Admin=0x3ff5ef452c5350725d2b1f2511b856ab30d5ab42d298eb29ea9ef7f32c2d3b12
+PackageID=0x11edfb0e5227ea02c100c8bd5daf1a6cda455e9c6a286b40f6fbd867e43381ad
