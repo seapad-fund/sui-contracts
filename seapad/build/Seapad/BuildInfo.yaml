@@ -1,0 +1,25 @@
+---
+compiled_package_info:
+  package_name: Seapad
+  address_alias_instantiation:
+    seapad: "0000000000000000000000000000000000000000000000000000000000000000"
+    std: "0000000000000000000000000000000000000000000000000000000000000001"
+    sui: "0000000000000000000000000000000000000000000000000000000000000002"
+    w3libs: 4acd9a4821e4a60768a7bf4d25f6e7b6257d3e327f5aa479ee9c7678dc504ca7
+  source_digest: A041627D1C0477696C76A2F7A3E57039ED71328309FD5590C2AD1AEAF96245B6
+  build_flags:
+    dev_mode: true
+    test_mode: true
+    generate_docs: false
+    generate_abis: false
+    install_dir: ~
+    force_recompilation: false
+    lock_file: ~
+    additional_named_addresses: {}
+    architecture: ~
+    fetch_deps_only: false
+    skip_fetch_latest_git_deps: false
+dependencies:
+  - MoveStdlib
+  - Sui
+  - W3libs
