@@ -30,7 +30,6 @@ module staking::stake_config {
         id: UID,
         stake_admin_address: address,
         treasury_admin_address: address,
-        escrow_admin: address,
         global_emergency_locked: bool,
     }
 
@@ -45,7 +44,6 @@ module staking::stake_config {
             id: object::new(ctx),
             stake_admin_address: @stake_admin,
             treasury_admin_address: @treasury_admin,
-            escrow_admin: @escrow_admin,
             global_emergency_locked: false,
         })
     }
@@ -84,22 +82,6 @@ module staking::stake_config {
     /// Returns address of treasury admin.
     public fun get_treasury_admin_address(global_config: &GlobalConfig): address {
         global_config.treasury_admin_address
-    }
-
-    /// Gets current address of `escrow_admin admin` account.
-    /// Returns address of escrow admin.
-    public fun get_escrow_admin_address(global_config: &GlobalConfig): address {
-        global_config.escrow_admin
-    }
-
-    /// Sets `escrow_admin` account.
-    /// Should be signed with current `escrow_admin` account.
-    ///     * `global_config` - current escrow admin account.
-    ///     * `new_address` - new treasury admin address.
-    ///     * ctx: current escrow_admin
-    public fun set_escrow_admin_address(global_config: &mut GlobalConfig, new_address: address, ctx: &mut TxContext) {
-        assert!(sender(ctx) == global_config.escrow_admin, ERR_NO_PERMISSIONS);
-        global_config.escrow_admin = new_address;
     }
 
     /// Enables "global emergency state". All the pools' operations are disabled except for `emergency_unstake()`.

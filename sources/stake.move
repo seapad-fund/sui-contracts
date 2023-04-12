@@ -146,7 +146,7 @@ module staking::stake {
         clock: &Clock,
         ctx: &mut TxContext
     ) {
-        assert!(sender(ctx) == stake_config::get_escrow_admin_address(global_config), ERR_NOT_ESCROW_ADMIN);
+        assert!(sender(ctx) == stake_config::get_stake_admin_address(global_config), ERR_NOT_ESCROW_ADMIN);
 
         assert!(!stake_config::is_global_emergency(global_config), ERR_EMERGENCY);
         assert!(duration_second > 0, ERR_DURATION_CANNOT_BE_ZERO);

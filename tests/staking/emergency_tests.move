@@ -12,6 +12,8 @@ module staking::emergency_tests {
     use staking::coin_stake::COIN_STAKE;
     use staking::coin_reward::COIN_REWARD;
     use staking::stake::StakePool;
+    use sui::clock;
+    use sui::clock::Clock;
 
 
     /// this is number of decimals in both StakeCoin and RewardCoin by default, named like that for readability
@@ -22,6 +24,12 @@ module staking::emergency_tests {
     // utilities
     fun scenario(): Scenario { test_scenario::begin(@stake_admin) }
     fun admins(): (address, address) { (@stake_admin, @treasury) }
+
+    fun create_clock_time_(scenario: &mut Scenario, addr: address) {
+        test_scenario::next_tx(scenario, addr);
+        let ctx = test_scenario::ctx(scenario);
+        clock::share_for_testing(clock::create_for_testing(ctx));
+    }
 
     #[test]
     fun test_initialize() {
@@ -108,7 +116,7 @@ module staking::emergency_tests {
 
     fun test_cannot_register_with_global_emergency_(scenario: &mut Scenario) {
         let (stake_emergency_admin, _) = admins();
-
+        create_clock_time_(scenario, stake_emergency_admin);
         next_tx(scenario, stake_emergency_admin);
             {
                 stake_config::init_for_testing(ctx(scenario));
@@ -122,6 +130,7 @@ module staking::emergency_tests {
                 let metaS = test_scenario::take_shared<CoinMetadata<COIN_STAKE>>(scenario);
                 let metaR = test_scenario::take_shared<CoinMetadata<COIN_REWARD>>(scenario);
                 let treasuryR = test_scenario::take_shared<TreasuryCap<COIN_REWARD>>(scenario);
+                let clock = test_scenario::take_shared<Clock>(scenario);
 
                 stake_config::enable_global_emergency(&mut gConfig, ctx(scenario));
 
@@ -135,12 +144,14 @@ module staking::emergency_tests {
                     &gConfig,
                     &metaS,
                     &metaR,
-                    NOW,
+                    &clock,
                     ctx(scenario));
                 test_scenario::return_shared(gConfig);
                 test_scenario::return_shared(metaS);
                 test_scenario::return_shared(metaR);
                 test_scenario::return_shared(treasuryR);
+                test_scenario::return_shared(clock);
+
             };
     }
 
@@ -155,7 +166,7 @@ module staking::emergency_tests {
     fun test_cannot_stake_with_emergency_(scenario: &mut Scenario) {
 
         let (stake_emergency_admin, _) = admins();
-
+        create_clock_time_(scenario, stake_emergency_admin);
         next_tx(scenario, stake_emergency_admin);
             {
                 stake_config::init_for_testing(ctx(scenario));
@@ -165,6 +176,7 @@ module staking::emergency_tests {
 
         next_tx(scenario, stake_emergency_admin);
             {
+                let clock = test_scenario::take_shared<Clock>(scenario);
                 let gConfig = test_scenario::take_shared<GlobalConfig>(scenario);
                 let metaS = test_scenario::take_shared<CoinMetadata<COIN_STAKE>>(scenario);
                 let metaR = test_scenario::take_shared<CoinMetadata<COIN_REWARD>>(scenario);
@@ -176,13 +188,15 @@ module staking::emergency_tests {
                 let reward_coins = coin::mint<COIN_REWARD>(&mut treasuryR, 12345 * ONE_COIN, ctx(scenario));
 
                 let duration = 12345;
-                stake::register_pool<COIN_STAKE, COIN_REWARD>(b"pool001", reward_coins, duration, &mut gConfig, &metaS, &metaR, NOW, ctx(scenario));
+                stake::register_pool<COIN_STAKE, COIN_REWARD>(b"pool001", reward_coins, duration, &mut gConfig, &metaS, &metaR, &clock, ctx(scenario));
 
                 test_scenario::return_shared(gConfig);
                 test_scenario::return_shared(metaS);
                 test_scenario::return_shared(metaR);
                 test_scenario::return_shared(treasuryS);
                 test_scenario::return_shared(treasuryR);
+                test_scenario::return_shared(clock);
+
             };
 
         next_tx(scenario, stake_emergency_admin);
@@ -204,10 +218,13 @@ module staking::emergency_tests {
                 let gConfig = test_scenario::take_shared<GlobalConfig>(scenario);
                 let pool = test_scenario::take_shared<StakePool<COIN_STAKE, COIN_REWARD>>(scenario);
                 let coins = test_scenario::take_from_sender<Coin<COIN_STAKE>>(scenario);
-                stake::stake<COIN_STAKE, COIN_REWARD>(&mut pool, coins, &mut gConfig, NOW, ctx(scenario));
+                let clock = test_scenario::take_shared<Clock>(scenario);
+
+                stake::stake<COIN_STAKE, COIN_REWARD>(&mut pool, coins, &mut gConfig, &clock, ctx(scenario));
 
                 test_scenario::return_shared(gConfig);
                 test_scenario::return_shared(pool);
+                test_scenario::return_shared(clock);
             }
     }
 //

@@ -135,13 +135,4 @@ module staking::stake_scripts {
     public entry fun enable_global_emergency(global_config: &mut GlobalConfig, ctx: &mut TxContext) {
         stake_config::enable_global_emergency(global_config, ctx);
     }
-
-    /// Sets `escrow_admin` account.
-    /// Should be signed with current `escrow_admin` account.
-    ///     * `global_config` - current escrow admin account.
-    ///     * `new_address` - new treasury admin address.
-    ///     * ctx: current escrow_admin
-    public entry fun set_escrow_admin_address(global_config: &mut GlobalConfig, new_address: address, ctx: &mut TxContext) {
-        stake_config::set_escrow_admin_address(global_config, new_address, ctx);
-    }
 }
