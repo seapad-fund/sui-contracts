@@ -16,7 +16,7 @@ module seapad::project_entries {
                                                  coin_decimals: u8,
                                                  token_decimals: u8,
                                                  ctx: &mut TxContext) {
-        project::create_project<COIN, TOKEN>(adminCap, owner, vesting_type, coin_decimals, token_decimals, ctx);
+        project::create_project<COIN, TOKEN>(adminCap, owner, vesting_type,0, coin_decimals, token_decimals, ctx);
     }
 
     public entry fun change_owner<COIN, TOKEN>(

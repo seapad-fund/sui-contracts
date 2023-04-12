@@ -128,8 +128,8 @@ module seapad::project {
     struct Vesting has key, store {
         id: UID,
         type: u8,
+        linear_time: u64,
         init_release_time: u64,
-        //must be shorted list
         milestones: vector<VestingMileStone>
     }
 
@@ -169,6 +169,7 @@ module seapad::project {
     public fun create_project<COIN, TOKEN>(_adminCap: &AdminCap,
                                            owner: address,
                                            vesting_type: u8,
+                                           linear_time_: u64,
                                            coin_decimals_: u8,
                                            token_decimals_: u8,
                                            ctx: &mut TxContext) {
@@ -203,6 +204,7 @@ module seapad::project {
         let vesting_obj = Vesting {
             id: object::new(ctx),
             type: vesting_type,
+            linear_time: linear_time_,
             init_release_time: 0,
             milestones: vector::empty<VestingMileStone>()
         };
@@ -234,10 +236,10 @@ module seapad::project {
 
     /// if you want more milestones
     public fun add_milestone<COIN, TOKEN>(_adminCap: &AdminCap,
-                                   project: &mut Project<COIN, TOKEN>,
-                                   time: u64,
-                                   percent: u64,
-                                   clock: &Clock) {
+                                          project: &mut Project<COIN, TOKEN>,
+                                          time: u64,
+                                          percent: u64,
+                                          clock: &Clock) {
         let vesting = &mut project.vesting;
         let end_time = project.launch_state.end_time;
 
@@ -256,17 +258,17 @@ module seapad::project {
     }
 
     public fun setup_project<COIN, TOKEN>(_adminCap: &AdminCap,
-                                   project: &mut Project<COIN, TOKEN>,
-                                   round: u8,
-                                   usewhitelist: bool,
-                                   swap_ratio_coin: u64,
-                                   swap_ratio_token: u64,
-                                   max_allocate: u64,
-                                   start_time: u64,
-                                   end_time: u64,
-                                   soft_cap: u64,
-                                   hard_cap: u64,
-                                   clock: &Clock) {
+                                          project: &mut Project<COIN, TOKEN>,
+                                          round: u8,
+                                          usewhitelist: bool,
+                                          swap_ratio_coin: u64,
+                                          swap_ratio_token: u64,
+                                          max_allocate: u64,
+                                          start_time: u64,
+                                          end_time: u64,
+                                          soft_cap: u64,
+                                          hard_cap: u64,
+                                          clock: &Clock) {
         assert!(end_time > start_time && start_time > clock::timestamp_ms(clock), EInvalidTime);
         project.use_whitelist = usewhitelist;
         if (usewhitelist) {
@@ -389,9 +391,9 @@ module seapad::project {
         event::emit(RemoveWhiteListEvent { project: id_address(project), users: temp_list });
     }
 
-    public fun start_fund_raising<COIN,TOKEN>(
+    public fun start_fund_raising<COIN, TOKEN>(
         _adminCap: &AdminCap,
-        project: &mut Project<COIN,TOKEN>,
+        project: &mut Project<COIN, TOKEN>,
         _clock: &Clock,
         ctx: &mut TxContext
     ) {
@@ -654,8 +656,10 @@ module seapad::project {
             total_percent = sum;
         };
         if (vesting.type == VESTING_TYPE_LINEAR) {
-            let delta = now - end_time;
-            total_percent = delta * 1000 / 31536000000;
+            if (now < vesting.linear_time) {
+                let delta = now - end_time;
+                total_percent = delta * 1000 / vesting.linear_time;
+            };
         };
         total_percent
     }
