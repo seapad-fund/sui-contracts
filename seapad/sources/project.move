@@ -486,8 +486,7 @@ module seapad::project {
         clock: &Clock,
         ctx: &mut TxContext
     ) {
-        validate_end_fund_rasing(project);
-        project.launch_state.end_time = clock::timestamp_ms(clock);
+        validate_end_fund_rasing(project, clock::timestamp_ms(clock));
         let total_coin_raised = if (option::is_none(&project.launch_state.coin_raised)) {
             0
         } else {
@@ -718,7 +717,8 @@ module seapad::project {
         assert!(project.launch_state.state == ROUND_STATE_REFUNDING, EInvalidRoundState);
     }
 
-    fun validate_end_fund_rasing<COIN, TOKEN>(project: &mut Project<COIN, TOKEN>) {
+    fun validate_end_fund_rasing<COIN, TOKEN>(project: &mut Project<COIN, TOKEN>, now: u64) {
+        assert!(project.launch_state.end_time <= now || project.launch_state.start_time < now, EInvalidTime);
         assert!(project.launch_state.state == ROUND_STATE_RASING, EInvalidRoundState);
     }
 
