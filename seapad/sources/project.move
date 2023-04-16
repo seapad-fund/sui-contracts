@@ -486,7 +486,8 @@ module seapad::project {
         clock: &Clock,
         ctx: &mut TxContext
     ) {
-        validate_end_fund_rasing(project, clock::timestamp_ms(clock));
+        validate_end_fund_rasing(project);
+        project.launch_state.end_time = clock::timestamp_ms(clock);
         let total_coin_raised = if (option::is_none(&project.launch_state.coin_raised)) {
             0
         } else {
@@ -502,7 +503,8 @@ module seapad::project {
             project: id_address(project),
             total_sold: project.launch_state.total_token_sold,
             epoch: tx_context::epoch(ctx),
-            state: project.launch_state.state
+            state: project.launch_state.state,
+            end_time: project.launch_state.end_time
         })
     }
 
@@ -716,8 +718,7 @@ module seapad::project {
         assert!(project.launch_state.state == ROUND_STATE_REFUNDING, EInvalidRoundState);
     }
 
-    fun validate_end_fund_rasing<COIN, TOKEN>(project: &mut Project<COIN, TOKEN>, now: u64) {
-        assert!(project.launch_state.end_time <= now, EInvalidTime);
+    fun validate_end_fund_rasing<COIN, TOKEN>(project: &mut Project<COIN, TOKEN>) {
         assert!(project.launch_state.state == ROUND_STATE_RASING, EInvalidRoundState);
     }
 
@@ -783,7 +784,8 @@ module seapad::project {
         project: address,
         total_sold: u64,
         epoch: u64,
-        state: u8
+        state: u8,
+        end_time: u64
     }
 
     struct AddWhiteListEvent has copy, drop {
