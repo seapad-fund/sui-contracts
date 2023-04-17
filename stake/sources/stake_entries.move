@@ -1,5 +1,5 @@
 /// Collection of entrypoints to handle staking pools.
-module seapad::stake_scripts {
+module seapad::stake_entries {
     use seapad::stake;
     use sui::tx_context::{TxContext, sender};
     use sui::coin::{Coin};
@@ -8,6 +8,7 @@ module seapad::stake_scripts {
     use seapad::stake::StakePool;
     use sui::transfer;
     use sui::clock;
+    use seapad::stake_config;
 
     /// Register new staking pool with staking coin `S` and reward coin `R`.
     ///     * `rewards` - reward amount in R coins.
@@ -19,7 +20,15 @@ module seapad::stake_scripts {
                                          decimalR: u8,
                                          system_clock: &Clock,
                                          ctx: &mut TxContext) {
-        stake::register_pool<S, R>(rewards, duration, global_config, decimalS, decimalR, clock::timestamp_ms(system_clock), ctx);
+        stake::register_pool<S, R>(
+            rewards,
+            duration,
+            global_config,
+            decimalS,
+            decimalR,
+            clock::timestamp_ms(system_clock),
+            ctx
+        );
     }
 
     /// Stake an `amount` of `Coin<S>` to the pool of stake coin `S` and reward coin `R` on the address `pool_addr`.
@@ -52,7 +61,7 @@ module seapad::stake_scripts {
                                    system_clock: &Clock,
                                    ctx: &mut TxContext) {
         let rewards = stake::harvest<S, R>(pool, global_config, clock::timestamp_ms(system_clock), ctx);
-        transfer::public_transfer( rewards, sender(ctx));
+        transfer::public_transfer(rewards, sender(ctx));
     }
 
     /// Deposit more `Coin<R>` rewards to the pool.
@@ -96,7 +105,33 @@ module seapad::stake_scripts {
                                                        system_clock: &Clock,
                                                        ctx: &mut TxContext) {
         let treasury_addr = sender(ctx);
-        let rewards = stake::withdraw_to_treasury<S, R>(pool, amount, global_config, clock::timestamp_ms(system_clock), ctx);
+        let rewards = stake::withdraw_to_treasury<S, R>(
+            pool,
+            amount,
+            global_config,
+            clock::timestamp_ms(system_clock),
+            ctx
+        );
         transfer::public_transfer(rewards, treasury_addr);
+    }
+
+    public entry fun enable_global_emergency(global_config: &mut GlobalConfig, ctx: &mut TxContext) {
+        stake_config::enable_global_emergency(global_config, ctx);
+    }
+
+    public entry fun set_treasury_admin_address(
+        global_config: &mut GlobalConfig,
+        new_address: address,
+        ctx: &mut TxContext
+    ) {
+        stake_config::set_treasury_admin_address(global_config, new_address, ctx);
+    }
+
+    public entry fun set_emergency_admin_address(
+        global_config: &mut GlobalConfig,
+        new_address: address,
+        ctx: &mut TxContext
+    ) {
+        stake_config::set_emergency_admin_address(global_config, new_address, ctx);
     }
 }

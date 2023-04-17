@@ -57,7 +57,7 @@ module seapad::stake_config {
     /// Should be signed with current `emergency_admin` account.
     ///     * `emergency_admin` - current emergency admin account.
     ///     * `new_address` - new emergency admin address.
-    public entry fun set_emergency_admin_address(global_config: &mut GlobalConfig, new_address: address, ctx: &mut TxContext) {
+    public fun set_emergency_admin_address(global_config: &mut GlobalConfig, new_address: address, ctx: &mut TxContext) {
         assert!(sender(ctx) == global_config.emergency_admin_address, ERR_NO_PERMISSIONS);
         global_config.emergency_admin_address = new_address;
     }
@@ -73,7 +73,7 @@ module seapad::stake_config {
     ///     * `global_config` - current treasury admin account.
     ///     * `new_address` - new treasury admin address.
     ///     * ctx: current treasury_admin
-    public entry fun set_treasury_admin_address(global_config: &mut GlobalConfig, new_address: address, ctx: &mut TxContext) {
+    public fun set_treasury_admin_address(global_config: &mut GlobalConfig, new_address: address, ctx: &mut TxContext) {
         assert!(sender(ctx) == global_config.treasury_admin_address, ERR_NO_PERMISSIONS);
         global_config.treasury_admin_address = new_address;
     }
@@ -87,7 +87,7 @@ module seapad::stake_config {
     /// Enables "global emergency state". All the pools' operations are disabled except for `emergency_unstake()`.
     /// This state cannot be disabled, use with caution.
     ///     * `emergency_admin` - current emergency admin account.
-    public entry fun enable_global_emergency(global_config: &mut GlobalConfig, ctx: &mut TxContext) {
+    public fun enable_global_emergency(global_config: &mut GlobalConfig, ctx: &mut TxContext) {
         assert!(sender(ctx) == global_config.emergency_admin_address, ERR_NO_PERMISSIONS);
         assert!(!global_config.global_emergency_locked, ERR_GLOBAL_EMERGENCY);
         global_config.global_emergency_locked = true;
