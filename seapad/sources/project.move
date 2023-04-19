@@ -65,16 +65,11 @@ module seapad::project {
 
     ///lives in launchpad domain
     ///use dynamic field to add likes, votes, and watch
-    const LIKES: vector<u8> = b"likes";
-    const WATCHS: vector<u8> = b"watchs";
     const VOTES: vector<u8> = b"votes"; //votes: VecSet<address>
 
     const VESTING_TYPE_MILESTONE: u8 = 1;
     const VESTING_TYPE_LINEAR: u8 = 2;
-    const TOKEN_INFO: vector<u8> = b"token_info";
-    const WHITELIST: vector<u8> = b"whitelist";
     const PROFILE: vector<u8> = b"profile";
-    const MAX_ALLOCATE: vector<u8> = b"max_allocate";
 
     struct ProjectProfile has store {
         name: vector<u8>,
@@ -141,9 +136,9 @@ module seapad::project {
         owner: address,
         coin_decimals: u8,
         token_decimals: u8,
-        vesting: Vesting
+        vesting: Vesting,
+        whitelist: Table<address, address>
         //        profile: //use dynamic field
-        //        whitelist: VecSet<address> //use dynamic field
     }
 
     struct AdminCap has key, store {
@@ -197,8 +192,6 @@ module seapad::project {
             total_vote: 0,
             voters: vec_set::empty()
         };
-        dynamic_field::add(&mut community.id, LIKES, vec_set::empty<address>());
-        dynamic_field::add(&mut community.id, WATCHS, vec_set::empty<address>());
         dynamic_field::add(&mut community.id, VOTES, vec_set::empty<address>());
 
         let vesting_obj = Vesting {
@@ -217,7 +210,8 @@ module seapad::project {
             use_whitelist: false,
             coin_decimals: coin_decimals_,
             token_decimals: token_decimals_,
-            vesting: vesting_obj
+            vesting: vesting_obj,
+            whitelist: table::new(ctx)
         };
 
         event::emit(build_event_create_project(&project));
@@ -271,9 +265,6 @@ module seapad::project {
                                           clock: &Clock) {
         assert!(end_time > start_time && start_time > clock::timestamp_ms(clock), EInvalidTime);
         project.use_whitelist = usewhitelist;
-        if (usewhitelist) {
-            dynamic_field::add(&mut project.id, WHITELIST, vec_set::empty<address>());
-        };
         let launchstate = &mut project.launch_state;
         launchstate.default_max_allocate = max_allocate;
         launchstate.round = round;
@@ -323,46 +314,46 @@ module seapad::project {
         event::emit(RemoveMaxAllocateEvent { project: id_address(project), user })
     }
 
-    public fun save_profile<COIN, TOKEN>(_adminCap: &AdminCap,
-                                         project: &mut Project<COIN, TOKEN>,
-                                         name: vector<u8>,
-                                         twitter: vector<u8>,
-                                         discord: vector<u8>,
-                                         telegram: vector<u8>,
-                                         website: vector<u8>,
-                                         _ctx: &mut TxContext) {
-        let exists = dynamic_field::exists_with_type<vector<u8>, ProjectProfile>(&project.id, PROFILE);
-        if (exists) {
-            let profile = dynamic_field::borrow_mut<vector<u8>, ProjectProfile>(&mut project.id, PROFILE);
-            profile.name = name;
-            profile.twitter = twitter;
-            profile.discord = discord;
-            profile.telegram = telegram;
-            profile.website = website;
-        }else {
-            dynamic_field::add(&mut project.id, PROFILE, ProjectProfile {
-                name,
-                twitter,
-                discord,
-                telegram,
-                website
-            })
-        }
-    }
+    // public fun save_profile<COIN, TOKEN>(_adminCap: &AdminCap,
+    //                                      project: &mut Project<COIN, TOKEN>,
+    //                                      name: vector<u8>,
+    //                                      twitter: vector<u8>,
+    //                                      discord: vector<u8>,
+    //                                      telegram: vector<u8>,
+    //                                      website: vector<u8>,
+    //                                      _ctx: &mut TxContext) {
+    //     let exists = dynamic_field::exists_with_type<vector<u8>, ProjectProfile>(&project.id, PROFILE);
+    //     if (exists) {
+    //         let profile = dynamic_field::borrow_mut<vector<u8>, ProjectProfile>(&mut project.id, PROFILE);
+    //         profile.name = name;
+    //         profile.twitter = twitter;
+    //         profile.discord = discord;
+    //         profile.telegram = telegram;
+    //         profile.website = website;
+    //     }else {
+    //         dynamic_field::add(&mut project.id, PROFILE, ProjectProfile {
+    //             name,
+    //             twitter,
+    //             discord,
+    //             telegram,
+    //             website
+    //         })
+    //     }
+    // }
 
     public fun add_whitelist<COIN, TOKEN>(_adminCap: &AdminCap,
                                           project: &mut Project<COIN, TOKEN>,
                                           user_list: vector<address>,
                                           _ctx: &mut TxContext) {
         assert!(project.use_whitelist, EProjectNotWhitelist);
-        let whitelist = dynamic_field::borrow_mut<vector<u8>, VecSet<address>>(&mut project.id, WHITELIST);
+        let whitelist = &mut project.whitelist;
         let temp_list = vector::empty<address>();
 
         let i = 0;
         while (i < vector::length(&user_list)) {
             let user_address = vector::pop_back(&mut user_list);
-            assert!(!vec_set::contains(whitelist, &user_address), EExistsInWhitelist);
-            vec_set::insert(whitelist, user_address);
+            assert!(!table::contains(whitelist, user_address), EExistsInWhitelist);
+            table::add(whitelist, user_address, user_address);
             vector::push_back(&mut temp_list, user_address);
 
             i = i + 1;
@@ -376,14 +367,14 @@ module seapad::project {
                                              user_list: vector<address>,
                                              _ctx: &mut TxContext) {
         assert!(project.use_whitelist, EProjectNotWhitelist);
-        let whitelist = dynamic_field::borrow_mut<vector<u8>, VecSet<address>>(&mut project.id, WHITELIST);
+        let whitelist =  &mut project.whitelist;
         let temp_list = vector::empty<address>();
 
         let i = 0;
         while (i < vector::length(&user_list)) {
             let user_address = vector::pop_back(&mut user_list);
-            assert!(vec_set::contains(whitelist, &user_address), ENotExistsInWhitelist);
-            vec_set::remove(whitelist, &user_address);
+            assert!(table::contains(whitelist, user_address), ENotExistsInWhitelist);
+            table::remove(whitelist, user_address);
             vector::push_back(&mut temp_list, user_address);
 
             i = i + 1;
@@ -704,8 +695,8 @@ module seapad::project {
         assert!(project.launch_state.state == ROUND_STATE_RASING, EInvalidRoundState);
         assert!(project.launch_state.start_time < now && project.launch_state.end_time >= now, EInvalidTime);
         if (project.use_whitelist) {
-            let whitelist = dynamic_field::borrow<vector<u8>, VecSet<address>>(&project.id, WHITELIST);
-            assert!(vec_set::contains(whitelist, &senderAddr), ENotWhitelist);
+            let whitelist = &mut project.whitelist;
+            assert!(table::contains(whitelist, senderAddr), ENotWhitelist);
         }
     }
 
