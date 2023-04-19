@@ -82,16 +82,16 @@ module seapad::project_entries {
         project::clear_max_allocate<COIN, TOKEN>(_admin_cap, user, project, _ctx);
     }
 
-    public entry fun save_profile<COIN, TOKEN>(_adminCap: &AdminCap,
-                                               project: &mut Project<COIN, TOKEN>,
-                                               name: vector<u8>,
-                                               twitter: vector<u8>,
-                                               discord: vector<u8>,
-                                               telegram: vector<u8>,
-                                               website: vector<u8>,
-                                               _ctx: &mut TxContext) {
-        project::save_profile<COIN, TOKEN>(_adminCap, project, name, twitter, discord, telegram, website, _ctx);
-    }
+    // public entry fun save_profile<COIN, TOKEN>(_adminCap: &AdminCap,
+    //                                            project: &mut Project<COIN, TOKEN>,
+    //                                            name: vector<u8>,
+    //                                            twitter: vector<u8>,
+    //                                            discord: vector<u8>,
+    //                                            telegram: vector<u8>,
+    //                                            website: vector<u8>,
+    //                                            _ctx: &mut TxContext) {
+    //     project::save_profile<COIN, TOKEN>(_adminCap, project, name, twitter, discord, telegram, website, _ctx);
+    // }
 
     public entry fun add_whitelist<COIN, TOKEN>(_adminCap: &AdminCap,
                                                 project: &mut Project<COIN, TOKEN>,
