@@ -19,6 +19,7 @@ module seapad::stake_entries {
                                          decimalS: u8,
                                          decimalR: u8,
                                          clock: &Clock,
+                                         duration_unlock_time_ms: u64,
                                          ctx: &mut TxContext) {
         stake::register_pool<S, R>(
             rewards,
@@ -27,6 +28,7 @@ module seapad::stake_entries {
             decimalS,
             decimalR,
             clock::timestamp_ms(clock),
+            duration_unlock_time_ms,
             ctx
         );
     }
