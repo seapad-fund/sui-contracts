@@ -66,13 +66,6 @@ module seapad::stake {
     /// When reward coin has more than 10 decimals.
     const ERR_INVALID_REWARD_DECIMALS: u64 = 123;
 
-    //
-    // Constants
-    //
-
-    /// Week in seconds, lockup period.
-    const WEEK_IN_SECONDS: u64 = 604800;
-
     /// When treasury can withdraw rewards (~3 months).
     const WITHDRAW_REWARD_PERIOD_IN_SECONDS: u64 = 7257600;
 
@@ -102,6 +95,7 @@ module seapad::stake {
         /// This field set to `true` only in case of emergency:
         /// * only `emergency_unstake()` operation is available in the state of emergency
         emergency_locked: bool,
+        duration_unlock_time_sec: u64
     }
 
     /// Stores user stake info.
@@ -131,6 +125,7 @@ module seapad::stake {
         decimalS: u8,
         decimalR: u8,
         timestamp_ms: u64,
+        duration_unlock_time_ms: u64,
         ctx: &mut TxContext
     ) {
         assert!(!stake_config::is_global_emergency(global_config), ERR_EMERGENCY);
@@ -162,6 +157,7 @@ module seapad::stake {
             reward_coins,
             scale,
             emergency_locked: false,
+            duration_unlock_time_sec: duration_unlock_time_ms / 1000
         };
 
         event::emit(RegisterPoolEvent {
@@ -236,19 +232,18 @@ module seapad::stake {
         let current_time = timestamp_ms / 1000;
         let user_address = sender(ctx);
         let accum_reward = pool.accum_reward;
-        let user_staked_amount_ = amount;
-        let unobtainable_reward_ = 0;
+
         if (!table::contains(&pool.stakes, user_address)) {
-            let new_stake = UserStake {
+            let new_user_stake = UserStake {
                 amount,
                 unobtainable_reward: 0,
                 earned_reward: 0,
-                unlock_time: current_time + WEEK_IN_SECONDS,
+                unlock_time: current_time + pool.duration_unlock_time_sec,
             };
 
             // calculate unobtainable reward for new stake
-            new_stake.unobtainable_reward = (accum_reward * (amount as u128)) / pool.scale;
-            table::add(&mut pool.stakes, user_address, new_stake);
+            new_user_stake.unobtainable_reward = (accum_reward * (amount as u128)) / pool.scale;
+            table::add(&mut pool.stakes, user_address, new_user_stake);
         } else {
             let user_stake = table::borrow_mut(&mut pool.stakes, user_address);
             // update earnings
@@ -256,10 +251,10 @@ module seapad::stake {
             user_stake.amount = user_stake.amount + amount;
             // recalculate unobtainable reward after stake amount changed
             user_stake.unobtainable_reward = (accum_reward * user_stake_amount(user_stake)) / pool.scale;
-            user_stake.unlock_time = current_time + WEEK_IN_SECONDS;
-            user_staked_amount_ = user_stake.amount;
-            unobtainable_reward_ = user_stake.unobtainable_reward;
+            user_stake.unlock_time = current_time + pool.duration_unlock_time_sec;
         };
+        let user_stake = table::borrow(&mut pool.stakes, user_address);
+
 
         coin::join(&mut pool.stake_coins, coins);
 
@@ -267,12 +262,14 @@ module seapad::stake {
             pool_id: object::id_address(pool),
             user_address,
             amount,
-            user_staked_amount: user_staked_amount_,
+            user_staked_amount: user_stake.amount,
             accum_reward: pool.accum_reward,
             total_staked: coin::value(&pool.stake_coins),
-            unlock_time_sec: current_time + WEEK_IN_SECONDS,
+            unlock_time_sec: current_time + pool.duration_unlock_time_sec,
             pool_last_updated_sec: pool.last_updated,
-            unobtainable_reward: unobtainable_reward_
+            unobtainable_reward: user_stake.unobtainable_reward,
+            earned_reward: user_stake.earned_reward,
+            unlock_time: user_stake.unlock_time
         });
     }
 
@@ -323,7 +320,9 @@ module seapad::stake {
             accum_reward: pool.accum_reward,
             total_staked: coin::value(&pool.stake_coins),
             pool_last_updated_sec: pool.last_updated,
-            unobtainable_reward: user_stake.unobtainable_reward
+            unobtainable_reward: user_stake.unobtainable_reward,
+            earned_reward: user_stake.earned_reward,
+            unlock_time: user_stake.unlock_time
         });
 
         coin
@@ -367,7 +366,9 @@ module seapad::stake {
             accum_reward: pool.accum_reward,
             total_staked: coin::value(&pool.stake_coins),
             pool_last_updated_sec: pool.last_updated,
-            unobtainable_reward: user_stake.unobtainable_reward
+            unobtainable_reward: user_stake.unobtainable_reward,
+            earned_reward: user_stake.earned_reward,
+            unlock_time: user_stake.unlock_time
         });
 
         coin
@@ -643,7 +644,9 @@ module seapad::stake {
         total_staked: u64,
         unlock_time_sec: u64,
         pool_last_updated_sec: u64,
-        unobtainable_reward: u128
+        unobtainable_reward: u128,
+        earned_reward: u64,
+        unlock_time: u64
     }
 
     struct UnstakeEvent has drop, store, copy {
@@ -654,7 +657,9 @@ module seapad::stake {
         accum_reward: u128,
         total_staked: u64,
         pool_last_updated_sec: u64,
-        unobtainable_reward: u128
+        unobtainable_reward: u128,
+        earned_reward: u64,
+        unlock_time: u64
     }
 
 
@@ -673,7 +678,9 @@ module seapad::stake {
         accum_reward: u128,
         total_staked: u64,
         pool_last_updated_sec: u64,
-        unobtainable_reward: u128
+        unobtainable_reward: u128,
+        earned_reward: u64,
+        unlock_time: u64
     }
 
     struct RegisterPoolEvent has drop, copy, store {
