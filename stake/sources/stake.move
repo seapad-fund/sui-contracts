@@ -95,7 +95,7 @@ module seapad::stake {
         /// This field set to `true` only in case of emergency:
         /// * only `emergency_unstake()` operation is available in the state of emergency
         emergency_locked: bool,
-        duration_unlock_time_sec: u64
+        duration_unstake_time_sec: u64
     }
 
     /// Stores user stake info.
@@ -125,7 +125,7 @@ module seapad::stake {
         decimalS: u8,
         decimalR: u8,
         timestamp_ms: u64,
-        duration_unlock_time_ms: u64,
+        duration_unstake_time_ms: u64,
         ctx: &mut TxContext
     ) {
         assert!(!stake_config::is_global_emergency(global_config), ERR_EMERGENCY);
@@ -157,7 +157,7 @@ module seapad::stake {
             reward_coins,
             scale,
             emergency_locked: false,
-            duration_unlock_time_sec: duration_unlock_time_ms / 1000
+            duration_unstake_time_sec: duration_unstake_time_ms / 1000
         };
 
         event::emit(RegisterPoolEvent {
@@ -238,7 +238,7 @@ module seapad::stake {
                 amount,
                 unobtainable_reward: 0,
                 earned_reward: 0,
-                unlock_time: current_time + pool.duration_unlock_time_sec,
+                unlock_time: current_time + pool.duration_unstake_time_sec,
             };
 
             // calculate unobtainable reward for new stake
@@ -251,7 +251,7 @@ module seapad::stake {
             user_stake.amount = user_stake.amount + amount;
             // recalculate unobtainable reward after stake amount changed
             user_stake.unobtainable_reward = (accum_reward * user_stake_amount(user_stake)) / pool.scale;
-            user_stake.unlock_time = current_time + pool.duration_unlock_time_sec;
+            user_stake.unlock_time = current_time + pool.duration_unstake_time_sec;
         };
         let user_stake = table::borrow(&mut pool.stakes, user_address);
 
@@ -265,7 +265,7 @@ module seapad::stake {
             user_staked_amount: user_stake.amount,
             accum_reward: pool.accum_reward,
             total_staked: coin::value(&pool.stake_coins),
-            unlock_time_sec: current_time + pool.duration_unlock_time_sec,
+            unlock_time_sec: current_time + pool.duration_unstake_time_sec,
             pool_last_updated_sec: pool.last_updated,
             unobtainable_reward: user_stake.unobtainable_reward,
             earned_reward: user_stake.earned_reward,
