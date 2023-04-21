@@ -15,8 +15,17 @@ module seapad::project_entries {
                                                  vesting_type: u8,
                                                  coin_decimals: u8,
                                                  token_decimals: u8,
+                                                 linear_time_ms: u64,
                                                  ctx: &mut TxContext) {
-        project::create_project<COIN, TOKEN>(adminCap, owner, vesting_type,0, coin_decimals, token_decimals, ctx);
+        project::create_project<COIN, TOKEN>(
+            adminCap,
+            owner,
+            vesting_type,
+            linear_time_ms,
+            coin_decimals,
+            token_decimals,
+            ctx
+        );
     }
 
     public entry fun change_owner<COIN, TOKEN>(
