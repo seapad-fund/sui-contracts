@@ -20,6 +20,8 @@ module seapad::project_test {
     const SOFT_CAP: u64 = 1000000000000;
     //2000
     const HARD_CAP: u64 = 2000000000000;
+    const DEPOSIT_VALUE: u64 = 40000000000000;
+
     const MAX_ALLOCATE: u64 = 500000000000;
     const OWNER_PROJECT: address = @0x1;
     const USER2: address = @0x2;
@@ -117,7 +119,7 @@ module seapad::project_test {
 
         create_project_milestone_(scenario);
         setup_launch_state_(scenario, 1, false, &clock);
-        deposit_to_project_(OWNER_PROJECT, 5000000000000, scenario);
+        deposit_to_project_(OWNER_PROJECT, DEPOSIT_VALUE, scenario);
         clock::increment_for_testing(&mut clock, 1000);
         start_fund_raising_(scenario, &clock);
 
@@ -135,7 +137,7 @@ module seapad::project_test {
 
         create_project_milestone_(scenario);
         setup_launch_state_(scenario, 1, false, &clock);
-        deposit_to_project_(OWNER_PROJECT, 5000000000000, scenario);
+        deposit_to_project_(OWNER_PROJECT, DEPOSIT_VALUE, scenario);
 
         clock::increment_for_testing(&mut clock, 1500);
         start_fund_raising_(scenario, &clock);
@@ -158,7 +160,7 @@ module seapad::project_test {
 
         create_project_milestone_(scenario);
         setup_launch_state_(scenario, 1, false, &clock);
-        deposit_to_project_(OWNER_PROJECT, 5000000000000, scenario);
+        deposit_to_project_(OWNER_PROJECT, DEPOSIT_VALUE, scenario);
         start_fund_raising_(scenario, &clock);
 
         let coin_buy = if (TOKEN_DECIMAL >= COIN_DECIMAL) {
@@ -193,7 +195,7 @@ module seapad::project_test {
 
         create_project_milestone_(scenario);
         setup_launch_state_(scenario, 1, false, &clock);
-        deposit_to_project_(OWNER_PROJECT, 5000000000000, scenario);
+        deposit_to_project_(OWNER_PROJECT, DEPOSIT_VALUE, scenario);
         start_fund_raising_(scenario, &clock);
 
         add_max_allocate_(USER2, MAX_ALLOCATE * 2, scenario);
@@ -217,7 +219,7 @@ module seapad::project_test {
 
         create_project_milestone_(scenario);
         setup_launch_state_(scenario, 1, false, &clock);
-        deposit_to_project_(OWNER_PROJECT, 5000000000000, scenario);
+        deposit_to_project_(OWNER_PROJECT, DEPOSIT_VALUE, scenario);
 
         clock::increment_for_testing(&mut clock, 1500);
         start_fund_raising_(scenario, &clock);
@@ -243,7 +245,7 @@ module seapad::project_test {
 
         create_project_milestone_(scenario);
         setup_launch_state_(scenario, 1, true, &clock);
-        deposit_to_project_(OWNER_PROJECT, 5000000000000, scenario);
+        deposit_to_project_(OWNER_PROJECT, DEPOSIT_VALUE, scenario);
 
         clock::increment_for_testing(&mut clock, 1500);
         start_fund_raising_(scenario, &clock);
@@ -266,7 +268,7 @@ module seapad::project_test {
 
         create_project_linear_time_(scenario);
         setup_launch_state_(scenario, 1, false, &clock);
-        deposit_to_project_(OWNER_PROJECT, 5000000000000, scenario);
+        deposit_to_project_(OWNER_PROJECT, DEPOSIT_VALUE, scenario);
 
         clock::increment_for_testing(&mut clock, 1500);
         start_fund_raising_(scenario, &clock);
@@ -328,7 +330,7 @@ module seapad::project_test {
 
         create_project_milestone_(scenario);
         setup_launch_state_(scenario, 1, false, &clock);
-        deposit_to_project_(OWNER_PROJECT, 5000000000000, scenario);
+        deposit_to_project_(OWNER_PROJECT, DEPOSIT_VALUE, scenario);
 
         clock::increment_for_testing(&mut clock, 1500);
         start_fund_raising_(scenario, &clock);
@@ -393,7 +395,7 @@ module seapad::project_test {
         create_project_milestone_(scenario);
         setup_launch_state_(scenario, 1, false, &clock);
 
-        let deposit_value = 5000000000000;
+        let deposit_value = DEPOSIT_VALUE;
         deposit_to_project_(OWNER_PROJECT, deposit_value, scenario);
         clock::increment_for_testing(&mut clock, 1000);
         start_fund_raising_(scenario, &clock);
@@ -566,14 +568,11 @@ module seapad::project_test {
             //deposit
             let ido = test_scenario::take_shared<Project<USDT, SPT>>(scenario);
             let ctx = test_scenario::ctx(scenario);
-            let spt1 = coin::mint_for_testing<SPT>(value / 2, ctx);
-            let spt2 = coin::mint_for_testing<SPT>(value / 2, ctx);
-            let spt3 = coin::mint_for_testing<SPT>(value / 2, ctx);
+            let spt1 = coin::mint_for_testing<SPT>(value, ctx);
+
 
             let spts = vector::empty<Coin<SPT>>();
             vector::push_back(&mut spts, spt1);
-            vector::push_back(&mut spts, spt2);
-            vector::push_back(&mut spts, spt3);
 
             //expect 5k
             project::deposit_by_owner(spts, value, &mut ido, ctx);

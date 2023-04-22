@@ -621,12 +621,10 @@ module seapad::project {
     public fun swap_token<COIN, TOKEN>(coin_value: u64, project: &Project<COIN, TOKEN>): u64 {
         let swap_ratio_coin = project.launch_state.swap_ratio_coin;
         let swap_ratio_token = project.launch_state.swap_ratio_token;
+        let coin_num = coin_value / math::pow(10, project.coin_decimals);
+        let token_value = (swap_ratio_token * coin_num * math::pow(10, project.token_decimals)) / swap_ratio_coin;
 
-        let ratio_coin = math::pow(10, project.coin_decimals) / swap_ratio_coin;
-        let ratio_token = math::pow(10, project.token_decimals) / swap_ratio_token;
-        let token_value = (coin_value as u128) * (ratio_coin as u128) / (ratio_token as u128);
-
-        (token_value as u64)
+        token_value
     }
 
     fun cal_claim_percent(vesting: &Vesting, end_time: u64, now: u64): u64 {
