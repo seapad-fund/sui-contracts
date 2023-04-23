@@ -65,6 +65,8 @@ module seapad::stake {
 
     /// When reward coin has more than 10 decimals.
     const ERR_INVALID_REWARD_DECIMALS: u64 = 123;
+    const ERR_EXCEED_MAX_STAKE: u64 = 124;
+
 
     /// When treasury can withdraw rewards (~3 months).
     const WITHDRAW_REWARD_PERIOD_IN_SECONDS: u64 = 7257600;
@@ -95,7 +97,8 @@ module seapad::stake {
         /// This field set to `true` only in case of emergency:
         /// * only `emergency_unstake()` operation is available in the state of emergency
         emergency_locked: bool,
-        duration_unstake_time_sec: u64
+        duration_unstake_time_sec: u64,
+        max_stake: u64
     }
 
     /// Stores user stake info.
@@ -126,6 +129,7 @@ module seapad::stake {
         decimalR: u8,
         timestamp_ms: u64,
         duration_unstake_time_ms: u64,
+        max_stake: u64,
         ctx: &mut TxContext
     ) {
         assert!(!stake_config::is_global_emergency(global_config), ERR_EMERGENCY);
@@ -157,7 +161,8 @@ module seapad::stake {
             reward_coins,
             scale,
             emergency_locked: false,
-            duration_unstake_time_sec: duration_unstake_time_ms / 1000
+            duration_unstake_time_sec: duration_unstake_time_ms / 1000,
+            max_stake: max_stake
         };
 
         event::emit(RegisterPoolEvent {
@@ -222,7 +227,7 @@ module seapad::stake {
     ) {
         let amount = coin::value(&coins);
         assert!(amount > 0, ERR_AMOUNT_CANNOT_BE_ZERO);
-
+        assert!(amount <= pool.max_stake, ERR_EXCEED_MAX_STAKE);
         assert!(!is_emergency_inner(pool, global_config), ERR_EMERGENCY);
         assert!(!is_finished_inner(pool, timestamp_ms), ERR_HARVEST_FINISHED);
 

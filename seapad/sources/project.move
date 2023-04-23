@@ -367,7 +367,7 @@ module seapad::project {
                                              user_list: vector<address>,
                                              _ctx: &mut TxContext) {
         assert!(project.use_whitelist, EProjectNotWhitelist);
-        let whitelist =  &mut project.whitelist;
+        let whitelist = &mut project.whitelist;
         let temp_list = vector::empty<address>();
 
         let i = 0;
@@ -619,12 +619,14 @@ module seapad::project {
     }
 
     public fun swap_token<COIN, TOKEN>(coin_value: u64, project: &Project<COIN, TOKEN>): u64 {
-        let swap_ratio_coin = project.launch_state.swap_ratio_coin;
-        let swap_ratio_token = project.launch_state.swap_ratio_token;
-        let coin_num = coin_value / math::pow(10, project.coin_decimals);
-        let token_value = (swap_ratio_token * coin_num * math::pow(10, project.token_decimals)) / swap_ratio_coin;
+        let swap_ratio_coin = (project.launch_state.swap_ratio_coin as u128);
+        let swap_ratio_token = (project.launch_state.swap_ratio_token as u128);
+        let decimal_ratio_coin = (math::pow(10, project.coin_decimals) as u128);
+        let decimal_ratio_token = (math::pow(10, project.token_decimals) as u128);
 
-        token_value
+        let token_value = (coin_value as u128) * (swap_ratio_token * decimal_ratio_token) / (swap_ratio_coin * decimal_ratio_coin);
+
+        (token_value as u64)
     }
 
     fun cal_claim_percent(vesting: &Vesting, end_time: u64, now: u64): u64 {
@@ -653,7 +655,6 @@ module seapad::project {
         };
         total_percent
     }
-
 
     fun validate_start_fund_raising<COIN, TOKEN>(project: &mut Project<COIN, TOKEN>) {
         let launchstate = &project.launch_state;
