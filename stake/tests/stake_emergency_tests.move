@@ -11,6 +11,7 @@ module seapad::emergency_tests {
     const ONE_COIN: u64 = 1000000;
 
     const START_TIME: u64 = 682981200;
+    const MAX_STAKE: u64 = 1000000000000000000;
 
     // utilities
     fun scenario(): Scenario { test_scenario::begin(@stake_emergency_admin) }
@@ -121,7 +122,7 @@ module seapad::emergency_tests {
                 let reward_coins = coin::mint_for_testing<REWARD_COIN>(12345 * ONE_COIN, ctx(scenario));
                 let duration = 12345;
 
-                stake::register_pool<STAKE_COIN, REWARD_COIN>(reward_coins, duration, &gConfig, decimalS, decimalR, TIMESTAMP_MS_NOW, ctx(scenario));
+                stake::register_pool<STAKE_COIN, REWARD_COIN>(reward_coins, duration, &gConfig, decimalS, decimalR, TIMESTAMP_MS_NOW, duration, MAX_STAKE, ctx(scenario));
                 test_scenario::return_shared(gConfig);
             };
     }
