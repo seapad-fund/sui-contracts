@@ -1,4 +1,4 @@
-module seapad::nftbox_scripts {
+module seapad::nftbox_entries {
 
     use seapad::nftbox::{NftAdminCap, NftPool, NftTreasuryCap};
     use seapad::nftbox;
