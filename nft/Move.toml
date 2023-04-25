@@ -6,5 +6,8 @@ version = "0.0.1"
 Sui = { git = "https://github.com/MystenLabs/sui", subdir = "crates/sui-framework/packages/sui-framework", rev = "devnet" }
 W3libs = { git = "https://github.com/seapad-fund/w3libs", rev = "dev" }
 
+[addresses]
+seapad="0x0"
+sui="0x2"
 nftbox_admin = "0x9d6f2e34e937842df89642cd96fba8509d4e47d297f716ce3a44df3070a79851"
 nftbox_treasury_admin = "0x9d6f2e34e937842df89642cd96fba8509d4e47d297f716ce3a44df3070a79851"
