@@ -20,6 +20,7 @@ module seapad::stake_entries {
                                          decimalR: u8,
                                          clock: &Clock,
                                          duration_unstake_time_ms: u64,
+                                         max_stake_value: u64,
                                          ctx: &mut TxContext) {
         stake::register_pool<S, R>(
             rewards,
@@ -29,6 +30,7 @@ module seapad::stake_entries {
             decimalR,
             clock::timestamp_ms(clock),
             duration_unstake_time_ms,
+            max_stake_value,
             ctx
         );
     }
