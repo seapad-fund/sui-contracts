@@ -56,7 +56,7 @@ module seapad::nftbox_entries {
     public entry fun remove_whitelist<COIN>(_adminCap: &NftAdminCap, pool: &mut NftPool<COIN>, froms: vector<address>){
         nftbox::remove_whitelist(_adminCap, pool, froms);
     }
-    
+
     public entry fun withdraw_fund<COIN>(_adminCap: &NftTreasuryCap, pool: &mut NftPool<COIN>, amt: u64, ctx: &mut TxContext){
         nftbox::withdraw_fund(_adminCap, pool, amt, ctx);
     }
