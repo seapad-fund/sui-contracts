@@ -9,3 +9,12 @@ W3libs = { git = "https://github.com/seapad-fund/w3libs", rev = "dev" }
 [addresses]
 seapad =  "0x00"
 sui =  "0x02"
+
+seedFund = "0x8880"
+privateFund = "0x8881"
+publicFund = "0x8882"
+foundationFund = "0x8883"
+advisorpartnerFund = "0x8885"
+marketingFund = "0x8886"
+ecosystemFund = "0x8887"
+daoFund = "0x8888"
