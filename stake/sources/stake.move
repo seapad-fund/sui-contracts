@@ -162,7 +162,7 @@ module seapad::stake {
             scale,
             emergency_locked: false,
             duration_unstake_time_sec: duration_unstake_time_ms / 1000,
-            max_stake: max_stake
+            max_stake
         };
 
         event::emit(RegisterPoolEvent {
@@ -227,7 +227,6 @@ module seapad::stake {
     ) {
         let amount = coin::value(&coins);
         assert!(amount > 0, ERR_AMOUNT_CANNOT_BE_ZERO);
-        assert!(amount <= pool.max_stake, ERR_EXCEED_MAX_STAKE);
         assert!(!is_emergency_inner(pool, global_config), ERR_EMERGENCY);
         assert!(!is_finished_inner(pool, timestamp_ms), ERR_HARVEST_FINISHED);
 
@@ -259,7 +258,7 @@ module seapad::stake {
             user_stake.unlock_time = current_time + pool.duration_unstake_time_sec;
         };
         let user_stake = table::borrow(&mut pool.stakes, user_address);
-
+        assert!(user_stake.amount <= pool.max_stake, ERR_EXCEED_MAX_STAKE);
 
         coin::join(&mut pool.stake_coins, coins);
 

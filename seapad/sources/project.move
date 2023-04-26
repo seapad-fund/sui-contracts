@@ -593,6 +593,9 @@ module seapad::project {
         let order_book = &mut project.launch_state.order_book;
         let order = table::borrow_mut(order_book, sender);
         let amount_fund = order.coin_amount;
+        assert!(amount_fund > 0, EClaimZero);
+        order.coin_amount = 0;
+
         let coin_fund = coin::split(option::borrow_mut(&mut project.launch_state.coin_raised), amount_fund, ctx);
         transfer::public_transfer(coin_fund, sender);
         event::emit(ClaimRefundEvent { project: object::id_address(project), user: sender, coin_fund: amount_fund })

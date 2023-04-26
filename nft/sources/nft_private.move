@@ -43,6 +43,14 @@ module seapad::nft_private {
         }
     }
 
+    #[test_only]
+    public fun mint_for_test(name: vector<u8>,
+                    description: vector<u8>,
+                    url: vector<u8>,
+                    ctx: &mut TxContext): PriNFT{
+        mint(name, description, url, ctx)
+    }
+
     public(friend) fun mint_batch(
         count: u64,
         name: vector<u8>,
@@ -69,8 +77,22 @@ module seapad::nft_private {
         nft.description = string::utf8(new_description)
     }
 
+    #[test_only]
+    public fun update_description_for_test(
+        nft: &mut PriNFT,
+        new_description: vector<u8>,
+    ) {
+        nft.description = string::utf8(new_description)
+    }
+
     /// Permanently delete `nft`
     public(friend) fun burn(nft: PriNFT) {
+        let PriNFT { id, name: _, description: _, url: _ } = nft;
+        object::delete(id)
+    }
+
+    #[test_only]
+    public fun burn_for_test(nft: PriNFT) {
         let PriNFT { id, name: _, description: _, url: _ } = nft;
         object::delete(id)
     }
@@ -92,7 +114,7 @@ module seapad::nft_private {
 }
 
 #[test_only]
-module nfts::private_nftTests {
+module seapad::private_nftTests {
     use seapad::nft_private::{Self, PriNFT};
     use sui::test_scenario as ts;
     use sui::transfer;
@@ -105,7 +127,8 @@ module nfts::private_nftTests {
         // create the NFT
         let scenario = ts::begin(addr1);
             {
-                nft_private::mint(b"test", b"a test", b"https://www.sui.io", ts::ctx(&mut scenario))
+                let nft = nft_private::mint_for_test(b"test", b"a test", b"https://www.sui.io", ts::ctx(&mut scenario));
+                transfer::public_transfer(nft,  addr1);
             };
         // send it from A to B
         ts::next_tx(&mut scenario, addr1);
@@ -117,7 +140,7 @@ module nfts::private_nftTests {
         ts::next_tx(&mut scenario, addr2);
             {
                 let nft = ts::take_from_sender<PriNFT>(&mut scenario);
-                nft_private::update_description(&mut nft, b"a new description") ;
+                nft_private::update_description_for_test(&mut nft, b"a new description") ;
                 assert!(*string::bytes(nft_private::description(&nft)) == b"a new description", 0);
                 ts::return_to_sender(&mut scenario, nft);
             };
@@ -125,7 +148,7 @@ module nfts::private_nftTests {
         ts::next_tx(&mut scenario, addr2);
             {
                 let nft = ts::take_from_sender<PriNFT>(&mut scenario);
-                nft_private::burn(nft)
+                nft_private::burn_for_test(nft)
             };
         ts::end(scenario);
     }

@@ -49,8 +49,12 @@ module seapad::nftbox_entries {
         nftbox::claim_refund<COIN>(pool, system_clock, ctx);
     }
 
-    public entry fun add_whitelist<COIN>(_adminCap: &NftAdminCap, pool: &mut NftPool<COIN>, white: address){
-        nftbox::add_whitelist(_adminCap, pool, white);
+    public entry fun add_whitelist<COIN>(_adminCap: &NftAdminCap, pool: &mut NftPool<COIN>, tos: vector<address>){
+        nftbox::add_whitelist(_adminCap, pool, tos);
+    }
+
+    public entry fun remove_whitelist<COIN>(_adminCap: &NftAdminCap, pool: &mut NftPool<COIN>, froms: vector<address>){
+        nftbox::remove_whitelist(_adminCap, pool, froms);
     }
 
     public entry fun withdraw_fund<COIN>(_adminCap: &NftTreasuryCap, pool: &mut NftPool<COIN>, amt: u64, ctx: &mut TxContext){

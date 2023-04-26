@@ -15,6 +15,7 @@ module seapad::nftbox {
     use std::vector;
     use sui::event::emit;
     use sui::transfer::{public_transfer};
+    use w3libs::u256;
 
     struct NFTBOX has drop {}
 
@@ -233,7 +234,6 @@ module seapad::nftbox {
     }
 
 
-    ///@todo assert name, desc, url ?
     public fun add_collection<COIN>(_adminCap: &NftAdminCap, pool: &mut NftPool<COIN>,
                                     type: u8, name: vector<u8>, description: vector<u8>, url: vector<u8>, price: u64){
         assert!(pool.state == ROUND_STATE_INIT, ERR_INVALID_STATE);
@@ -267,7 +267,7 @@ module seapad::nftbox {
     ///Buy multiple nft items with count, with coin in should afford total cost
     public fun buy_nft<COIN>(coin_in: &mut Coin<COIN>, nft_types:  vector<u8>, nft_amounts: vector<u64>,
                              pool: &mut NftPool<COIN>, system_clock: &Clock, ctx: &mut TxContext){
-        //check state
+        //check pool state
         assert!(pool.state == ROUND_STATE_RASING, ERR_NOT_FUNDRAISING);
         assert!(pool.hard_cap <= pool.total_sold_coin, ERR_REACH_HARDCAP);
 
@@ -281,39 +281,40 @@ module seapad::nftbox {
         assert!(vector::length<u64>(&nft_amounts) > 0 && (vector::length<u64>(&nft_amounts) == vector::length<u8>(&nft_types)), ERR_BAD_NFT_INFO);
 
         let size = vector::length<u8>(&nft_types);
-        let cost =( 0 as u64); //@fixme
-        let nftAmt = (0 as u64);
+        let cost256 = u256::zero();
+        let nftAmt = 0u64;
         while (size > 0){
             size = size - 1;
-            let nft_amount = *vector::borrow(&nft_amounts, size);
+            let nftAmount = *vector::borrow(&nft_amounts, size);
             let collectionType = *vector::borrow(&nft_types, size);
-            assert!(nft_amount > 0 && collectionType > 0 && table::contains(&pool.templates, collectionType), ERR_BAD_NFT_INFO);
-            cost = cost + nft_amount * table::borrow(&pool.templates, collectionType).price; //@fixme check overflow
-            nftAmt = nftAmt + nft_amount;
+            assert!(nftAmount > 0 && collectionType > 0 && table::contains(&pool.templates, collectionType), ERR_BAD_NFT_INFO);
+
+            cost256 = u256::mul_add(u256::from_u64(nftAmount), u256::from_u64(table::borrow(&pool.templates, collectionType).price), cost256);
+            nftAmt = nftAmt + nftAmount;
         };
 
-        assert!(cost <= coin::value(coin_in), ERR_NOT_ENOUGHT_FUND);
+        let cost64 = u256::as_u64(cost256);
+        assert!(cost64 <= coin::value(coin_in), ERR_NOT_ENOUGHT_FUND);
 
-        //support multiple buy
-        let totalCost = cost;
+        //check multiple buy
         if(hasOrder){
-            totalCost = totalCost + table::borrow(&pool.orders, buyer).secured_coin;
+            cost256 = u256::add(cost256, u256::from_u64(table::borrow(&pool.orders, buyer).secured_coin));
         };
 
-        assert!(totalCost <= pool.allocate, ERR_OUTOF_ALLOCATE);
+        assert!(u256::as_u64(cost256) <= pool.allocate, ERR_OUTOF_ALLOCATE);
 
         //count participants
         if(!hasOrder || table::borrow(&pool.orders, buyer).secured_coin > 0)
         {
-            pool.participants =  pool.participants + 1;
+            pool.participants =  u256::increment_u64(pool.participants);
         };
 
         //sold amount
-        pool.total_sold_coin = pool.total_sold_coin + cost;
-        pool.total_sold_nft = pool.total_sold_nft + nftAmt;
+        pool.total_sold_coin = u256::add_u64(pool.total_sold_coin, cost64);
+        pool.total_sold_nft = u256::add_u64(pool.total_sold_nft, nftAmt);
 
         //take coin
-        coin::join(&mut pool.fund, coin::split(coin_in, cost, ctx));
+        coin::join(&mut pool.fund, coin::split(coin_in, cost64, ctx));
 
         //mint nfts
         let nfts = vector::empty<PriNFT>();
@@ -328,20 +329,20 @@ module seapad::nftbox {
 
         if(!hasOrder){
             table::add(&mut pool.orders, buyer, NftOrder {
-                secured_coin: cost,
+                secured_coin: cost64,
                 secured_nfts: nfts
             })
         }
         else {
             let order = table::borrow_mut(&mut pool.orders, buyer);
-            order.secured_coin = order.secured_coin + cost;
+            order.secured_coin = u256::add_u64(order.secured_coin, cost64);
             vector::append(&mut order.secured_nfts, nfts);
         };
 
         emit(NftPoolBuyEvent {
             buyer,
             amt: nftAmt,
-            cost,
+            cost: cost64,
             timestamp: clock::timestamp_ms(system_clock),
         })
     }
@@ -420,18 +421,11 @@ module seapad::nftbox {
                 && vector::length<PriNFT>(&table::borrow(&mut pool.orders, buyer).secured_nfts) > 0,
             ERR_MISSING_ORDERS);
 
-        let NftOrder {
-            secured_coin,
-            secured_nfts,
-        } = table::remove(&mut pool.orders, buyer);
+        let nftOrder  = table::remove(&mut pool.orders, buyer);
+        let secured_coin = nftOrder.secured_coin;
+        let size = vector::length<PriNFT>(&nftOrder.secured_nfts);
 
-        //burn nft
-        let index = 0 ;
-        let size = vector::length(&mut secured_nfts);
-        while (index < size){
-            nft_private::burn(vector::pop_back(&mut secured_nfts));
-        };
-        vector::destroy_empty(secured_nfts);
+        destroyNftOrder(nftOrder);
 
         //refund coin
         public_transfer(coin::split(&mut pool.fund, secured_coin, ctx), buyer);
@@ -445,15 +439,32 @@ module seapad::nftbox {
         });
     }
 
-    public fun add_whitelist<COIN>(_adminCap: &NftAdminCap, pool: &mut NftPool<COIN>, to: address){
+    public fun add_whitelist<COIN>(_adminCap: &NftAdminCap, pool: &mut NftPool<COIN>, tos: vector<address>){
         assert!(pool.use_whitelist, ERR_WHITELIST);
         assert!(pool.state == ROUND_STATE_INIT, ERR_INVALID_STATE);
+        let size = vector::length<address>(&tos);
+        while (size > 0){
+            size = size -1;
+            let to = vector::pop_back(&mut tos);
+            if(!table::contains(&pool.orders, to))
+                table::add(&mut pool.orders, to, NftOrder{
+                    secured_coin: 0,
+                    secured_nfts: vector::empty<PriNFT>(),
+                });
+        }
+    }
 
-        if(!table::contains(&pool.orders, to))
-            table::add(&mut pool.orders, to, NftOrder{
-                secured_coin: 0,
-                secured_nfts: vector::empty<PriNFT>(),
-            });
+    public fun remove_whitelist<COIN>(_adminCap: &NftAdminCap, pool: &mut NftPool<COIN>, froms: vector<address>){
+        assert!(pool.use_whitelist, ERR_WHITELIST);
+        assert!(pool.state == ROUND_STATE_INIT, ERR_INVALID_STATE);
+        let size = vector::length<address>(&froms);
+        while (size > 0){
+            size = size -1;
+            let from = vector::pop_back(&mut froms);
+            if(table::contains(&pool.orders, from)){
+                destroyNftOrder(table::remove(&mut pool.orders, from));
+            }
+        }
     }
 
     /// @todo implement charging fee
@@ -463,5 +474,20 @@ module seapad::nftbox {
         assert!(amt <= val, ERR_NOT_ENOUGHT_FUND);
         let coin = coin::split(&mut pool.fund, amt, _ctx);
         public_transfer(coin, pool.owner);
+    }
+
+
+
+    fun destroyNftOrder(order: NftOrder){
+        let  NftOrder {
+            secured_coin: _secured_coin,
+            secured_nfts,
+        } = order;
+        let size = vector::length<PriNFT>(&secured_nfts);
+        while (size > 0){
+            size = size - 1;
+            nft_private::burn(vector::pop_back(&mut secured_nfts))
+        };
+        vector::destroy_empty(secured_nfts);
     }
 }
