@@ -314,9 +314,11 @@ module seapad::tokenomic {
         assert!(table::contains(&pie.shares, senderAddr)
             && !table::contains(&pie.shares, to), ERR_NO_PERMISSION);
 
-        let fund = table::remove(&mut pie.shares, senderAddr);
+        let fund = table::borrow_mut<address, TokenomicFund<COIN>>(&mut pie.shares, senderAddr);
         fund.owner = to;
-        table::add<address, TokenomicFund<COIN>>(&mut pie.shares, to, fund);
+
+        let fund2 = table::remove<address, TokenomicFund<COIN>>(&mut pie.shares, senderAddr);
+        table::add<address, TokenomicFund<COIN>>(&mut pie.shares, to, fund2);
     }
 
     public fun getTotalSupply<COIN>(pie: &TokenomicPie<COIN>): u64{
