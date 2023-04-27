@@ -76,6 +76,118 @@ module seapad::tokenomic {
         init_tokenomic0(_admin, preMint, total_supply, tge, sclock, ctx);
     }
 
+    #[test_only]
+    public fun init_fund_for_test<COIN>(_admin: &TAdmin,
+                                        pie: &mut TokenomicPie<COIN>,
+                                        tge: u64,
+                                        sclock: &Clock,
+                                        ctx: &mut TxContext){
+                addFund(_admin,
+                    pie,
+                    @seedFund,
+                    b"Seed Fund",
+                    tge,
+                    1000,
+                    500,
+                    tge,
+                    tge + 18*MONTH_IN_MS,
+                    sclock,
+                    ctx
+                );
+
+                addFund(_admin,
+                    pie,
+                    @privateFund,
+                    b"Private Fund",
+                    tge,
+                    1200,
+                    1000,
+                    tge,
+                    tge + 12*MONTH_IN_MS,
+                    sclock,
+                    ctx
+                );
+
+                addFund(_admin,
+                    pie,
+                    @publicFund,
+                    b"Public(IDO) Fund",
+                    tge,
+                    300,
+                    2500,
+                    tge,
+                    tge + 6*MONTH_IN_MS,
+                    sclock,
+                    ctx
+                );
+
+                addFund(_admin,
+                    pie,
+                    @foundationFund,
+                    b"Foundation Fund",
+                    tge,
+                    1500,
+                    0,
+                    tge + 12* MONTH_IN_MS,
+                    tge + 48*MONTH_IN_MS,
+                    sclock,
+                    ctx
+                );
+
+
+                addFund(_admin,
+                    pie,
+                    @advisorpartnerFund,
+                    b"Advisor/Partner Fund",
+                    tge,
+                    500,
+                    0,
+                    tge + 12* MONTH_IN_MS,
+                    tge + 36*MONTH_IN_MS,
+                    sclock,
+                    ctx
+                );
+
+
+                addFund(_admin,
+                    pie,
+                    @marketingFund,
+                    b"Market Fund",
+                    tge,
+                    1200,
+                    500,
+                    tge,
+                    tge + 36*MONTH_IN_MS,
+                    sclock,
+                    ctx
+                );
+
+                addFund(_admin,
+                    pie,
+                    @ecosystemFund,
+                    b"Ecosystem Fund",
+                    tge,
+                    2800,
+                    0,
+                    tge,
+                    tge + 60*MONTH_IN_MS,
+                    sclock,
+                    ctx
+                );
+
+                addFund(_admin,
+                    pie,
+                    @daoFund,
+                    b"DAO Fund",
+                    tge,
+                    1500,
+                    0,
+                    tge + 24* MONTH_IN_MS,
+                    tge + 36*MONTH_IN_MS,
+                    sclock,
+                    ctx
+                );
+    }
     public fun init_tokenomic0<COIN>(_admin: &TAdmin,
                                      genesis_mint: Coin<COIN>,
                                      total_supply: u64,
@@ -97,111 +209,111 @@ module seapad::tokenomic {
             shares: table::new<address, TokenomicFund<COIN>>(ctx)
         };
 
-        addFund(_admin,
-            &mut pie,
-            @seedFund,
-            b"Seed Fund",
-            tge,
-            1000,
-            500,
-            tge,
-            tge + 18*MONTH_IN_MS,
-            sclock,
-            ctx
-        );
-
-        addFund(_admin,
-            &mut pie,
-            @privateFund,
-            b"Private Fund",
-            tge,
-            1200,
-            1000,
-            tge,
-            tge + 12*MONTH_IN_MS,
-            sclock,
-            ctx
-        );
-
-        addFund(_admin,
-            &mut pie,
-            @publicFund,
-            b"Public(IDO) Fund",
-            tge,
-            300,
-            2500,
-            tge,
-            tge + 6*MONTH_IN_MS,
-            sclock,
-            ctx
-        );
-
-        addFund(_admin,
-            &mut pie,
-            @foundationFund,
-            b"Foundation Fund",
-            tge,
-            1500,
-            0,
-            tge + 12* MONTH_IN_MS,
-            tge + 48*MONTH_IN_MS,
-            sclock,
-            ctx
-        );
-
-
-        addFund(_admin,
-            &mut pie,
-            @advisorpartnerFund,
-            b"Advisor/Partner Fund",
-            tge,
-            500,
-            0,
-            tge + 12* MONTH_IN_MS,
-            tge + 36*MONTH_IN_MS,
-            sclock,
-            ctx
-        );
-
-
-        addFund(_admin,
-            &mut pie,
-            @marketingFund,
-            b"Market Fund",
-            tge,
-            1200,
-            500,
-            tge,
-            tge + 36*MONTH_IN_MS,
-            sclock,
-            ctx
-        );
-
-        addFund(_admin,
-            &mut pie,
-            @ecosystemFund,
-            b"Ecosystem Fund",
-            tge,
-            2800,
-            0,
-            tge,
-            tge + 60*MONTH_IN_MS,
-            sclock,
-            ctx
-        );
-
-        addFund(_admin,
-            &mut pie,
-            @daoFund,
-            b"DAO Fund",
-            tge,
-            1500,
-            0,
-            tge + 24* MONTH_IN_MS,
-            tge + 36*MONTH_IN_MS,
-            sclock,
-            ctx
-        );
+//        addFund(_admin,
+//            &mut pie,
+//            @seedFund,
+//            b"Seed Fund",
+//            tge,
+//            1000,
+//            500,
+//            tge,
+//            tge + 18*MONTH_IN_MS,
+//            sclock,
+//            ctx
+//        );
+//
+//        addFund(_admin,
+//            &mut pie,
+//            @privateFund,
+//            b"Private Fund",
+//            tge,
+//            1200,
+//            1000,
+//            tge,
+//            tge + 12*MONTH_IN_MS,
+//            sclock,
+//            ctx
+//        );
+//
+//        addFund(_admin,
+//            &mut pie,
+//            @publicFund,
+//            b"Public(IDO) Fund",
+//            tge,
+//            300,
+//            2500,
+//            tge,
+//            tge + 6*MONTH_IN_MS,
+//            sclock,
+//            ctx
+//        );
+//
+//        addFund(_admin,
+//            &mut pie,
+//            @foundationFund,
+//            b"Foundation Fund",
+//            tge,
+//            1500,
+//            0,
+//            tge + 12* MONTH_IN_MS,
+//            tge + 48*MONTH_IN_MS,
+//            sclock,
+//            ctx
+//        );
+//
+//
+//        addFund(_admin,
+//            &mut pie,
+//            @advisorpartnerFund,
+//            b"Advisor/Partner Fund",
+//            tge,
+//            500,
+//            0,
+//            tge + 12* MONTH_IN_MS,
+//            tge + 36*MONTH_IN_MS,
+//            sclock,
+//            ctx
+//        );
+//
+//
+//        addFund(_admin,
+//            &mut pie,
+//            @marketingFund,
+//            b"Market Fund",
+//            tge,
+//            1200,
+//            500,
+//            tge,
+//            tge + 36*MONTH_IN_MS,
+//            sclock,
+//            ctx
+//        );
+//
+//        addFund(_admin,
+//            &mut pie,
+//            @ecosystemFund,
+//            b"Ecosystem Fund",
+//            tge,
+//            2800,
+//            0,
+//            tge,
+//            tge + 60*MONTH_IN_MS,
+//            sclock,
+//            ctx
+//        );
+//
+//        addFund(_admin,
+//            &mut pie,
+//            @daoFund,
+//            b"DAO Fund",
+//            tge,
+//            1500,
+//            0,
+//            tge + 24* MONTH_IN_MS,
+//            tge + 36*MONTH_IN_MS,
+//            sclock,
+//            ctx
+//        );
 
         share_object(pie);
     }
