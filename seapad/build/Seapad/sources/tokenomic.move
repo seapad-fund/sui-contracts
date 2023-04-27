@@ -325,11 +325,11 @@ module seapad::tokenomic {
         pie.total_supply
     }
 
-    public fun getTotalSharePercent<COIN>(pie: &TokenomicPie<COIN>): u64{
+    public fun getTotalShare<COIN>(pie: &TokenomicPie<COIN>): u64{
         pie.total_shared_percent
     }
 
-    public fun getTGETimeMs<COIN>(pie: &TokenomicPie<COIN>): u64{
+    public fun getTGEMilis<COIN>(pie: &TokenomicPie<COIN>): u64{
         pie.tge_ms
     }
 
@@ -337,12 +337,12 @@ module seapad::tokenomic {
         coin::value(&pie.fund_remain)
     }
 
-    public fun getShareFundReleasedAtTGE<COIN>(pie: &TokenomicPie<COIN>, addr: address): u64{
+    public fun getShareFundTGE<COIN>(pie: &TokenomicPie<COIN>, addr: address): u64{
         let share = table::borrow(&pie.shares, addr);
         coin::value(&share.tge_fund)
     }
 
-    public fun getShareFundVestingAvailable<COIN>(pie: &TokenomicPie<COIN>, addr: address): u64{
+    public fun getShareFundVesting<COIN>(pie: &TokenomicPie<COIN>, addr: address): u64{
         let share = table::borrow(&pie.shares, addr);
         coin::value(&share.vesting_fund)
     }
