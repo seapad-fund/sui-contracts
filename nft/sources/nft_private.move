@@ -6,7 +6,10 @@ module seapad::nft_private {
     use sui::object::{Self, ID, UID};
     use sui::tx_context::{TxContext};
     use std::vector;
+    use sui::table::Table;
     use sui::vec_map::VecMap;
+    use sui::table;
+    use sui::vec_map;
 
     /// Allow custome attributes
     struct PriNFT has key, store {
@@ -19,15 +22,12 @@ module seapad::nft_private {
         edition: u64, //101
         thumbnail_url: Url, //"{thumbnail_image_url",
         creator: string::String, //"Unknown NFT Fan"
-        attributes: VecMap<vector<u8>,  vector<u8>>
+        attributes: Table<vector<u8>,  vector<u8>>
     }
 
     struct MintNFTEvent has copy, drop {
-        // The Object ID of the NFT
         object_id: ID,
-        // The creator of the NFT
         creator: address,
-        // The name of the NFT
         name: string::String,
         project_url: Url,
     }
@@ -42,7 +42,7 @@ module seapad::nft_private {
         edition: u64,
         thumbnail_url: vector<u8>,
         creator: vector<u8>,
-        attributes: VecMap< vector<u8>,  vector<u8>>,
+        attributes: Table<vector<u8>,  vector<u8>>,
         ctx: &mut TxContext
     ): PriNFT {
         PriNFT {
@@ -70,7 +70,7 @@ module seapad::nft_private {
         edition: u64,
         thumbnail_url: vector<u8>,
         creator: vector<u8>,
-        attributes: VecMap< vector<u8>,  vector<u8>>,
+        attributes: Table<vector<u8>,  vector<u8>>,
         ctx: &mut TxContext): PriNFT{
         mint(name, link, image_url, description, project_url, edition, thumbnail_url, creator, attributes, ctx)
     }
@@ -85,14 +85,17 @@ module seapad::nft_private {
         edition: u64,
         thumbnail_url: vector<u8>,
         creator: vector<u8>,
-        attributes: VecMap<vector<u8>, vector<u8>>,
+        attributes: &VecMap<vector<u8>, vector<u8>>,
         ctx: &mut TxContext
     ): vector<PriNFT> {
         assert!(count > 0, 1);
-
         let nfts  = vector::empty<PriNFT>();
+
         while (count > 0){
-            vector::push_back(&mut nfts,  mint(name, link, image_url, description, project_url, edition, thumbnail_url, creator, attributes, ctx));
+            vector::push_back(
+                &mut nfts,
+                mint(name, link, image_url, description, project_url,
+                    edition, thumbnail_url, creator, vec2map<vector<u8>, vector<u8>>(attributes, ctx), ctx));
             count = count -1;
         };
 
@@ -126,10 +129,12 @@ module seapad::nft_private {
             edition:_edition,
             thumbnail_url: _thumbnail_url,
             creator: _creator,
-            attributes: _attributes
+            attributes
         } = nft;
-        object::delete(id)
+        table::drop(attributes);
+        object::delete(id);
     }
+
 
     #[test_only]
     public fun burn_for_test(nft: PriNFT) {
@@ -155,6 +160,20 @@ module seapad::nft_private {
     public fun creator(nft: &PriNFT): &string::String {
         &nft.creator
     }
+
+
+    fun vec2map<K: copy + drop + store, V: store + copy>(vdata: &VecMap<K, V>, ctx: &mut TxContext): Table<K, V>{
+        let keys = vec_map::keys(vdata);
+        let ksize = vector::length<K>(&keys);
+        let tab = table::new<K,V>(ctx);
+        while (ksize > 0){
+            ksize = ksize -1;
+            let key = vector::pop_back(&mut keys);
+            table::add(&mut tab, key, *vec_map::get(vdata, &key))
+        };
+
+        tab
+    }
 }
 
 #[test_only]
@@ -165,6 +184,8 @@ module seapad::private_nftTests {
     use std::string;
     use sui::vec_map;
     use std::ascii::String;
+    use sui::table;
+    use sui::test_scenario;
 
     #[test]
     fun mint_transfer_update() {
@@ -173,16 +194,6 @@ module seapad::private_nftTests {
         // create the NFT
         let scenario = ts::begin(addr1);
             {
-//                name: vector<u8>,
-//                link: vector<u8>,
-//                image_url: vector<u8>,
-//                description: vector<u8>,
-//                project_url: vector<u8>,
-//                edition: u64,
-//                thumbnail_url: vector<u8>,
-//                creator: vector<u8>,
-//                attributes: VecMap<String, String>,
-//
                 let nft = nft_private::mint_for_test(
                     b"name",
                     b"link",
@@ -192,7 +203,7 @@ module seapad::private_nftTests {
                     1,
                     b"thumbnail_url",
                     b"creator",
-                    vec_map::empty< vector<u8>,  vector<u8>>()
+                    table::new<vector<u8>,  vector<u8>>(test_scenario::ctx(&mut scenario))
                     , ts::ctx(&mut scenario));
                 transfer::public_transfer(nft,  addr1);
             };
