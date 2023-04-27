@@ -6,26 +6,39 @@ module seapad::nftbox_entries {
     use sui::clock::Clock;
     use sui::coin::Coin;
 
-    public entry fun create_pool<COIN>(adminCap: &NftAdminCap,
-                                 owner: address,
-                                 soft_cap: u64,
-                                 hard_cap: u64,
-                                 round: u8,
-                                 use_whitelist: bool,
-                                 vesting_time: u64,
-                                 allocate: u64,
-                                 start_time: u64,
-                                 end_time: u64,
-                                 system_clock: &Clock,
-                                 ctx: &mut TxContext){
-        nftbox::create_pool<COIN>(adminCap, owner, soft_cap, hard_cap, round, use_whitelist, vesting_time,
-            allocate, start_time, end_time, system_clock, ctx);
+    ///soft_cap: in percent of hardcap, coin value
+    public entry fun create_pool<COIN>(_adminCap: &NftAdminCap,
+                                       owner: address,
+                                       soft_cap_percent: u64,
+                                       round: u8,
+                                       use_whitelist: bool,
+                                       vesting_time_seconds: u64,
+                                       start_time: u64,
+                                       end_time: u64,
+                                       system_clock: &Clock,
+                                       ctx: &mut TxContext){
+        nftbox::create_pool<COIN>(_adminCap, owner, soft_cap_percent, round, use_whitelist, vesting_time_seconds,
+            start_time, end_time, system_clock, ctx);
     }
 
-    public entry fun add_template<COIN>(_adminCap: &NftAdminCap, pool: &mut NftPool<COIN>,
-                                  name: vector<u8>, description: vector<u8>, url: vector<u8>,
-                                  price: u64, type: u8){
-        nftbox::add_collection<COIN>(_adminCap, pool, type, name, description, url, price);
+    public entry fun add_collection<COIN>(_adminCap: &NftAdminCap,
+                                          pool: &mut NftPool<COIN>,
+                                            cap: u64,
+                                            allocate: u64,
+                                            price: u64,
+                                            type: u8,
+                                            name: vector<u8>,
+                                            link: vector<u8>,
+                                            image_url: vector<u8>,
+                                            description: vector<u8>,
+                                            project_url: vector<u8>,
+                                            edition: u64,
+                                            thumbnail_url: vector<u8>,
+                                            creator: vector<u8>
+    ){
+        nftbox::add_collection<COIN>(_adminCap, pool, cap, allocate, price,
+            type, name, link, image_url, description,
+            project_url, edition, thumbnail_url, creator);
     }
 
     public entry fun start_pool<COIN>(_adminCap: &NftAdminCap, pool: &mut NftPool<COIN>, system_clock: &Clock) {

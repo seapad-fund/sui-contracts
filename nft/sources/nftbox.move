@@ -16,6 +16,8 @@ module seapad::nftbox {
     use sui::event::emit;
     use sui::transfer::{public_transfer};
     use w3libs::u256;
+    use sui::vec_map::VecMap;
+    use sui::vec_map;
 
     struct NFTBOX has drop {}
 
@@ -42,6 +44,7 @@ module seapad::nftbox {
     struct NftOrder has store {
         secured_coin: u64,
         secured_nfts: vector<PriNFT>,
+        secured_types: VecMap<u8, u64>
     }
 
     struct NftPoolStartedEvent has copy, drop {
@@ -64,7 +67,6 @@ module seapad::nftbox {
         state: u8,
         use_whitelist: bool,
         vesting_time_seconds: u64,
-        allocate: u64,
         owner: address,
         start_time: u64,
         end_time: u64,
@@ -74,13 +76,13 @@ module seapad::nftbox {
         id: address,
         total_sold_coin: u64,
         total_sold_nft: u64,
+        soft_cap_percent: u64,
         soft_cap: u64,
         hard_cap: u64,
         round: u8,
         state: u8,
         use_whitelist: bool,
         vesting_time: u64,
-        allocate: u64,
         owner: address,
         start_time: u64,
         end_time: u64,
@@ -90,7 +92,8 @@ module seapad::nftbox {
         buyer: address,
         secured_nfts: u64,
         secured_coin: u64,
-        timestamp_ms: u64
+        secured_types: VecMap<u8, u64>,
+        timestamp_ms: u64,
     }
 
     struct NftPoolRefundEvent has copy, drop {
@@ -101,11 +104,19 @@ module seapad::nftbox {
     }
 
     struct NftTemplate has store, copy {
+        cap: u64,
+        allocate: u64,
+        price: u64,
         type: u8,
         name: vector<u8>,
+        link: vector<u8>,
+        image_url: vector<u8>,
         description: vector<u8>,
-        url: vector<u8>,
-        price: u64
+        project_url: vector<u8>,
+        edition: u64,
+        thumbnail_url: vector<u8>,
+        creator: vector<u8>,
+        attributes: VecMap<vector<u8>, vector<u8>> //@fixme use dynamic fields
     }
 
     ///NFT pool, owned by project owner, listed by admin
@@ -113,13 +124,13 @@ module seapad::nftbox {
         id: UID,
         owner: address, //project owner address
         templates: Table<u8, NftTemplate>,  //all template listed to sell
+        soft_cap_percent: u64, //in percent scaled to x100
         soft_cap: u64, //in coin
         hard_cap: u64, //in coin
         round: u8,  //which round
         state: u8,  //state
         use_whitelist: bool,    // is whitelist mode enabled ?
         vesting_time_seconds: u64, //timestamp: when to vesting all nft
-        allocate: u64, // in coin per user
         fund: Coin<COIN>,   //raised fund
         start_time: u64,    //estimated start time, updated when realy started
         end_time: u64,  //estimated end time, updated when realy ended
@@ -169,42 +180,42 @@ module seapad::nftbox {
     const ERR_WHITELIST: u64 = 6020;
     const ERR_OUTOF_ALLOCATE: u64 = 6021;
     const ERR_INVALID_ADMIN: u64 = 6022;
+    const ERR_NFT_CAP: u64 = 6023;
+
+
 
     ///! NFT scope
 
     /// add pool
     public fun create_pool<COIN>(_adminCap: &NftAdminCap,
                                  owner: address,
-                                 soft_cap: u64,
-                                 hard_cap: u64,
+                                 soft_cap_percent: u64,
                                  round: u8,
                                  use_whitelist: bool,
                                  vesting_time_seconds: u64,
-                                 allocate: u64,
                                  start_time: u64,
                                  end_time: u64,
                                  system_clock: &Clock,
                                  ctx: &mut TxContext) {
 
         //@todo review validate
-        assert!(soft_cap > 0 && hard_cap > 0 && hard_cap > soft_cap, ERR_INVALID_CAP);
+        assert!(soft_cap_percent > 0 && soft_cap_percent < 10000, ERR_INVALID_CAP);
         assert!(round >= ROUND_SEED && round <= ROUND_PUBLIC, ERR_INVALID_ROUND);
         let timestap_now = clock::timestamp_ms(system_clock);
         assert!(vesting_time_seconds > timestap_now, ERR_INVALID_VESTING_TIME);
-        assert!(allocate > 0 && allocate < hard_cap, ERR_INVALID_ALLOCATE);
 
         assert!(start_time > timestap_now && end_time > timestap_now && end_time > start_time, ERR_INVALID_START_STOP_TIME);
 
         let pool = NftPool<COIN>{
             id: object::new(ctx),
             templates: table::new<u8, NftTemplate>(ctx),
-            soft_cap,
-            hard_cap,
+            soft_cap_percent,
+            soft_cap: 0, //not initialzed yet
+            hard_cap: 0, //not initialzed yet
             round,
             state: ROUND_STATE_INIT,
             use_whitelist,
             vesting_time_seconds,
-            allocate,
             owner,
             fund: coin::zero<COIN>(ctx),
             start_time,
@@ -223,7 +234,6 @@ module seapad::nftbox {
             state: pool.state,
             use_whitelist: pool.use_whitelist,
             vesting_time_seconds: pool.vesting_time_seconds,
-            allocate: pool.allocate,
             owner: pool.owner,
             start_time: pool.start_time,
             end_time: pool.end_time,
@@ -233,25 +243,77 @@ module seapad::nftbox {
         transfer::share_object(pool);
     }
 
+    public fun add_attribute<COIN>( _adminCap: &NftAdminCap,
+                                     pool: &mut NftPool<COIN>,
+                                     type: u8,
+                                     key: vector<u8>,
+                                     value: vector<u8>){
+        assert!(vector::length<u8>(&key) > 0
+                && vector::length<u8>(&key) > 0
+                && table::contains<u8, NftTemplate>(&pool.templates, type), ERR_BAD_NFT_INFO);
 
-    public fun add_collection<COIN>(_adminCap: &NftAdminCap, pool: &mut NftPool<COIN>,
-                                    type: u8, name: vector<u8>, description: vector<u8>, url: vector<u8>, price: u64){
-        assert!(pool.state == ROUND_STATE_INIT, ERR_INVALID_STATE);
+        let collection = table::borrow_mut<u8, NftTemplate>(&mut pool.templates, type);
+        assert!(vec_map::contains<vector<u8>, vector<u8>>(&collection.attributes, &key), ERR_BAD_NFT_INFO);
 
-        assert!((vector::length<u8>(&name) > 0 && vector::length<u8>(&description) > 0 && vector::length<u8>(&url) > 0)
-                && (price > 0) && (type > 0), ERR_BAD_NFT_INFO);
+        vec_map::insert<vector<u8>, vector<u8>>(&mut collection.attributes, key, value);
 
-        table::add(&mut pool.templates, type, NftTemplate {
-            type,
-            name,
-            description,
-            url,
-            price
-        });
     }
 
 
-    public fun start_pool<COIN>(_adminCap: &NftAdminCap, pool: &mut NftPool<COIN>, system_clock: &Clock) {
+    ///@todo validate attributes
+    public fun add_collection<COIN>( _adminCap: &NftAdminCap,
+                                      pool: &mut NftPool<COIN>,
+                                      cap: u64,
+                                      allocate: u64,
+                                      price: u64,
+                                      type: u8,
+                                      name: vector<u8>,
+                                      link: vector<u8>,
+                                      image_url: vector<u8>,
+                                      description: vector<u8>,
+                                      project_url: vector<u8>,
+                                      edition: u64,
+                                      thumbnail_url: vector<u8>,
+                                      creator: vector<u8>){
+        assert!(pool.state == ROUND_STATE_INIT, ERR_INVALID_STATE);
+
+        assert!((
+                (cap >= allocate && allocate > 0)
+                && (price > 0)
+                && (type > 0)
+                && vector::length<u8>(&name) > 0
+                && vector::length<u8>(&link) > 0
+                && vector::length<u8>(&image_url) > 0
+                && vector::length<u8>(&description) > 0
+                && vector::length<u8>(&project_url) > 0
+                && (edition > 0)
+                && vector::length<u8>(&thumbnail_url) > 0
+                && vector::length<u8>(&creator) > 0),
+                ERR_BAD_NFT_INFO);
+
+        table::add(&mut pool.templates, type, NftTemplate {
+            cap,
+            allocate,
+            price,
+            type,
+            name,
+            link,
+            image_url,
+            description,
+            project_url,
+            edition,
+            thumbnail_url,
+            creator,
+            attributes: vec_map::empty<vector<u8>, vector<u8>>()
+        });
+
+        pool.hard_cap = u256::mul_add_u64(cap, price, pool.hard_cap);
+        pool.soft_cap = u256::mul_u64(pool.hard_cap, pool.soft_cap_percent)/10000;
+    }
+
+    public fun start_pool<COIN>(_adminCap: &NftAdminCap,
+                                pool: &mut NftPool<COIN>,
+                                system_clock: &Clock) {
         assert!(pool.state == ROUND_STATE_INIT, ERR_INVALID_STATE);
         assert!(table::length<u8, NftTemplate>(&pool.templates) > 0, ERR_MISSING_NFT_TEMPLATE);
 
@@ -283,25 +345,40 @@ module seapad::nftbox {
         let size = vector::length<u8>(&nft_types);
         let cost256 = u256::zero();
         let nftAmt = 0u64;
+        let checkedTypes = vec_map::empty<u8, u64>();
         while (size > 0){
             size = size - 1;
-            let nftAmount = *vector::borrow(&nft_amounts, size);
             let collectionType = *vector::borrow(&nft_types, size);
+            assert!(vec_map::contains<u8, u64>(&checkedTypes, &collectionType), ERR_BAD_NFT_INFO);
+
+            let nftAmount = *vector::borrow(&nft_amounts, size);
             assert!(nftAmount > 0 && collectionType > 0 && table::contains(&pool.templates, collectionType), ERR_BAD_NFT_INFO);
 
-            cost256 = u256::mul_add(u256::from_u64(nftAmount), u256::from_u64(table::borrow(&pool.templates, collectionType).price), cost256);
+            let collection = table::borrow(&pool.templates, collectionType);
+
+            //validate allocate per type
+            //check multiple buys
+            let ordered = if(!table::contains(&pool.orders, buyer)){
+                    0u64
+                }
+                else {
+                    let order = table::borrow(&pool.orders, buyer);
+                    if(!vec_map::contains<u8, u64>(&order.secured_types, &collectionType)){
+                        0u64
+                    }
+                    else {
+                        *vec_map::get(&order.secured_types, &collectionType)
+                    }
+                };
+
+            assert!(u256::add_u64(ordered, nftAmount) <= collection.cap, ERR_OUTOF_ALLOCATE);
+
+            cost256 = u256::mul_add(u256::from_u64(nftAmount), u256::from_u64(collection.price), cost256);
             nftAmt = nftAmt + nftAmount;
         };
 
         let cost64 = u256::as_u64(cost256);
         assert!(cost64 <= coin::value(coin_in), ERR_NOT_ENOUGHT_FUND);
-
-        //check multiple buy
-        if(hasOrder){
-            cost256 = u256::add(cost256, u256::from_u64(table::borrow(&pool.orders, buyer).secured_coin));
-        };
-
-        assert!(u256::as_u64(cost256) <= pool.allocate, ERR_OUTOF_ALLOCATE);
 
         //count participants
         if(!hasOrder || table::borrow(&pool.orders, buyer).secured_coin > 0)
@@ -319,18 +396,36 @@ module seapad::nftbox {
         //mint nfts
         let nfts = vector::empty<PriNFT>();
         let size = vector::length(&nft_types);
+
+        let securedTypes = if(!hasOrder) {
+            &mut vec_map::empty<u8, u64>()
+        }
+        else {
+            &mut table::borrow_mut(&mut pool.orders, buyer).secured_types
+        };
+
         while (size > 0){
             size = size -1;
             let nftType = *vector::borrow(&nft_types, size);
             let nftAmt = *vector::borrow(&nft_amounts, size);
             let collection = table::borrow(&pool.templates, nftType);
-            vector::append(&mut nfts, mint_batch(nftAmt, collection.name, collection.description, collection.description, ctx));
+            vector::append(&mut nfts, mint_nft_batch_int(nftAmt, collection, ctx));
+
+            //update secured types
+            let newTotalAmt = if(vec_map::contains<u8, u64>(securedTypes, &nftType)){
+                let (_k, oldAmt) = vec_map::remove<u8, u64>(securedTypes, &nftType);
+                oldAmt + nftAmt
+            }else {
+                nftAmt
+            };
+            vec_map::insert<u8, u64>(securedTypes, nftType,  newTotalAmt);
         };
 
         if(!hasOrder){
             table::add(&mut pool.orders, buyer, NftOrder {
                 secured_coin: cost64,
-                secured_nfts: nfts
+                secured_nfts: nfts,
+                secured_types: *securedTypes
             })
         }
         else {
@@ -345,6 +440,12 @@ module seapad::nftbox {
             cost: cost64,
             timestamp: clock::timestamp_ms(system_clock),
         })
+    }
+
+    fun mint_nft_batch_int(nftAmt: u64, collection: &NftTemplate, ctx: &mut TxContext): vector<PriNFT>{
+        mint_batch(nftAmt, collection.name, collection.link, collection.image_url,
+            collection.description, collection.project_url, collection.edition,
+            collection.thumbnail_url, collection.creator, collection.attributes, ctx)
     }
 
     public fun stop_pool<COIN>(_adminCap: &NftAdminCap, pool: &mut NftPool<COIN>, system_clock: &Clock) {
@@ -365,7 +466,7 @@ module seapad::nftbox {
             id:  id_address(pool),
             total_sold_coin: pool.total_sold_coin,
             total_sold_nft: pool.total_sold_nft,
-
+            soft_cap_percent: pool.soft_cap_percent,
             soft_cap: pool.soft_cap,
             hard_cap: pool.hard_cap,
 
@@ -373,7 +474,6 @@ module seapad::nftbox {
             state: pool.state,
             use_whitelist: pool.use_whitelist,
             vesting_time: pool.vesting_time_seconds,
-            allocate: pool.allocate,
             owner: pool.owner,
             start_time: pool.start_time,
             end_time: pool.end_time
@@ -394,6 +494,7 @@ module seapad::nftbox {
         let NftOrder {
             secured_coin,
             secured_nfts,
+            secured_types
         } = table::remove(&mut pool.orders, buyer);
 
         let size = vector::length(&mut secured_nfts);
@@ -408,6 +509,7 @@ module seapad::nftbox {
             buyer,
             secured_nfts: size,
             secured_coin,
+            secured_types,
             timestamp_ms: timestamp_now
         });
     }
@@ -450,6 +552,7 @@ module seapad::nftbox {
                 table::add(&mut pool.orders, to, NftOrder{
                     secured_coin: 0,
                     secured_nfts: vector::empty<PriNFT>(),
+                    secured_types: vec_map::empty<u8, u64>()
                 });
         }
     }
@@ -482,12 +585,22 @@ module seapad::nftbox {
         let  NftOrder {
             secured_coin: _secured_coin,
             secured_nfts,
+            secured_types
         } = order;
+
         let size = vector::length<PriNFT>(&secured_nfts);
         while (size > 0){
             size = size - 1;
             nft_private::burn(vector::pop_back(&mut secured_nfts))
         };
         vector::destroy_empty(secured_nfts);
+
+        let keys = vec_map::keys(&secured_types);
+        let ksize = vector::length<u8>(&keys);
+        while (ksize > 0){
+            vec_map::remove<u8, u64>(&mut secured_types, &vector::pop_back(&mut keys));
+            ksize = ksize - 1;
+        };
+        vec_map::destroy_empty(secured_types);
     }
 }
