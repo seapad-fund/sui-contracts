@@ -1,5 +1,4 @@
 module seapad::nftbox {
-    //@todo review math actions
     use sui::object::{UID, id_address};
     use sui::coin::Coin;
     use seapad::nft_private::{PriNFT, mint_batch};
@@ -54,7 +53,7 @@ module seapad::nftbox {
         round: u8,
         state: u8,
         use_whitelist: bool,
-        vesting_time_seconds: u64,
+        vesting_time_ms: u64,
         owner: address,
         start_time: u64,
         end_time: u64,
@@ -67,7 +66,7 @@ module seapad::nftbox {
         round: u8,
         state: u8,
         use_whitelist: bool,
-        vesting_time_seconds: u64,
+        vesting_time_ms: u64,
         owner: address,
         start_time: u64,
         end_time: u64,
@@ -90,7 +89,7 @@ module seapad::nftbox {
         round: u8,
         state: u8,
         use_whitelist: bool,
-        vesting_time: u64,
+        vesting_time_ms: u64,
         owner: address,
         start_time: u64,
         end_time: u64,
@@ -112,11 +111,11 @@ module seapad::nftbox {
     }
 
     struct NftTemplate has store {
-        cap: u64,
-        sold: u64, //amount of NFT sold!
-        allocate: u64,
-        price: u64,
-        type: u8,
+        cap: u64,  //hardcap in NFT token
+        sold: u64, //amount of NFT sold
+        allocate: u64, //max allocation per user per template
+        price: u64, //price in coin
+        type: u8,  //collection type
         name: vector<u8>,
         link: vector<u8>,
         image_url: vector<u8>,
@@ -125,7 +124,7 @@ module seapad::nftbox {
         edition: u64,
         thumbnail_url: vector<u8>,
         creator: vector<u8>,
-        attributes: VecMap<vector<u8>, vector<u8>>
+        attributes: VecMap<vector<u8>, vector<u8>> //use vecmap for collection for easy
     }
 
     ///NFT pool, owned by project owner, listed by admin
@@ -139,7 +138,7 @@ module seapad::nftbox {
         round: u8,  //which round
         state: u8,  //state
         use_whitelist: bool,    // is whitelist mode enabled ?
-        vesting_time_seconds: u64, //timestamp: when to vesting all nft
+        vesting_time_ms: u64, //timestamp: when to vesting all nft
         fund: Coin<COIN>,   //raised fund
         start_time: u64,    //estimated start time, updated when realy started
         end_time: u64,  //estimated end time, updated when realy ended
@@ -202,7 +201,7 @@ module seapad::nftbox {
                                  soft_cap_percent: u64,
                                  round: u8,
                                  use_whitelist: bool,
-                                 vesting_time_seconds: u64,
+                                 vesting_time_ms: u64,
                                  start_time: u64,
                                  end_time: u64,
                                  system_clock: &Clock,
@@ -211,10 +210,9 @@ module seapad::nftbox {
         //@todo review validate
         assert!(soft_cap_percent > 0 && soft_cap_percent < 10000, ERR_INVALID_CAP);
         assert!(round >= ROUND_SEED && round <= ROUND_PUBLIC, ERR_INVALID_ROUND);
-        let timestap_now = clock::timestamp_ms(system_clock);
-        assert!(vesting_time_seconds > timestap_now, ERR_INVALID_VESTING_TIME);
-
-        assert!(start_time > timestap_now && end_time > timestap_now && end_time > start_time, ERR_INVALID_START_STOP_TIME);
+        let ts_now_ms = clock::timestamp_ms(system_clock);
+        assert!(vesting_time_ms > ts_now_ms, ERR_INVALID_VESTING_TIME);
+        assert!(start_time > ts_now_ms && end_time > start_time, ERR_INVALID_START_STOP_TIME);
 
         let pool = NftPool<COIN>{
             id: object::new(ctx),
@@ -225,7 +223,7 @@ module seapad::nftbox {
             round,
             state: ROUND_STATE_INIT,
             use_whitelist,
-            vesting_time_seconds,
+            vesting_time_ms,
             owner,
             fund: coin::zero<COIN>(ctx),
             start_time,
@@ -243,7 +241,7 @@ module seapad::nftbox {
             round: pool.round,
             state: pool.state,
             use_whitelist: pool.use_whitelist,
-            vesting_time_seconds: pool.vesting_time_seconds,
+            vesting_time_ms: pool.vesting_time_ms,
             owner: pool.owner,
             start_time: pool.start_time,
             end_time: pool.end_time,
@@ -260,7 +258,6 @@ module seapad::nftbox {
                                      value: vector<u8>){
 
         assert!(pool.state == ROUND_STATE_INIT, ERR_INVALID_STATE);
-
         assert!(vector::length<u8>(&key) > 0
                 && vector::length<u8>(&value) > 0
                 && table::contains<u8, NftTemplate>(&pool.templates, type), ERR_BAD_NFT_INFO);
@@ -268,7 +265,6 @@ module seapad::nftbox {
         assert!(!vec_map::contains<vector<u8>, vector<u8>>(&collection.attributes, &key), ERR_BAD_NFT_INFO);
         vec_map::insert<vector<u8>, vector<u8>>(&mut collection.attributes, key, value);
     }
-
 
     public fun add_collection<COIN>( _adminCap: &NftAdminCap,
                                       pool: &mut NftPool<COIN>,
@@ -339,7 +335,7 @@ module seapad::nftbox {
                 round: pool.round,
                 state: pool.state,
                 use_whitelist: pool.use_whitelist,
-                vesting_time_seconds: pool.vesting_time_seconds,
+                vesting_time_ms: pool.vesting_time_ms,
                 owner: pool.owner,
                 start_time: pool.start_time,
                 end_time: pool.end_time,
@@ -355,11 +351,11 @@ module seapad::nftbox {
         //check whitelist
         let buyer = sender(ctx);
         let hasOrder = table::contains(&pool.orders, buyer);
-
         assert!(!pool.use_whitelist || hasOrder, ERR_NOT_IN_WHITELIST);
 
         //check nft info
-        assert!(vector::length<u64>(&nft_amounts) > 0 && (vector::length<u64>(&nft_amounts) == vector::length<u8>(&nft_types)), ERR_BAD_NFT_INFO);
+        assert!(vector::length<u64>(&nft_amounts) > 0
+            && (vector::length<u64>(&nft_amounts) == vector::length<u8>(&nft_types)), ERR_BAD_NFT_INFO);
 
         //combine check:
         //- type exist, unique types list
@@ -499,7 +495,7 @@ module seapad::nftbox {
             round: pool.round,
             state: pool.state,
             use_whitelist: pool.use_whitelist,
-            vesting_time: pool.vesting_time_seconds,
+            vesting_time_ms: pool.vesting_time_ms,
             owner: pool.owner,
             start_time: pool.start_time,
             end_time: pool.end_time
@@ -509,7 +505,7 @@ module seapad::nftbox {
     public fun claim_nft<COIN>(pool: &mut NftPool<COIN>, system_clock: &Clock, ctx: &mut TxContext) {
         assert!(pool.state == ROUND_STATE_CLAIM, ERR_INVALID_STATE);
         let timestamp_now = clock::timestamp_ms(system_clock);
-        assert!(timestamp_now*1000 >= pool.vesting_time_seconds, ERR_INVALID_VESTING_TIME);
+        assert!(timestamp_now >= pool.vesting_time_ms, ERR_INVALID_VESTING_TIME);
 
         let buyer = sender(ctx);
 
