@@ -60,22 +60,6 @@ module seapad::tokenomic {
         transfer::transfer(TAdmin { id: object::new(ctx) }, sender(ctx));
     }
 
-    #[test_only]
-    public fun init_for_testing(ctx: &mut TxContext) {
-        init(TOKENOMIC {}, ctx);
-    }
-
-    public entry fun init_tokenomic<COIN>(_admin: &TAdmin,
-                                          treasuryCap: TreasuryCap<COIN>,
-                                          total_supply: u64,
-                                          tge: u64,
-                                          sclock: &Clock,
-                                          ctx: &mut TxContext) {
-        let preMint = coin::mint(&mut treasuryCap, total_supply, ctx);
-        public_freeze_object(treasuryCap);
-        init_tokenomic0(_admin, preMint, total_supply, tge, sclock, ctx);
-    }
-
     public fun init_tokenomic0<COIN>(_admin: &TAdmin,
                                      genesis_mint: Coin<COIN>,
                                      total_supply: u64,
@@ -96,113 +80,6 @@ module seapad::tokenomic {
             total_shared_percent: 0u64,
             shares: table::new<address, TokenomicFund<COIN>>(ctx)
         };
-
-        addFund(_admin,
-            &mut pie,
-            @seedFund,
-            b"Seed Fund",
-            tge,
-            1000,
-            500,
-            tge,
-            tge + 18*MONTH_IN_MS,
-            sclock,
-            ctx
-        );
-
-        addFund(_admin,
-            &mut pie,
-            @privateFund,
-            b"Private Fund",
-            tge,
-            1200,
-            1000,
-            tge,
-            tge + 12*MONTH_IN_MS,
-            sclock,
-            ctx
-        );
-
-        addFund(_admin,
-            &mut pie,
-            @publicFund,
-            b"Public(IDO) Fund",
-            tge,
-            300,
-            2500,
-            tge,
-            tge + 6*MONTH_IN_MS,
-            sclock,
-            ctx
-        );
-
-        addFund(_admin,
-            &mut pie,
-            @foundationFund,
-            b"Foundation Fund",
-            tge,
-            1500,
-            0,
-            tge + 12* MONTH_IN_MS,
-            tge + 48*MONTH_IN_MS,
-            sclock,
-            ctx
-        );
-
-
-        addFund(_admin,
-            &mut pie,
-            @advisorpartnerFund,
-            b"Advisor/Partner Fund",
-            tge,
-            500,
-            0,
-            tge + 12* MONTH_IN_MS,
-            tge + 36*MONTH_IN_MS,
-            sclock,
-            ctx
-        );
-
-
-        addFund(_admin,
-            &mut pie,
-            @marketingFund,
-            b"Market Fund",
-            tge,
-            1200,
-            500,
-            tge,
-            tge + 36*MONTH_IN_MS,
-            sclock,
-            ctx
-        );
-
-        addFund(_admin,
-            &mut pie,
-            @ecosystemFund,
-            b"Ecosystem Fund",
-            tge,
-            2800,
-            0,
-            tge,
-            tge + 60*MONTH_IN_MS,
-            sclock,
-            ctx
-        );
-
-        addFund(_admin,
-            &mut pie,
-            @daoFund,
-            b"DAO Fund",
-            tge,
-            1500,
-            0,
-            tge + 24* MONTH_IN_MS,
-            tge + 36*MONTH_IN_MS,
-            sclock,
-            ctx
-        );
-
         share_object(pie);
     }
 
@@ -345,5 +222,136 @@ module seapad::tokenomic {
     public fun getShareFundVestingAvailable<COIN>(pie: &TokenomicPie<COIN>, addr: address): u64{
         let share = table::borrow(&pie.shares, addr);
         coin::value(&share.vesting_fund)
+    }
+
+
+
+    #[test_only]
+    public fun init_for_testing(ctx: &mut TxContext) {
+        init(TOKENOMIC {}, ctx);
+    }
+
+    public entry fun init_tokenomic<COIN>(_admin: &TAdmin,
+                                          treasuryCap: TreasuryCap<COIN>,
+                                          total_supply: u64,
+                                          tge: u64,
+                                          sclock: &Clock,
+                                          ctx: &mut TxContext) {
+        let preMint = coin::mint(&mut treasuryCap, total_supply, ctx);
+        public_freeze_object(treasuryCap);
+        init_tokenomic0(_admin, preMint, total_supply, tge, sclock, ctx);
+    }
+
+    #[test_only]
+    public fun init_fund_for_test<COIN>(_admin: &TAdmin,
+                                        pie: &mut TokenomicPie<COIN>,
+                                        tge: u64,
+                                        sclock: &Clock,
+                                        ctx: &mut TxContext){
+        addFund(_admin,
+            pie,
+            @seedFund,
+            b"Seed Fund",
+            tge,
+            1000,
+            500,
+            tge,
+            tge + 18*MONTH_IN_MS,
+            sclock,
+            ctx
+        );
+
+        addFund(_admin,
+            pie,
+            @privateFund,
+            b"Private Fund",
+            tge,
+            1200,
+            1000,
+            tge,
+            tge + 12*MONTH_IN_MS,
+            sclock,
+            ctx
+        );
+
+        addFund(_admin,
+            pie,
+            @publicFund,
+            b"Public(IDO) Fund",
+            tge,
+            300,
+            2500,
+            tge,
+            tge + 6*MONTH_IN_MS,
+            sclock,
+            ctx
+        );
+
+        addFund(_admin,
+            pie,
+            @foundationFund,
+            b"Foundation Fund",
+            tge,
+            1500,
+            0,
+            tge + 12* MONTH_IN_MS,
+            tge + 48*MONTH_IN_MS,
+            sclock,
+            ctx
+        );
+
+
+        addFund(_admin,
+            pie,
+            @advisorpartnerFund,
+            b"Advisor/Partner Fund",
+            tge,
+            500,
+            0,
+            tge + 12* MONTH_IN_MS,
+            tge + 36*MONTH_IN_MS,
+            sclock,
+            ctx
+        );
+
+
+        addFund(_admin,
+            pie,
+            @marketingFund,
+            b"Market Fund",
+            tge,
+            1200,
+            500,
+            tge,
+            tge + 36*MONTH_IN_MS,
+            sclock,
+            ctx
+        );
+
+        addFund(_admin,
+            pie,
+            @ecosystemFund,
+            b"Ecosystem Fund",
+            tge,
+            2800,
+            0,
+            tge,
+            tge + 60*MONTH_IN_MS,
+            sclock,
+            ctx
+        );
+
+        addFund(_admin,
+            pie,
+            @daoFund,
+            b"DAO Fund",
+            tge,
+            1500,
+            0,
+            tge + 24* MONTH_IN_MS,
+            tge + 36*MONTH_IN_MS,
+            sclock,
+            ctx
+        );
     }
 }
