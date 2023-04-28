@@ -48,6 +48,7 @@ module seapad::project {
     const ENotOwner: u64 = 1018;
     const EExistsCoinMetadata: u64 = 1019;
     const ENotExistsInWhitelist: u64 = 1020;
+    const EInvalidPermission: u64 = 1021;
 
 
     const ROUND_SEED: u8 = 1;
@@ -219,10 +220,12 @@ module seapad::project {
     }
 
     public fun change_owner<COIN, TOKEN>(
-        _admin_cap: &AdminCap,
         new_owner: address,
-        project: &mut Project<COIN, TOKEN>
+        project: &mut Project<COIN, TOKEN>,
+        ctx: &mut TxContext
     ) {
+        let sender = sender(ctx);
+        assert!(sender == project.owner, EInvalidPermission);
         let current_owner = project.owner;
         project.owner = new_owner;
         event::emit(ChangeProjectOwnerEvent { project: id_address(project), old_owner: current_owner, new_owner });

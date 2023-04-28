@@ -286,7 +286,7 @@ module seapad::stake {
         pool: &mut StakePool<S, R>,
         amount: u64,
         global_config: &GlobalConfig,
-        timestamp_ms: u64,
+        now_ms: u64,
         ctx: &mut TxContext
     ): Coin<S> {
         assert!(amount > 0, ERR_AMOUNT_CANNOT_BE_ZERO);
@@ -297,13 +297,13 @@ module seapad::stake {
         assert!(table::contains(&pool.stakes, user_address), ERR_NO_STAKE);
 
         // update pool accum_reward and timestamp
-        update_accum_reward(pool, timestamp_ms);
+        update_accum_reward(pool, now_ms);
 
         let user_stake = table::borrow_mut(&mut pool.stakes, user_address);
         assert!(amount <= user_stake.amount, ERR_NOT_ENOUGH_S_BALANCE);
 
         // check unlock timestamp
-        let current_time = timestamp_ms / 1000; //@todo review math div
+        let current_time = now_ms / 1000; //@todo review math div
         if (pool.end_timestamp >= current_time) {
             assert!(current_time >= user_stake.unlock_time, ERR_TOO_EARLY_UNSTAKE);
         };
@@ -338,7 +338,7 @@ module seapad::stake {
     /// Returns R coins: `Coin<R>`.
     public fun harvest<S, R>(pool: &mut StakePool<S, R>,
                              global_config: &GlobalConfig,
-                             timestamp_ms: u64,
+                             now_ms: u64,
                              ctx: &mut TxContext): Coin<R> {
         assert!(!is_emergency_inner(pool, global_config), ERR_EMERGENCY);
 
@@ -346,7 +346,7 @@ module seapad::stake {
         assert!(table::contains(&pool.stakes, user_address), ERR_NO_STAKE);
 
         // update pool accum_reward and timestamp
-        update_accum_reward(pool, timestamp_ms);
+        update_accum_reward(pool, now_ms);
 
         let user_stake = table::borrow_mut(&mut pool.stakes, user_address);
 
@@ -586,8 +586,7 @@ module seapad::stake {
         let total_stake = pool_total_staked(pool);
         if (total_stake == 0) return 0;
 
-        let total_rewards =
-            (pool.reward_per_sec as u128) * (seconds_passed as u128) * pool.scale;
+        let total_rewards = (pool.reward_per_sec as u128) * (seconds_passed as u128) * pool.scale;
         total_rewards / total_stake
     }
 

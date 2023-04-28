@@ -28,12 +28,8 @@ module seapad::project_entries {
         );
     }
 
-    public entry fun change_owner<COIN, TOKEN>(
-        admin_cap: &AdminCap,
-        new_owner: address,
-        project: &mut Project<COIN, TOKEN>
-    ) {
-        project::change_owner<COIN, TOKEN>(admin_cap, new_owner, project);
+    public entry fun change_owner<COIN, TOKEN>(new_owner: address, project: &mut Project<COIN, TOKEN>, ctx: &mut TxContext) {
+        project::change_owner<COIN, TOKEN>(new_owner, project, ctx);
     }
 
     public entry fun add_milestone<COIN, TOKEN>(_adminCap: &AdminCap,
