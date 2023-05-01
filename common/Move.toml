@@ -1,11 +1,11 @@
 [package]
 name = "Common"
 version = "0.0.1"
-published-at = "0xb727ee14d65fa07ef36d93d66bd58f1a408eb0a79d24f271c002daef6b12da48"
+published-at = "0xe5aad0e34598ed60ecf09a00bbd02d08440951ca213b1958b6e178660fa0dba0"
 
 [dependencies]
-Sui = { git = "https://github.com/MystenLabs/sui", subdir = "crates/sui-framework/packages/sui-framework", rev = "devnet" }
+Sui = { git = "https://github.com/MystenLabs/sui", subdir = "crates/sui-framework/packages/sui-framework", rev = "testnet" }
 
 [addresses]
-common =  "0xb727ee14d65fa07ef36d93d66bd58f1a408eb0a79d24f271c002daef6b12da48"
+common =  "0xe5aad0e34598ed60ecf09a00bbd02d08440951ca213b1958b6e178660fa0dba0"
 sui= "0x02"

@@ -121,7 +121,7 @@ module seapad::nftbox {
         timestamp_ms: u64
     }
 
-    struct NftTemplate has store {
+    struct NftTemplate has store, drop {
         cap: u64,
         //hardcap in NFT token
         sold: u64,
