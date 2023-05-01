@@ -1,6 +1,6 @@
 #[test_only]
 module seapad::emergency_tests {
-    use sui::test_scenario::{Scenario, next_tx, ctx};
+    use sui::test_scenario::{Scenario, next_tx, ctx, return_shared, end, take_from_sender, return_to_sender};
     use sui::test_scenario;
     use seapad::stake_config;
     use seapad::stake_config::GlobalConfig;
@@ -9,6 +9,8 @@ module seapad::emergency_tests {
     use seapad::stake_entries;
     use sui::clock::Clock;
     use sui::clock;
+    use seapad::stake::StakePool;
+    use sui::coin::Coin;
 
     /// this is number of decimals in both StakeCoin and RewardCoin by default, named like that for readability
     const ONE_COIN: u64 = 1000000;
@@ -50,7 +52,6 @@ module seapad::emergency_tests {
         test_scenario::end(scenario);
     }
 
-
     #[test]
     #[expected_failure(abort_code = stake::ERR_EMERGENCY)]
     fun test_cannot_register_with_global_emergency() {
@@ -60,15 +61,143 @@ module seapad::emergency_tests {
     }
 
     #[test]
-    fun test_stake() {
+    #[expected_failure(abort_code = stake::ERR_EXCEED_MAX_STAKE)]
+    fun test_max_stake() {
         let scenario_val = test_scenario::begin(@treasury_admin);
         let scenario = &mut scenario_val;
         let ctx = ctx(scenario);
         let clock = clock::create_for_testing(ctx);
 
+        //create pool
         next_tx(scenario, @treasury_admin);
+        register_pool(&clock, scenario);
+
+        //stake
+        next_tx(scenario, @alice);
+        stake(MAX_STAKE_VALUE + 1, &clock, scenario);
+
+        clock::destroy_for_testing(clock);
+        end(scenario_val);
+    }
+
+    #[test]
+    fun test_unstake() {
+        let scenario_val = test_scenario::begin(@treasury_admin);
+        let scenario = &mut scenario_val;
+        let ctx = ctx(scenario);
+        let clock = clock::create_for_testing(ctx);
+
+        //create pool
+        next_tx(scenario, @treasury_admin);
+        register_pool(&clock, scenario);
+
+        //stake
+        next_tx(scenario, @alice);
+        stake(STAKE_VALUE, &clock, scenario);
+
+        clock::increment_for_testing(&mut clock, DURATION_UNSTAKE_MS);
+
+        //unstake
+        let unstake_amount = STAKE_VALUE / 2;
+        next_tx(scenario, @alice);
+        unstake(unstake_amount, &clock, scenario);
+
+        //check coin
+        next_tx(scenario, @alice);
         {
-            register_pool(&clock,scenario);
+            let coin_unstake = take_from_sender<Coin<STAKE_COIN>>(scenario);
+            assert!(coin::value(&coin_unstake) == unstake_amount, 0);
+
+            return_to_sender(scenario, coin_unstake);
+        };
+
+        clock::destroy_for_testing(clock);
+        end(scenario_val);
+    }
+
+    #[test]
+    //@TODO
+    fun test_harvest() {
+        let scenario_val = test_scenario::begin(@treasury_admin);
+        let scenario = &mut scenario_val;
+        let ctx = ctx(scenario);
+        let clock = clock::create_for_testing(ctx);
+
+        //create pool
+        next_tx(scenario, @treasury_admin);
+        register_pool(&clock, scenario);
+
+        //stake
+        next_tx(scenario, @alice);
+        stake(STAKE_VALUE, &clock, scenario);
+
+        clock::increment_for_testing(&mut clock, DURATION_UNSTAKE_MS);
+
+        next_tx(scenario, @alice);
+        let pending_reward = get_pending_reward(&clock, scenario);
+        //harvest
+        next_tx(scenario, @alice);
+        harvest(&clock, scenario);
+
+        //check harvest
+        next_tx(scenario, @alice);
+        {
+            let reward = take_from_sender<Coin<REWARD_COIN>>(scenario);
+            assert!(pending_reward == coin::value(&reward), 0);
+            return_to_sender(scenario, reward);
+        };
+
+        clock::destroy_for_testing(clock);
+        end(scenario_val);
+    }
+
+    fun get_pending_reward(clock: &Clock, scenario: &mut Scenario): u64 {
+        let pool = test_scenario::take_shared<StakePool<STAKE_COIN, REWARD_COIN>>(scenario);
+        let user = test_scenario::sender(scenario);
+
+        let reward_value = stake::get_pending_user_rewards(&pool, user, clock::timestamp_ms(clock));
+        return_shared(pool);
+
+        reward_value
+    }
+
+    fun harvest(clock: &Clock, scenario: &mut Scenario) {
+        {
+            let pool = test_scenario::take_shared<StakePool<STAKE_COIN, REWARD_COIN>>(scenario);
+            let config = test_scenario::take_shared<GlobalConfig>(scenario);
+            let ctx = test_scenario::ctx(scenario);
+
+            stake_entries::harvest(&mut pool, &config, clock, ctx);
+
+            return_shared(pool);
+            return_shared(config)
+        }
+    }
+
+    fun unstake(stake_amount: u64, clock: &Clock, scenario: &mut Scenario) {
+        {
+            let pool = test_scenario::take_shared<StakePool<STAKE_COIN, REWARD_COIN>>(scenario);
+            let config = test_scenario::take_shared<GlobalConfig>(scenario);
+            let ctx = test_scenario::ctx(scenario);
+
+            stake_entries::unstake(&mut pool, stake_amount, &config, clock, ctx);
+
+            return_shared(pool);
+            return_shared(config)
+        }
+    }
+
+    fun stake(stake_value: u64, clock: &Clock, scenario: &mut Scenario) {
+        {
+            let pool = test_scenario::take_shared<StakePool<STAKE_COIN, REWARD_COIN>>(scenario);
+            let config = test_scenario::take_shared<GlobalConfig>(scenario);
+            let ctx = test_scenario::ctx(scenario);
+            let stake_coin = coin::mint_for_testing<STAKE_COIN>(stake_value, ctx);
+
+            stake_entries::stake(&mut pool, stake_coin, &config, clock, ctx);
+
+            return_shared(pool);
+            return_shared(config)
         }
     }
 
@@ -81,7 +210,8 @@ module seapad::emergency_tests {
             let config = test_scenario::take_shared<GlobalConfig>(scenario);
             let ctx = test_scenario::ctx(scenario);
             let reward = coin::mint_for_testing<REWARD_COIN>(REWARD_VALUE, ctx);
-            stake_entries::register_pool<STAKE_COIN, REWARD_COIN>(reward,
+            stake_entries::register_pool<STAKE_COIN, REWARD_COIN>(
+                reward,
                 DURATION,
                 &config,
                 DECIMAL_S,
