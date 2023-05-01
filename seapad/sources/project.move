@@ -22,6 +22,7 @@ module seapad::project {
     use sui::vec_set::{Self, VecSet};
     use sui::clock::{Clock};
     use sui::clock;
+    use common::kyc::{Kyc, hasKYC};
 
     ///Define model first
 
@@ -49,6 +50,7 @@ module seapad::project {
     const EExistsCoinMetadata: u64 = 1019;
     const ENotExistsInWhitelist: u64 = 1020;
     const EInvalidPermission: u64 = 1021;
+    const ENotKYC: u64 = 1022;
 
 
     const ROUND_SEED: u8 = 1;
@@ -138,8 +140,8 @@ module seapad::project {
         coin_decimals: u8,
         token_decimals: u8,
         vesting: Vesting,
-        whitelist: Table<address, address>
-        //        profile: //use dynamic field
+        whitelist: Table<address, address>,
+        require_kyc: bool
     }
 
     struct AdminCap has key, store {
@@ -168,6 +170,7 @@ module seapad::project {
                                            linear_time_: u64,
                                            coin_decimals_: u8,
                                            token_decimals_: u8,
+                                           require_kyc: bool,
                                            ctx: &mut TxContext) {
         let launchstate = LaunchState<COIN, TOKEN> {
             id: object::new(ctx),
@@ -212,7 +215,8 @@ module seapad::project {
             coin_decimals: coin_decimals_,
             token_decimals: token_decimals_,
             vesting: vesting_obj,
-            whitelist: table::new(ctx)
+            whitelist: table::new(ctx),
+            require_kyc
         };
 
         event::emit(build_event_create_project(&project));
@@ -408,10 +412,14 @@ module seapad::project {
         amount: u64,
         project: &mut Project<COIN, TOKEN>,
         clock: &Clock,
+        kyc: &Kyc,
         ctx: &mut TxContext
     ) {
         let coin_amt = payment::take_from(coins, amount, ctx);
         let buyer_address = tx_context::sender(ctx);
+        if(project.require_kyc){
+            assert!(hasKYC(buyer_address, kyc), ENotKYC);
+        };
         validate_state_for_buy(project, buyer_address, clock::timestamp_ms(clock));
         let more_coin = coin::value(&coin_amt);
         let more_token_ = swap_token(more_coin, project);

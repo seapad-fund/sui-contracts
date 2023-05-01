@@ -5,6 +5,7 @@ module seapad::project_entries {
     use seapad::project;
     use std::vector;
     use sui::clock::Clock;
+    use common::kyc::Kyc;
 
     public entry fun change_admin(adminCap: AdminCap, to: address) {
         project::change_admin(adminCap, to);
@@ -16,6 +17,7 @@ module seapad::project_entries {
                                                  coin_decimals: u8,
                                                  token_decimals: u8,
                                                  linear_time_ms: u64,
+                                                 require_kyc: bool,
                                                  ctx: &mut TxContext) {
         project::create_project<COIN, TOKEN>(
             adminCap,
@@ -24,11 +26,16 @@ module seapad::project_entries {
             linear_time_ms,
             coin_decimals,
             token_decimals,
+            require_kyc,
             ctx
         );
     }
 
-    public entry fun change_owner<COIN, TOKEN>(new_owner: address, project: &mut Project<COIN, TOKEN>, ctx: &mut TxContext) {
+    public entry fun change_owner<COIN, TOKEN>(
+        new_owner: address,
+        project: &mut Project<COIN, TOKEN>,
+        ctx: &mut TxContext
+    ) {
         project::change_owner<COIN, TOKEN>(new_owner, project, ctx);
     }
 
@@ -126,11 +133,12 @@ module seapad::project_entries {
         amount: u64,
         project: &mut Project<COIN, TOKEN>,
         clock: &Clock,
+        kyc: &Kyc,
         ctx: &mut TxContext
     ) {
         let coins = vector::empty<Coin<COIN>>();
         vector::push_back(&mut coins, coin);
-        project::buy<COIN, TOKEN>(coins, amount, project, clock, ctx);
+        project::buy<COIN, TOKEN>(coins, amount, project, clock, kyc, ctx);
     }
 
     public entry fun end_fund_raising<COIN, TOKEN>(
