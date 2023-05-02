@@ -5,6 +5,7 @@ published-at = "0xb727ee14d65fa07ef36d93d66bd58f1a408eb0a79d24f271c002daef6b12da
 
 [dependencies]
 Sui = { git = "https://github.com/MystenLabs/sui", subdir = "crates/sui-framework/packages/sui-framework", rev = "devnet" }
+W3libs = { git = "https://github.com/seapad-fund/w3libs", rev = "dev" }
 
 [addresses]
 common =  "0xb727ee14d65fa07ef36d93d66bd58f1a408eb0a79d24f271c002daef6b12da48"
