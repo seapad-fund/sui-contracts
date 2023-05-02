@@ -79,6 +79,12 @@ module common::referal {
         users: vector<address>,
     }
 
+    struct ReferalDepositEvent has drop, copy {
+        referal: address,
+        more_reward: u64,
+        fund_total: u64,
+    }
+
     struct Referal<phantom COIN> has key, store {
         id: UID,
         state: u8,
@@ -96,6 +102,7 @@ module common::referal {
     public entry fun change_admin(admin: AdminCap, to: address) {
         transfer(admin, to);
     }
+
 
     public entry fun create_project<COIN>(_admin: &AdminCap, ctx: &mut TxContext){
         let referal = Referal<COIN> {
@@ -124,7 +131,7 @@ module common::referal {
 
         assert!(index == rsize && index > 0, ERR_BAD_REFERAL_INFO);
 
-        while (index > 0){
+        while (index > 0) {
             index = index - 1;
             let user = *vector::borrow(&users, index);
             let reward = *vector::borrow(&rewards, index);
@@ -159,7 +166,7 @@ module common::referal {
 
         assert!(index > 0, ERR_BAD_REFERAL_INFO);
 
-        while (index > 0){
+        while (index > 0) {
             index = index - 1;
             let user = *vector::borrow(&users, index);
             assert!(table::contains(&referal.rewards, user), ERR_BAD_REFERAL_INFO);
@@ -231,8 +238,15 @@ module common::referal {
         public_transfer(coin::split(&mut referal.fund, total, ctx), to);
     }
 
-    public entry fun deposit_project_fund<COIN>(_admin: &AdminCap, referal: &mut Referal<COIN>, fund: Coin<COIN>, _ctx: &mut TxContext){
-        assert!(coin::value(&fund) > 0, ERR_BAD_FUND);
+    public entry fun deposit_project_fund<COIN>(_admin: &AdminCap, referal: &mut Referal<COIN>, fund: Coin<COIN>, _ctx: &mut TxContext) {
+        let moreFund = coin::value(&fund);
+        assert!(moreFund > 0, ERR_BAD_FUND);
         coin::join(&mut referal.fund, fund);
+
+        emit(ReferalDepositEvent {
+            referal: id_address(referal),
+            more_reward: moreFund,
+            fund_total: coin::value(&referal.fund)
+        })
     }
 }
