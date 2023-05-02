@@ -1,5 +1,5 @@
 module common::referal {
-    use sui::object::{UID, id_address, uid_to_address};
+    use sui::object::{UID, id_address};
     use sui::coin::Coin;
     use sui::table::Table;
     use sui::tx_context::{TxContext, sender};
@@ -14,37 +14,18 @@ module common::referal {
 
     struct REFERAL has drop {}
 
-    struct AdminCap has key, store {
+    struct RAdminCap has key, store {
         id: UID
     }
 
-    const ERR_ALREADY_KYC: u64 = 1001;
-    const ERR_NOT_KYC: u64 = 1002;
-    const ERR_REFERAL_STATE: u64 = 1003;
-    const ERR_NOT_ENOUGH_FUND: u64 = 1004;
-    const ERR_BAD_REFERAL_INFO: u64 = 1005;
+    const ERR_BAD_STATE: u64 = 1001;
+    const ERR_NOT_ENOUGH_FUND: u64 = 1002;
+    const ERR_BAD_REFERAL_INFO: u64 = 1003;
+    const ERR_BAD_FUND: u64 = 1004;
 
     const STATE_INIT: u8 = 0;
     const STATE_CLAIM: u8 = 1;
-    const STATE_DONE: u8 = 2;
-
-    struct Referal<phantom COIN> has key, store {
-        id: UID,
-        state: u8,
-        fund: Coin<COIN>,
-        rewards: Table<address, u64>,
-        rewards_total: u64
-    }
-
-
-    fun init(_witness: REFERAL, ctx: &mut TxContext) {
-        let adminCap = AdminCap { id: object::new(ctx) };
-        transfer::transfer(adminCap, sender(ctx));
-    }
-
-    public entry fun change_admin(admin_cap: AdminCap, to: address) {
-        transfer(admin_cap, to);
-    }
+    const STATE_CLOSED: u8 = 2;
 
     struct ReferalCreatedEvent has drop, copy {
         referal: address,
@@ -62,7 +43,7 @@ module common::referal {
         user_total: u64
     }
 
-    struct ReferalDoneEvent has drop, copy {
+    struct ReferalClosedEvent has drop, copy {
         referal: address,
         state: u8,
         rewards_total: u64,
@@ -70,7 +51,7 @@ module common::referal {
         user_total: u64
     }
 
-    struct ReferalUserClaimEvent has drop, copy {
+    struct ReferalUserClaimedEvent has drop, copy {
         referal: address,
         state: u8,
         rewards_total: u64,
@@ -86,7 +67,7 @@ module common::referal {
         fund_total: u64,
         user_total: u64,
         users: vector<address>,
-        users_rewards: vector<u64>
+        rewards: vector<u64>
     }
 
     struct ReferalRemovedEvent has drop, copy {
@@ -104,7 +85,26 @@ module common::referal {
         fund_total: u64,
     }
 
-    public entry fun create_referal<COIN>(ctx: &mut TxContext) {
+    struct Referal<phantom COIN> has key, store {
+        id: UID,
+        state: u8,
+        fund: Coin<COIN>,
+        rewards: Table<address, u64>,
+        rewards_total: u64
+    }
+
+
+    fun init(_witness: REFERAL, ctx: &mut TxContext) {
+        let adminCap = RAdminCap { id: object::new(ctx) };
+        transfer::transfer(adminCap, sender(ctx));
+    }
+
+    public entry fun change_admin(admin: RAdminCap, to: address) {
+        transfer(admin, to);
+    }
+
+
+    public entry fun create_project<COIN>(_admin: &RAdminCap, ctx: &mut TxContext){
         let referal = Referal<COIN> {
             id: object::new(ctx),
             state: STATE_INIT,
@@ -112,7 +112,6 @@ module common::referal {
             fund: coin::zero<COIN>(ctx),
             rewards: table::new<address, u64>(ctx)
         };
-
 
         emit(ReferalCreatedEvent {
             referal: id_address(&referal),
@@ -125,34 +124,30 @@ module common::referal {
         share_object(referal);
     }
 
-    public entry fun upsert_referal<COIN>(
-        _admin: &AdminCap,
-        referal: &mut Referal<COIN>,
-        users: vector<address>,
-        userRewards: vector<u64>
-    ) {
-        assert!(referal.state == STATE_INIT, ERR_REFERAL_STATE);
+    public entry fun upsert_referal<COIN>(_admin: &RAdminCap, referal: &mut Referal<COIN>, users: vector<address>, rewards: vector<u64>, _ctx: &mut TxContext){
+        assert!(referal.state == STATE_INIT , ERR_BAD_STATE);
         let index = vector::length(&users);
-        let rsize = vector::length(&userRewards);
+        let rsize = vector::length(&rewards);
 
         assert!(index == rsize && index > 0, ERR_BAD_REFERAL_INFO);
 
         while (index > 0) {
             index = index - 1;
-            let userAddr = *vector::borrow(&users, index);
-            let userReward = *vector::borrow(&userRewards, index);
-            assert!(userReward > 0, ERR_BAD_REFERAL_INFO);
+            let user = *vector::borrow(&users, index);
+            let reward = *vector::borrow(&rewards, index);
+            assert!(reward > 0, ERR_BAD_REFERAL_INFO);
 
-            if (table::contains(&referal.rewards, userAddr)) {
-                let oldReward = table::remove(&mut referal.rewards, userAddr);
-                table::add(&mut referal.rewards, userAddr, userReward);
-                referal.rewards_total = u256::add_u64(u256::sub_u64(referal.rewards_total, oldReward), userReward);
-            }else {
-                table::add(&mut referal.rewards, userAddr, userReward);
-                referal.rewards_total = u256::add_u64(referal.rewards_total, userReward);
+            if(table::contains(&referal.rewards, user)){
+                let oldReward = table::remove(&mut referal.rewards, user);
+                table::add(&mut referal.rewards, user, reward);
+                assert!(referal.rewards_total >= oldReward, ERR_BAD_REFERAL_INFO);
+                referal.rewards_total = u256::add_u64(u256::sub_u64(referal.rewards_total, oldReward), reward);
+            }
+            else {
+                table::add(&mut referal.rewards, user, reward);
+                referal.rewards_total = u256::add_u64(referal.rewards_total, reward);
             }
         };
-
 
         emit(ReferalUpsertEvent {
             referal: id_address(referal),
@@ -161,21 +156,22 @@ module common::referal {
             fund_total: coin::value(&referal.fund),
             user_total: table::length(&referal.rewards),
             users,
-            users_rewards: userRewards
+            rewards
         })
     }
 
-    public entry fun remove_referal<COIN>(referal: &mut Referal<COIN>, users: vector<address>, _ctx: &mut TxContext) {
-        assert!(referal.state == STATE_INIT, ERR_REFERAL_STATE);
+    public entry fun remove_referal<COIN>(_admin: &RAdminCap, referal: &mut Referal<COIN>, users: vector<address>, _ctx: &mut TxContext){
+        assert!(referal.state == STATE_INIT , ERR_BAD_STATE);
         let index = vector::length(&users);
 
         assert!(index > 0, ERR_BAD_REFERAL_INFO);
 
         while (index > 0) {
             index = index - 1;
-            let userAddr = *vector::borrow(&users, index);
-            assert!(table::contains(&referal.rewards, userAddr), ERR_BAD_REFERAL_INFO);
-            let oldReward = table::remove(&mut referal.rewards, userAddr);
+            let user = *vector::borrow(&users, index);
+            assert!(table::contains(&referal.rewards, user), ERR_BAD_REFERAL_INFO);
+            let oldReward = table::remove(&mut referal.rewards, user);
+            assert!(referal.rewards_total >= oldReward, ERR_BAD_REFERAL_INFO);
             referal.rewards_total = referal.rewards_total - oldReward;
         };
 
@@ -190,8 +186,8 @@ module common::referal {
         })
     }
 
-    public entry fun start_claim_referal<COIN>(_admin: &AdminCap, referal: &mut Referal<COIN>, _ctx: &mut TxContext) {
-        assert!(referal.state == STATE_INIT, ERR_REFERAL_STATE);
+    public entry fun start_claim_project<COIN>(_admin: &RAdminCap, referal: &mut Referal<COIN>, _ctx: &mut TxContext){
+        assert!(referal.state == STATE_INIT, ERR_BAD_STATE);
         assert!(referal.rewards_total <= coin::value(&referal.fund), ERR_NOT_ENOUGH_FUND);
         referal.state = STATE_CLAIM;
 
@@ -204,17 +200,16 @@ module common::referal {
         })
     }
 
-
-    public entry fun claim_referal<COIN>(referal: &mut Referal<COIN>, ctx: &mut TxContext) {
+    public entry fun claim_reward<COIN>(referal: &mut Referal<COIN>, ctx: &mut TxContext){
         let user = sender(ctx);
-        assert!(referal.state == STATE_CLAIM, ERR_REFERAL_STATE);
+        assert!(referal.state == STATE_CLAIM , ERR_BAD_STATE);
         assert!(table::contains(&referal.rewards, user), ERR_BAD_REFERAL_INFO);
 
         let reward = table::remove(&mut referal.rewards, user);
         public_transfer(coin::split(&mut referal.fund, reward, ctx), user);
         referal.rewards_total = referal.rewards_total - reward;
 
-        emit(ReferalUserClaimEvent {
+        emit(ReferalUserClaimedEvent {
             referal: id_address(referal),
             state: referal.state,
             rewards_total: referal.rewards_total,
@@ -224,11 +219,11 @@ module common::referal {
         })
     }
 
-    public entry fun done_referal<COIN>(_admin: &AdminCap, referal: &mut Referal<COIN>) {
-        assert!(referal.state < STATE_DONE, ERR_REFERAL_STATE);
-        referal.state = STATE_DONE;
+    public entry fun close_project<COIN>(_admin: &RAdminCap, referal: &mut Referal<COIN>, _ctx: &mut TxContext){
+        assert!(referal.state < STATE_CLOSED, ERR_BAD_STATE);
+        referal.state = STATE_CLOSED;
 
-        emit(ReferalDoneEvent {
+        emit(ReferalClosedEvent {
             referal: id_address(referal),
             state: referal.state,
             rewards_total: referal.rewards_total,
@@ -237,22 +232,21 @@ module common::referal {
         })
     }
 
-    public entry fun deposit_fund<COIN>(more: Coin<COIN>, referal: &mut Referal<COIN>) {
-        let more_value = coin::value(&more);
-        assert!(more_value > 0, ERR_NOT_ENOUGH_FUND);
-        coin::join(&mut referal.fund, more);
-        referal.rewards_total = referal.rewards_total + more_value;
-
-        emit(ReferalDepositEvent {
-            referal: uid_to_address(&referal.id),
-            more_reward: more_value,
-            fund_total: coin::value(&referal.fund)
-        })
+    public entry fun withdraw_project_fund<COIN>(_admin: &RAdminCap, referal: &mut Referal<COIN>, to: address, ctx: &mut TxContext){
+        assert!(referal.state == STATE_CLOSED, ERR_BAD_STATE);
+        let total = coin::value(&referal.fund);
+        public_transfer(coin::split(&mut referal.fund, total, ctx), to);
     }
 
-    public entry fun withdraw_fund<COIN>(_admin: &AdminCap, referal: &mut Referal<COIN>, ctx: &mut TxContext){
-        assert!(referal.state == STATE_DONE , ERR_REFERAL_STATE);
-        transfer(referal.fund, sender(ctx));
-        referal.rewards_total = 0;
+    public entry fun deposit_project_fund<COIN>(_admin: &RAdminCap, referal: &mut Referal<COIN>, fund: Coin<COIN>, _ctx: &mut TxContext) {
+        let moreFund = coin::value(&fund);
+        assert!(moreFund > 0, ERR_BAD_FUND);
+        coin::join(&mut referal.fund, fund);
+
+        emit(ReferalDepositEvent {
+            referal: id_address(referal),
+            more_reward: moreFund,
+            fund_total: coin::value(&referal.fund)
+        })
     }
 }

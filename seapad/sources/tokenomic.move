@@ -6,7 +6,7 @@ module seapad::tokenomic {
     use sui::coin::{Coin, TreasuryCap};
     use sui::clock::Clock;
     use sui::coin;
-    use sui::transfer::{share_object, public_transfer, public_freeze_object};
+    use sui::transfer::{share_object, public_transfer, public_freeze_object, transfer};
     use sui::clock;
     use sui::table::Table;
     use sui::table;
@@ -27,7 +27,7 @@ module seapad::tokenomic {
 
     struct TOKENOMIC has drop {}
 
-    struct TAdmin has key, store {
+    struct TAdminCap has key, store {
         id: UID
     }
 
@@ -57,24 +57,28 @@ module seapad::tokenomic {
     }
 
     fun init(_witness: TOKENOMIC, ctx: &mut TxContext) {
-        transfer::transfer(TAdmin { id: object::new(ctx) }, sender(ctx));
+        transfer::transfer(TAdminCap { id: object::new(ctx) }, sender(ctx));
     }
 
-    public fun init_tokenomic0<COIN>(_admin: &TAdmin,
+    public entry fun change_admin(admin: TAdminCap, to: address) {
+        transfer(admin, to);
+    }
+
+    public fun init_tokenomic0<COIN>(_admin: &TAdminCap,
                                      genesis_mint: Coin<COIN>,
                                      total_supply: u64,
-                                     tge: u64,
+                                     tge_ms: u64,
                                      sclock: &Clock,
                                      ctx: &mut TxContext){
-        let now = clock::timestamp_ms(sclock);
-        assert!(tge > now, ERR_INVALID_TGE);
+        let now_ms = clock::timestamp_ms(sclock);
+        assert!(tge_ms > now_ms, ERR_INVALID_TGE);
         assert!(total_supply > 0 && total_supply == coin::value(&genesis_mint), ERR_INVALID_SUPPLY);
 
         let fund_remain = genesis_mint;
 
         let pie = TokenomicPie {
             id: object::new(ctx),
-            tge_ms: tge,
+            tge_ms,
             total_supply,
             fund_remain,
             total_shared_percent: 0u64,
@@ -84,17 +88,17 @@ module seapad::tokenomic {
     }
 
 
-    public entry fun addFund<COIN>(_admin: &TAdmin,
+    public entry fun addFund<COIN>(_admin: &TAdminCap,
                                    pie: &mut TokenomicPie<COIN>,
-        owner: address,
-        name: vector<u8>,
-        tge_ms: u64,
-        share_percent: u64,
-        tge_release_percent: u64,
-        claim_start_ms: u64,
-        claim_end_ms: u64,
-        sclock: &Clock,
-        ctx: &mut TxContext
+                                   owner: address,
+                                   name: vector<u8>,
+                                   tge_ms: u64,
+                                   share_percent: u64,
+                                   tge_release_percent: u64,
+                                   claim_start_ms: u64,
+                                   claim_end_ms: u64,
+                                   sclock: &Clock,
+                                   ctx: &mut TxContext
     )
     {
         let now = clock::timestamp_ms(sclock);
@@ -154,7 +158,11 @@ module seapad::tokenomic {
         assert!(now_ms >= fund.tge_ms, ERR_TGE_NOT_STARTED);
 
         let tgeFundAmt = coin::value(&fund.tge_fund);
-        let claimedCoin = if(tgeFundAmt <= 0){ coin::zero<COIN>(ctx) } else { coin::split(&mut fund.tge_fund, tgeFundAmt, ctx) };
+        let claimedCoin = if(tgeFundAmt <= 0) {
+            coin::zero<COIN>(ctx) }
+        else {
+            coin::split(&mut fund.tge_fund, tgeFundAmt, ctx)
+        };
 
         claimedCoin = if(now_ms < fund.claim_start_ms){
             claimedCoin
@@ -167,7 +175,13 @@ module seapad::tokenomic {
             claimedCoin
         }
         else {
-            let effectiveLastClaimTime = if(fund.last_claim_ms <= fund.claim_start_ms) { fund.claim_start_ms } else{ fund.last_claim_ms };
+            let effectiveLastClaimTime = if(fund.last_claim_ms <= fund.claim_start_ms) {
+                fund.claim_start_ms
+            }
+            else{
+                fund.last_claim_ms
+            };
+
             assert!(now_ms >= effectiveLastClaimTime, ERR_BAD_VESTING_TIME);
 
             let claimValue =  (now_ms - effectiveLastClaimTime) * fund.vesting_fund_total/(fund.claim_end_ms - fund.claim_start_ms);
@@ -231,32 +245,37 @@ module seapad::tokenomic {
         init(TOKENOMIC {}, ctx);
     }
 
-    public entry fun init_tokenomic<COIN>(_admin: &TAdmin,
+    ///@warning CRITICAL:
+    /// + when you mint wrong token supply, it will be limited forever!
+    /// + user must have both TAdminCap & TreasuryCap
+    public entry fun init_tokenomic<COIN>(_admin: &TAdminCap,
                                           treasuryCap: TreasuryCap<COIN>,
                                           total_supply: u64,
-                                          tge: u64,
+                                          tge_ms: u64,
                                           sclock: &Clock,
                                           ctx: &mut TxContext) {
+        //CRITICAL!!!
         let preMint = coin::mint(&mut treasuryCap, total_supply, ctx);
         public_freeze_object(treasuryCap);
-        init_tokenomic0(_admin, preMint, total_supply, tge, sclock, ctx);
+
+        init_tokenomic0(_admin, preMint, total_supply, tge_ms, sclock, ctx);
     }
 
     #[test_only]
-    public fun init_fund_for_test<COIN>(_admin: &TAdmin,
+    public fun init_fund_for_test<COIN>(_admin: &TAdminCap,
                                         pie: &mut TokenomicPie<COIN>,
-                                        tge: u64,
+                                        tge_ms: u64,
                                         sclock: &Clock,
                                         ctx: &mut TxContext){
         addFund(_admin,
             pie,
             @seedFund,
             b"Seed Fund",
-            tge,
+            tge_ms,
             1000,
             500,
-            tge,
-            tge + 18*MONTH_IN_MS,
+            tge_ms,
+            tge_ms + 18*MONTH_IN_MS,
             sclock,
             ctx
         );
@@ -265,11 +284,11 @@ module seapad::tokenomic {
             pie,
             @privateFund,
             b"Private Fund",
-            tge,
+            tge_ms,
             1200,
             1000,
-            tge,
-            tge + 12*MONTH_IN_MS,
+            tge_ms,
+            tge_ms + 12*MONTH_IN_MS,
             sclock,
             ctx
         );
@@ -278,11 +297,11 @@ module seapad::tokenomic {
             pie,
             @publicFund,
             b"Public(IDO) Fund",
-            tge,
+            tge_ms,
             300,
             2500,
-            tge,
-            tge + 6*MONTH_IN_MS,
+            tge_ms,
+            tge_ms + 6*MONTH_IN_MS,
             sclock,
             ctx
         );
@@ -291,11 +310,11 @@ module seapad::tokenomic {
             pie,
             @foundationFund,
             b"Foundation Fund",
-            tge,
+            tge_ms,
             1500,
             0,
-            tge + 12* MONTH_IN_MS,
-            tge + 48*MONTH_IN_MS,
+            tge_ms + 12* MONTH_IN_MS,
+            tge_ms + 48*MONTH_IN_MS,
             sclock,
             ctx
         );
@@ -305,11 +324,11 @@ module seapad::tokenomic {
             pie,
             @advisorpartnerFund,
             b"Advisor/Partner Fund",
-            tge,
+            tge_ms,
             500,
             0,
-            tge + 12* MONTH_IN_MS,
-            tge + 36*MONTH_IN_MS,
+            tge_ms + 12* MONTH_IN_MS,
+            tge_ms + 36*MONTH_IN_MS,
             sclock,
             ctx
         );
@@ -319,11 +338,11 @@ module seapad::tokenomic {
             pie,
             @marketingFund,
             b"Market Fund",
-            tge,
+            tge_ms,
             1200,
             500,
-            tge,
-            tge + 36*MONTH_IN_MS,
+            tge_ms,
+            tge_ms + 36*MONTH_IN_MS,
             sclock,
             ctx
         );
@@ -332,11 +351,11 @@ module seapad::tokenomic {
             pie,
             @ecosystemFund,
             b"Ecosystem Fund",
-            tge,
+            tge_ms,
             2800,
             0,
-            tge,
-            tge + 60*MONTH_IN_MS,
+            tge_ms,
+            tge_ms + 60*MONTH_IN_MS,
             sclock,
             ctx
         );
@@ -345,11 +364,11 @@ module seapad::tokenomic {
             pie,
             @daoFund,
             b"DAO Fund",
-            tge,
+            tge_ms,
             1500,
             0,
-            tge + 24* MONTH_IN_MS,
-            tge + 36*MONTH_IN_MS,
+            tge_ms + 24* MONTH_IN_MS,
+            tge_ms + 36*MONTH_IN_MS,
             sclock,
             ctx
         );
