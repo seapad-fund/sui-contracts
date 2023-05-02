@@ -1,15 +1,13 @@
 module common::kyc {
-
     use sui::object::UID;
-    use sui::vec_set;
     use sui::tx_context::{TxContext, sender};
     use sui::transfer;
     use sui::object;
-    use sui::vec_set::VecSet;
     use std::vector;
-    use sui::transfer::public_transfer;
+    use sui::transfer::transfer;
     use sui::event::emit;
-
+    use sui::table::Table;
+    use sui::table;
 
     ///Witness
     struct KYC has drop {}
@@ -18,9 +16,17 @@ module common::kyc {
         id: UID
     }
 
+    const KYC_LEVEL_ONE: u8 = 1;
+    const KYC_LEVEL_TWO: u8 = 2;
+    const KYC_LEVEL_THREE: u8 = 3;
+    const KYC_LEVEL_FOUR: u8 = 4;
+
+    const ERR_ALREADY_KYC: u64 = 1001;
+    const ERR_NOT_KYC: u64 = 1002;
+
     struct Kyc has key, store {
         id: UID,
-        whitelist: VecSet<address>
+        whitelist: Table<address, u8>
     }
 
     fun init(_witness: KYC, ctx: &mut TxContext) {
@@ -29,52 +35,48 @@ module common::kyc {
 
         transfer::share_object(Kyc {
             id: object::new(ctx),
-            whitelist: vec_set::empty<address>(),
+            whitelist: table::new<address, u8>(ctx),
         });
     }
 
     public entry fun change_admin(admin_cap: AdminCap, to: address) {
-        public_transfer(admin_cap, to);
+        transfer(admin_cap, to);
     }
 
     public entry fun add(_admin_cap: &AdminCap, users: vector<address>, kyc: &mut Kyc){
-        let (i, n) = (0, vector::length(& users));
-        let users_copy = vector::empty<address>();
-        vector::append(&mut users_copy, users);
 
-        while (i < n){
-            let user = vector::pop_back(&mut users);
-            assert!(!vec_set::contains(&kyc.whitelist, &user), 0);
-            vec_set::insert(&mut kyc.whitelist, user);
+        let index = vector::length<address>(&users);
 
-            i = i + 1;
+        while (index > 0) {
+            index = index - 1;
+            let userAddr = *vector::borrow(&users, index);
+            assert!(!table::contains(&kyc.whitelist, userAddr), ERR_ALREADY_KYC);
+            table::add(&mut kyc.whitelist, userAddr, KYC_LEVEL_ONE);
         };
 
         emit(AddKycEvent {
-            users: users_copy
+            users
         })
     }
 
     public entry fun remove(_admin_cap: &AdminCap, users: vector<address>, kyc: &mut Kyc){
-        let (i, n) = (0, vector::length(& users));
-        let users_copy = vector::empty<address>();
-        vector::append(&mut users_copy, users);
 
-        while (i < n){
-            let user = vector::pop_back(&mut users);
-            assert!(vec_set::contains(&kyc.whitelist, &user), 0);
-            vec_set::remove(&mut kyc.whitelist, &user);
+        let index = vector::length<address>(&users);
 
-            i = i + 1;
+        while (index > 0) {
+            index = index - 1;
+            let userAddr = *vector::borrow(&users, index);
+            assert!(table::contains(&kyc.whitelist, userAddr), ERR_NOT_KYC);
+            table::remove(&mut kyc.whitelist, userAddr);
         };
 
         emit(RemoveKycEvent {
-            users: users_copy
+            users
         })
     }
 
     public fun hasKYC(user: address, kyc: &Kyc): bool{
-        vec_set::contains(&kyc.whitelist, &user)
+        table::contains(&kyc.whitelist, user)
     }
 
     struct AddKycEvent has copy, drop {
