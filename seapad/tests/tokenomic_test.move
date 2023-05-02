@@ -5,7 +5,7 @@ module seapad::tokenomic_test {
     use sui::clock;
     use sui::clock::Clock;
     use seapad::tokenomic;
-    use seapad::tokenomic::{TAdmin, TokenomicPie};
+    use seapad::tokenomic::{TAdminCap, TokenomicPie};
     use sui::coin;
     use std::debug;
     use sui::coin::Coin;
@@ -40,7 +40,7 @@ module seapad::tokenomic_test {
         test_scenario::next_tx(scenario, ADMIN);
 
         let clock = test_scenario::take_shared<Clock>(scenario);
-        let ecoAdmin = test_scenario::take_from_sender<TAdmin>(scenario);
+        let ecoAdmin = test_scenario::take_from_sender<TAdminCap>(scenario);
 
         tokenomic::init_tokenomic0(&ecoAdmin,
             coin::mint_for_testing<XCOIN>(TOTAL_SUPPLY, test_scenario::ctx(scenario)),
@@ -51,7 +51,7 @@ module seapad::tokenomic_test {
         test_scenario::return_to_sender(scenario, ecoAdmin);
 
         test_scenario::next_tx(scenario, ADMIN);
-        let ecoAdmin = test_scenario::take_from_sender<TAdmin>(scenario);
+        let ecoAdmin = test_scenario::take_from_sender<TAdminCap>(scenario);
         let pie = take_shared<TokenomicPie<XCOIN>>(scenario);
         tokenomic::init_fund_for_test(&ecoAdmin,
             &mut pie,
@@ -112,7 +112,7 @@ module seapad::tokenomic_test {
         test_scenario::next_tx(scenario, ADMIN);
 
         let clock = test_scenario::take_shared<Clock>(scenario);
-        let ecoAdmin = test_scenario::take_from_sender<TAdmin>(scenario);
+        let ecoAdmin = test_scenario::take_from_sender<TAdminCap>(scenario);
 
         tokenomic::init_tokenomic0(&ecoAdmin,
             coin::mint_for_testing<XCOIN>(TOTAL_SUPPLY, test_scenario::ctx(scenario)),
@@ -123,7 +123,7 @@ module seapad::tokenomic_test {
         test_scenario::return_to_sender(scenario, ecoAdmin);
 
         test_scenario::next_tx(scenario, ADMIN);
-        let ecoAdmin = test_scenario::take_from_sender<TAdmin>(scenario);
+        let ecoAdmin = test_scenario::take_from_sender<TAdminCap>(scenario);
         let pie = take_shared<TokenomicPie<XCOIN>>(scenario);
         tokenomic::init_fund_for_test(&ecoAdmin,
             &mut pie,
@@ -158,7 +158,7 @@ module seapad::tokenomic_test {
         test_scenario::next_tx(scenario, ADMIN);
 
         let clock = test_scenario::take_shared<Clock>(scenario);
-        let ecoAdmin = test_scenario::take_from_sender<TAdmin>(scenario);
+        let ecoAdmin = test_scenario::take_from_sender<TAdminCap>(scenario);
 
         tokenomic::init_tokenomic0(&ecoAdmin,
             coin::mint_for_testing<XCOIN>(TOTAL_SUPPLY, test_scenario::ctx(scenario)),
@@ -169,7 +169,7 @@ module seapad::tokenomic_test {
         test_scenario::return_to_sender(scenario, ecoAdmin);
 
         test_scenario::next_tx(scenario, ADMIN);
-        let ecoAdmin = test_scenario::take_from_sender<TAdmin>(scenario);
+        let ecoAdmin = test_scenario::take_from_sender<TAdminCap>(scenario);
         let pie = take_shared<TokenomicPie<XCOIN>>(scenario);
         tokenomic::init_fund_for_test(&ecoAdmin,
             &mut pie,
@@ -231,7 +231,7 @@ module seapad::tokenomic_test {
         test_scenario::next_tx(scenario, ADMIN);
 
         let clock = test_scenario::take_shared<Clock>(scenario);
-        let ecoAdmin = test_scenario::take_from_sender<TAdmin>(scenario);
+        let ecoAdmin = test_scenario::take_from_sender<TAdminCap>(scenario);
 
         tokenomic::init_tokenomic0(&ecoAdmin,
             coin::mint_for_testing<XCOIN>(TOTAL_SUPPLY, test_scenario::ctx(scenario)),
@@ -243,7 +243,7 @@ module seapad::tokenomic_test {
         test_scenario::return_to_sender(scenario, ecoAdmin);
 
         test_scenario::next_tx(scenario, ADMIN);
-        let ecoAdmin = test_scenario::take_from_sender<TAdmin>(scenario);
+        let ecoAdmin = test_scenario::take_from_sender<TAdminCap>(scenario);
         let pie = take_shared<TokenomicPie<XCOIN>>(scenario);
         tokenomic::init_fund_for_test(&ecoAdmin,
             &mut pie,
@@ -278,7 +278,7 @@ module seapad::tokenomic_test {
         test_scenario::next_tx(scenario, ADMIN);
 
         let clock = test_scenario::take_shared<Clock>(scenario);
-        let ecoAdmin = test_scenario::take_from_sender<TAdmin>(scenario);
+        let ecoAdmin = test_scenario::take_from_sender<TAdminCap>(scenario);
 
         tokenomic::init_tokenomic0(&ecoAdmin,
             coin::mint_for_testing<XCOIN>(TOTAL_SUPPLY, test_scenario::ctx(scenario)),
@@ -289,7 +289,7 @@ module seapad::tokenomic_test {
         test_scenario::return_to_sender(scenario, ecoAdmin);
 
         test_scenario::next_tx(scenario, ADMIN);
-        let ecoAdmin = test_scenario::take_from_sender<TAdmin>(scenario);
+        let ecoAdmin = test_scenario::take_from_sender<TAdminCap>(scenario);
         let pie = take_shared<TokenomicPie<XCOIN>>(scenario);
         tokenomic::init_fund_for_test(&ecoAdmin,
             &mut pie,
@@ -326,7 +326,7 @@ module seapad::tokenomic_test {
         test_scenario::next_tx(scenario, ADMIN);
 
         let clock = test_scenario::take_shared<Clock>(scenario);
-        let ecoAdmin = test_scenario::take_from_sender<TAdmin>(scenario);
+        let ecoAdmin = test_scenario::take_from_sender<TAdminCap>(scenario);
 
         tokenomic::init_tokenomic0(&ecoAdmin,
             coin::mint_for_testing<XCOIN>(TOTAL_SUPPLY, test_scenario::ctx(scenario)),
@@ -338,7 +338,7 @@ module seapad::tokenomic_test {
         test_scenario::return_to_sender(scenario, ecoAdmin);
 
         test_scenario::next_tx(scenario, ADMIN);
-        let ecoAdmin = test_scenario::take_from_sender<TAdmin>(scenario);
+        let ecoAdmin = test_scenario::take_from_sender<TAdminCap>(scenario);
         let pie = take_shared<TokenomicPie<XCOIN>>(scenario);
         tokenomic::init_fund_for_test(&ecoAdmin,
             &mut pie,
@@ -383,7 +383,7 @@ module seapad::tokenomic_test {
         test_scenario::next_tx(scenario, ADMIN);
 
         let clock = test_scenario::take_shared<Clock>(scenario);
-        let ecoAdmin = test_scenario::take_from_sender<TAdmin>(scenario);
+        let ecoAdmin = test_scenario::take_from_sender<TAdminCap>(scenario);
 
         tokenomic::init_tokenomic0(&ecoAdmin,
             coin::mint_for_testing<XCOIN>(TOTAL_SUPPLY, test_scenario::ctx(scenario)),
@@ -395,7 +395,7 @@ module seapad::tokenomic_test {
         test_scenario::return_to_sender(scenario, ecoAdmin);
 
         test_scenario::next_tx(scenario, ADMIN);
-        let ecoAdmin = test_scenario::take_from_sender<TAdmin>(scenario);
+        let ecoAdmin = test_scenario::take_from_sender<TAdminCap>(scenario);
         let pie = take_shared<TokenomicPie<XCOIN>>(scenario);
         tokenomic::init_fund_for_test(&ecoAdmin,
             &mut pie,
@@ -441,7 +441,7 @@ module seapad::tokenomic_test {
 
         test_scenario::next_tx(scenario, ADMIN);
         let clock = test_scenario::take_shared<Clock>(scenario);
-        let ecoAdmin = test_scenario::take_from_sender<TAdmin>(scenario);
+        let ecoAdmin = test_scenario::take_from_sender<TAdminCap>(scenario);
 
         tokenomic::init_tokenomic0(&ecoAdmin,
             coin::mint_for_testing<XCOIN>(TOTAL_SUPPLY, test_scenario::ctx(scenario)),
@@ -453,7 +453,7 @@ module seapad::tokenomic_test {
 
 
         test_scenario::next_tx(scenario, ADMIN);
-        let ecoAdmin = test_scenario::take_from_sender<TAdmin>(scenario);
+        let ecoAdmin = test_scenario::take_from_sender<TAdminCap>(scenario);
         let pie = take_shared<TokenomicPie<XCOIN>>(scenario);
         tokenomic::init_fund_for_test(&ecoAdmin,
             &mut pie,
@@ -491,7 +491,7 @@ module seapad::tokenomic_test {
 
         test_scenario::next_tx(scenario, ADMIN);
         let clock = test_scenario::take_shared<Clock>(scenario);
-        let ecoAdmin = test_scenario::take_from_sender<TAdmin>(scenario);
+        let ecoAdmin = test_scenario::take_from_sender<TAdminCap>(scenario);
         tokenomic::init_tokenomic0(&ecoAdmin,
             coin::mint_for_testing<XCOIN>(TOTAL_SUPPLY, test_scenario::ctx(scenario)),
             TOTAL_SUPPLY,
@@ -501,7 +501,7 @@ module seapad::tokenomic_test {
         test_scenario::return_to_sender(scenario, ecoAdmin);
 
         test_scenario::next_tx(scenario, ADMIN);
-        let ecoAdmin = test_scenario::take_from_sender<TAdmin>(scenario);
+        let ecoAdmin = test_scenario::take_from_sender<TAdminCap>(scenario);
         let pie = take_shared<TokenomicPie<XCOIN>>(scenario);
         tokenomic::init_fund_for_test(&ecoAdmin,
             &mut pie,
