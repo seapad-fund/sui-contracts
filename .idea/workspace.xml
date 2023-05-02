@@ -5,8 +5,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="10b876f6-5f11-44d6-9e4a-d6252006a611" name="Changes" comment="change devnet config">
-      <change beforePath="$PROJECT_DIR$/common/sources/referal.move" beforeDir="false" afterPath="$PROJECT_DIR$/common/sources/referal.move" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/seapad/sources/project.move" beforeDir="false" afterPath="$PROJECT_DIR$/seapad/sources/project.move" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/common/Move.toml" beforeDir="false" afterPath="$PROJECT_DIR$/common/Move.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/contract/testnet.toml" beforeDir="false" afterPath="$PROJECT_DIR$/contract/testnet.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/seapad/Move.toml" beforeDir="false" afterPath="$PROJECT_DIR$/seapad/Move.toml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -23,7 +24,7 @@
     </option>
   </component>
   <component name="Git.Merge.Settings">
-    <option name="BRANCH" value="testnet" />
+    <option name="BRANCH" value="devnet" />
   </component>
   <component name="Git.Rebase.Settings">
     <option name="NEW_BASE" value="origin/devnet" />
@@ -32,7 +33,7 @@
     <option name="RECENT_BRANCH_BY_REPOSITORY">
       <map>
         <entry key="$PROJECT_DIR$/../seapad-frontend" value="develop" />
-        <entry key="$PROJECT_DIR$" value="master" />
+        <entry key="$PROJECT_DIR$" value="devnet" />
         <entry key="$PROJECT_DIR$/../w3libs" value="testnet" />
       </map>
     </option>
@@ -95,6 +96,10 @@
               <option name="branches">
                 <list>
                   <RecentBranch>
+                    <option name="branchName" value="testnet" />
+                    <option name="lastUsedInstant" value="1683015947" />
+                  </RecentBranch>
+                  <RecentBranch>
                     <option name="branchName" value="devnet" />
                     <option name="lastUsedInstant" value="1683006868" />
                   </RecentBranch>
@@ -129,7 +134,7 @@
     "SONARLINT_PRECOMMIT_ANALYSIS": "true",
     "WebServerToolWindowFactoryState": "false",
     "jdk.selected.JAVA_MODULE": "1.8",
-    "last_opened_file_path": "/Users/anhtv/Documents/Sui/sui-contracts/common",
+    "last_opened_file_path": "/Users/anhtv/Documents/Sui/sui-contracts",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
@@ -158,6 +163,12 @@
     <configuration name="Build" type="MoveRunConfiguration">
       <option name="command" value="move compile" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
+      <envs />
+      <method v="2" />
+    </configuration>
+    <configuration default="true" type="MoveRunConfiguration">
+      <option name="command" value="move compile" />
+      <option name="workingDirectory" value="file://$PROJECT_DIR$/../w3libs" />
       <envs />
       <method v="2" />
     </configuration>
