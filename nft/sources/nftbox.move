@@ -400,6 +400,7 @@ module seapad::nftbox {
         });
     }
 
+    ///@todo review code
     ///Buy multiple nft items with count, with coin in should afford total cost
     public fun buy_nft<COIN>(coin_in: &mut Coin<COIN>,
                              nft_types: vector<u8>,
