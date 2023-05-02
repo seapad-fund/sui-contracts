@@ -12,6 +12,7 @@ module seapad::spt {
     use sui::transfer;
     use sui::tx_context::{TxContext, sender};
     use sui::url;
+    use sui::transfer::freeze_object;
 
     const SYMBOL: vector<u8> = b"SPT";
     const NAME: vector<u8> = b"SPT";
@@ -62,6 +63,11 @@ module seapad::spt {
                           ctx: &mut TxContext) {
         let take = payment::take_from(coins, value, ctx);
         coin::burn(treasury_cap, take);
+    }
+
+    ///CRTICIAL
+    public entry fun burn_mint_cap(treasury_cap: TreasuryCap<SPT>, _ctx: TxContext){
+        freeze_object(treasury_cap);
     }
 
     #[test_only]
