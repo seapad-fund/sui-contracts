@@ -6,11 +6,13 @@ module seapad::project_test {
     use seapad::spt::{Self, SPT};
     use sui::coin::{Self, Coin};
     use sui::math;
-    use sui::test_scenario::{Self, Scenario};
+    use sui::test_scenario::{Self, Scenario, return_to_sender, return_shared};
     use seapad::usdt;
     use seapad::usdt::USDT;
     use sui::clock;
     use sui::clock::Clock;
+    use common::kyc;
+    use common::kyc::Kyc;
 
     const ADMIN: address = @0xC0FFEE;
     const TOKEN_MINT_TEST: u64 = 1000000000000000;
@@ -122,6 +124,27 @@ module seapad::project_test {
         deposit_to_project_(OWNER_PROJECT, DEPOSIT_VALUE, scenario);
         clock::increment_for_testing(&mut clock, 1000);
         start_fund_raising_(scenario, &clock);
+
+        test_scenario::return_shared(clock);
+        test_scenario::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = project::ENotKYC)]
+    fun test_buy_not_kyc() {
+        let scenario_val = scenario();
+        let scenario = &mut scenario_val;
+        create_clock_time_(scenario);
+        test_scenario::next_tx(scenario, ADMIN);
+        let clock = test_scenario::take_shared<Clock>(scenario);
+
+        create_project_milestone_(scenario);
+        setup_launch_state_(scenario, 1, false, &clock);
+        deposit_to_project_(OWNER_PROJECT, DEPOSIT_VALUE, scenario);
+
+        clock::increment_for_testing(&mut clock, 1500);
+        start_fund_raising_(scenario, &clock);
+        buy_token_(@0x11, 500000000000, scenario, &clock);//pass
 
         test_scenario::return_shared(clock);
         test_scenario::end(scenario_val);
@@ -456,6 +479,7 @@ module seapad::project_test {
         {
             let ctx = test_scenario::ctx(scenario);
             project::init_for_testing(ctx);
+            kyc::init_for_testing(ctx);
             spt::init_for_testing(ctx);
             usdt::init_for_testing(ctx);
         };
@@ -463,6 +487,9 @@ module seapad::project_test {
         test_scenario::next_tx(scenario, ADMIN);
         {
             let admin_cap = test_scenario::take_from_sender<AdminCap>(scenario);
+            let kyc = test_scenario::take_shared<Kyc>(scenario);
+            add_whitelist_kyc(&mut kyc, scenario);
+
             let ctx = test_scenario::ctx(scenario);
 
             project::create_project<USDT, SPT>(
@@ -472,8 +499,11 @@ module seapad::project_test {
                 LINEAR_TIME,
                 COIN_DECIMAL,
                 TOKEN_DECIMAL,
+                true,
                 ctx
             );
+
+            return_shared(kyc);
             test_scenario::return_to_sender(scenario, admin_cap);
         };
     }
@@ -483,7 +513,6 @@ module seapad::project_test {
     }
 
     fun setup_launch_state_(scenario: &mut Scenario, round: u8, usewhitelist: bool, clock: &Clock) {
-
         test_scenario::next_tx(scenario, ADMIN);
         {
             let admin_cap = test_scenario::take_from_sender<AdminCap>(scenario);
@@ -585,13 +614,16 @@ module seapad::project_test {
         test_scenario::next_tx(scenario, user);
         {
             let project = test_scenario::take_shared<Project<USDT, SPT>>(scenario);
+            let kyc = test_scenario::take_shared<Kyc>(scenario);
+
             let ctx = test_scenario::ctx(scenario);
             let coin = coin::mint_for_testing<USDT>(TOKEN_MINT_TEST, ctx);
             let coins = vector::empty<Coin<USDT>>();
             vector::push_back(&mut coins, coin);
 
-            project::buy(coins, value, &mut project, clock, ctx);
+            project::buy(coins, value, &mut project, clock, &kyc, ctx);
 
+            return_shared(kyc);
             test_scenario::return_shared(project);
         };
     }
@@ -651,6 +683,27 @@ module seapad::project_test {
         test_scenario::next_tx(scenario, ADMIN);
         let ctx = test_scenario::ctx(scenario);
         clock::share_for_testing(clock::create_for_testing(ctx));
+    }
+
+    fun add_whitelist_kyc(kyc: &mut Kyc, scenario: &mut Scenario) {
+        test_scenario::next_tx(scenario, ADMIN);
+
+        let admin_cap = test_scenario::take_from_sender<kyc::AdminCap>(scenario);
+
+        let whitelist = vector::empty<address>();
+
+        vector::push_back(&mut whitelist, OWNER_PROJECT);
+        vector::push_back(&mut whitelist, USER2);
+        vector::push_back(&mut whitelist, USER3);
+        vector::push_back(&mut whitelist, USER4);
+        vector::push_back(&mut whitelist, USER5);
+        vector::push_back(&mut whitelist, USER6);
+        vector::push_back(&mut whitelist, USER7);
+        vector::push_back(&mut whitelist, USER8);
+        vector::push_back(&mut whitelist, USER9);
+
+        kyc::add(&admin_cap, whitelist, kyc);
+        return_to_sender(scenario, admin_cap);
     }
 }
 
