@@ -321,33 +321,6 @@ module seapad::project {
         event::emit(RemoveMaxAllocateEvent { project: id_address(project), user })
     }
 
-    // public fun save_profile<COIN, TOKEN>(_adminCap: &AdminCap,
-    //                                      project: &mut Project<COIN, TOKEN>,
-    //                                      name: vector<u8>,
-    //                                      twitter: vector<u8>,
-    //                                      discord: vector<u8>,
-    //                                      telegram: vector<u8>,
-    //                                      website: vector<u8>,
-    //                                      _ctx: &mut TxContext) {
-    //     let exists = dynamic_field::exists_with_type<vector<u8>, ProjectProfile>(&project.id, PROFILE);
-    //     if (exists) {
-    //         let profile = dynamic_field::borrow_mut<vector<u8>, ProjectProfile>(&mut project.id, PROFILE);
-    //         profile.name = name;
-    //         profile.twitter = twitter;
-    //         profile.discord = discord;
-    //         profile.telegram = telegram;
-    //         profile.website = website;
-    //     }else {
-    //         dynamic_field::add(&mut project.id, PROFILE, ProjectProfile {
-    //             name,
-    //             twitter,
-    //             discord,
-    //             telegram,
-    //             website
-    //         })
-    //     }
-    // }
-
     public fun add_whitelist<COIN, TOKEN>(_adminCap: &AdminCap,
                                           project: &mut Project<COIN, TOKEN>,
                                           user_list: vector<address>,
