@@ -1,0 +1,12 @@
+rpc =  "https://fullnode.devnet.sui.io"
+faucet =  "https://faucet.devnet.sui.io/gas"
+
+###Seapad
+SPT=0xf5bef65e4f75de4e03ce18fffd25bf375cf6746b44fcf36045376840cf251c76
+USDT=0xf741d5c71a528c6c1931c9165d8527ce9a7b1a157b15eb22c76a2ac3ba3a1e0b
+Admin=0x428f50dacb73fc957e5d7458367dc99bd20dee720b6e77c36c957bfd0cd42afb
+PackageID=0xea864aff3177c79f373db05c1db643ea857c87e0b432384d9f3d1306c792767f
+
+###Staking
+StakeConfig=0x77fdd98806c66edd8d477db1fd763ae59263425e665f4f1c16a520379899f57a
+PackageId=0xc9c9e328071319d880c185bf472c9e381f4fd6ba5859a4e89213911d17e06c59
