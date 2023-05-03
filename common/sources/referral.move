@@ -272,12 +272,7 @@ module common::referral {
         referral.rewards_total = referral.rewards_total - value;
     }
 
-    public entry fun deposit_project_fund<COIN>(
-        _admin: &AdminCap,
-        referral: &mut Referral<COIN>,
-        fund: Coin<COIN>,
-        _ctx: &mut TxContext
-    ) {
+    public entry fun deposit_project_fund<COIN>(referral: &mut Referral<COIN>, fund: Coin<COIN>) {
         let more_fund = coin::value(&fund);
         assert!(more_fund > 0, ERR_BAD_FUND);
         coin::join(&mut referral.fund, fund);
