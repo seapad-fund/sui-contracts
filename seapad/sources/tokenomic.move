@@ -3,15 +3,16 @@ module seapad::tokenomic {
     use sui::object::UID;
     use sui::object;
     use sui::transfer;
-    use sui::coin::{Coin, TreasuryCap};
+    use sui::coin::{Coin};
     use sui::clock::Clock;
     use sui::coin;
-    use sui::transfer::{share_object, public_transfer, public_freeze_object, transfer};
+    use sui::transfer::{share_object, public_transfer, transfer};
     use sui::clock;
     use sui::table::Table;
     use sui::table;
     use std::vector;
     use sui::math;
+    use w3libs::u256;
 
     const MONTH_IN_MS: u64 =    2592000000;
     const TEN_YEARS_IN_MS: u64 =    311040000000;
@@ -34,25 +35,23 @@ module seapad::tokenomic {
     struct TokenomicFund<phantom COIN> has store {
         owner: address, //owner of fund
         name: vector<u8>, //name
-        share_percent: u64, //share of pie in percent * 100
         tge_ms: u64, //TGE timestamp
         tge_release_percent: u64, //released at tge, in %
         claim_start_ms: u64, //time to be able to claim.
         claim_end_ms: u64, //end tge
-
         last_claim_ms: u64,
-
         tge_fund: Coin<COIN>,
         vesting_fund_total: u64, //total of vesting fund, inited just one time, nerver change!
-        vesting_fund: Coin<COIN>
+        vesting_fund: Coin<COIN>,
+        fund_percent: u64
     }
 
     struct TokenomicPie<phantom COIN> has key, store{
         id: UID,
         tge_ms: u64, //TGE timestamp
         total_supply: u64, //total supply of coin value, preset and nerver change!
-        total_shared_percent: u64, //total pecent that shared by funds
-        fund_remain: Coin<COIN>, //total supply preminted, reduced when distribute to sub fund!
+        total_shares: u64,
+        total_shares_percent: u64,
         shares: Table<address, TokenomicFund<COIN>> //all shares
     }
 
@@ -64,24 +63,21 @@ module seapad::tokenomic {
         transfer(admin, to);
     }
 
-    public fun init_tokenomic0<COIN>(_admin: &TAdminCap,
-                                     genesis_mint: Coin<COIN>,
+    public entry fun init_tokenomic<COIN>(_admin: &TAdminCap,
                                      total_supply: u64,
                                      tge_ms: u64,
                                      sclock: &Clock,
                                      ctx: &mut TxContext){
         let now_ms = clock::timestamp_ms(sclock);
         assert!(tge_ms > now_ms, ERR_INVALID_TGE);
-        assert!(total_supply > 0 && total_supply == coin::value(&genesis_mint), ERR_INVALID_SUPPLY);
-
-        let fund_remain = genesis_mint;
+        assert!(total_supply > 0 , ERR_INVALID_SUPPLY);
 
         let pie = TokenomicPie {
             id: object::new(ctx),
             tge_ms,
             total_supply,
-            fund_remain,
-            total_shared_percent: 0u64,
+            total_shares: 0,
+            total_shares_percent: 0,
             shares: table::new<address, TokenomicFund<COIN>>(ctx)
         };
         share_object(pie);
@@ -93,7 +89,7 @@ module seapad::tokenomic {
                                    owner: address,
                                    name: vector<u8>,
                                    tge_ms: u64,
-                                   share_percent: u64,
+                                   fund: Coin<COIN>,
                                    tge_release_percent: u64,
                                    claim_start_ms: u64,
                                    claim_end_ms: u64,
@@ -104,39 +100,35 @@ module seapad::tokenomic {
         let now = clock::timestamp_ms(sclock);
         assert!(tge_ms >= now
             && (vector::length<u8>(&name) > 0)
-            && (share_percent > 0 && share_percent <= 10000)
             && (tge_release_percent >= 0 && tge_release_percent <= 10000)
             && (claim_start_ms >= now && claim_start_ms >= tge_ms)
-            && (claim_end_ms > claim_start_ms && claim_end_ms - claim_start_ms <= TEN_YEARS_IN_MS)
-            && (ONE_HUNDRED_PERCENT_SCALED - pie.total_shared_percent >= share_percent),
+            && (claim_end_ms > claim_start_ms && claim_end_ms - claim_start_ms <= TEN_YEARS_IN_MS),
             ERR_INVALID_FUND_PARAMS);
 
-        pie.total_shared_percent = pie.total_shared_percent + share_percent;
+        pie.total_shares = u256::add_u64(pie.total_shares, coin::value(&fund));
+        pie.total_shares_percent = pie.total_shares*10000/pie.total_supply;
 
-        let fundAmt = (pie.total_supply * share_percent)/ ONE_HUNDRED_PERCENT_SCALED;
-        let fundCoin = coin::split(&mut pie.fund_remain, fundAmt, ctx);
+        let fundAmt = coin::value(&fund);
 
         let tgeFundCoin = if(tge_release_percent == 0){
                 coin::zero<COIN>(ctx)
             }
             else {
-                coin::split(&mut fundCoin, (fundAmt * tge_release_percent)/ ONE_HUNDRED_PERCENT_SCALED, ctx)
+                coin::split(&mut fund, (fundAmt * tge_release_percent)/ ONE_HUNDRED_PERCENT_SCALED, ctx)
             };
 
         let fund =  TokenomicFund<COIN> {
                 owner,
                 name,
-                share_percent,
                 tge_ms,
                 tge_release_percent,
                 claim_start_ms,
                 claim_end_ms,
-
                 last_claim_ms: 0u64,
-
                 tge_fund: tgeFundCoin,
-                vesting_fund_total: coin::value(& fundCoin),
-                vesting_fund: fundCoin
+                vesting_fund_total: coin::value(& fund),
+                vesting_fund: fund,
+                fund_percent:  fundAmt*100/pie.total_supply
             };
 
         table::add(&mut pie.shares, owner, fund);
@@ -154,7 +146,6 @@ module seapad::tokenomic {
         let fund = table::borrow_mut(&mut pie.shares, senderAddr);
 
         assert!(senderAddr == fund.owner, ERR_NO_PERMISSION);
-        assert!(fund.share_percent > 0, ERR_INVALID_FUND_PARAMS);
         assert!(now_ms >= fund.tge_ms, ERR_TGE_NOT_STARTED);
 
         let tgeFundAmt = coin::value(&fund.tge_fund);
@@ -197,9 +188,6 @@ module seapad::tokenomic {
         public_transfer(claimedCoin, senderAddr);
     }
 
-
-    ///change one fund owner to other owner
-    ///CRITICAL!!!
     public entry fun change_fund_owner<COIN>(pie: &mut TokenomicPie<COIN>, to: address, ctx: &mut TxContext){
         let senderAddr = sender(ctx);
         assert!(table::contains(&pie.shares, senderAddr)
@@ -216,16 +204,16 @@ module seapad::tokenomic {
         pie.total_supply
     }
 
-    public fun getTotalSharePercent<COIN>(pie: &TokenomicPie<COIN>): u64{
-        pie.total_shared_percent
+    public fun getTotalShares<COIN>(pie: &TokenomicPie<COIN>): u64{
+        pie.total_shares
+    }
+
+    public fun getTotalSharesPercent<COIN>(pie: &TokenomicPie<COIN>): u64{
+        pie.total_shares_percent
     }
 
     public fun getTGETimeMs<COIN>(pie: &TokenomicPie<COIN>): u64{
         pie.tge_ms
-    }
-
-    public fun getFundRemain<COIN>(pie: &TokenomicPie<COIN>): u64{
-        coin::value(&pie.fund_remain)
     }
 
     public fun getShareFundReleasedAtTGE<COIN>(pie: &TokenomicPie<COIN>, addr: address): u64{
@@ -243,134 +231,5 @@ module seapad::tokenomic {
     #[test_only]
     public fun init_for_testing(ctx: &mut TxContext) {
         init(TOKENOMIC {}, ctx);
-    }
-
-    ///@warning CRITICAL:
-    /// + when you mint wrong token supply, it will be limited forever!
-    /// + user must have both TAdminCap & TreasuryCap
-    public entry fun init_tokenomic<COIN>(_admin: &TAdminCap,
-                                          treasuryCap: TreasuryCap<COIN>,
-                                          total_supply: u64,
-                                          tge_ms: u64,
-                                          sclock: &Clock,
-                                          ctx: &mut TxContext) {
-        //CRITICAL!!!
-        let preMint = coin::mint(&mut treasuryCap, total_supply, ctx);
-        public_freeze_object(treasuryCap);
-
-        init_tokenomic0(_admin, preMint, total_supply, tge_ms, sclock, ctx);
-    }
-
-    #[test_only]
-    public fun init_fund_for_test<COIN>(_admin: &TAdminCap,
-                                        pie: &mut TokenomicPie<COIN>,
-                                        tge_ms: u64,
-                                        sclock: &Clock,
-                                        ctx: &mut TxContext){
-        addFund(_admin,
-            pie,
-            @seedFund,
-            b"Seed Fund",
-            tge_ms,
-            1000,
-            500,
-            tge_ms,
-            tge_ms + 18*MONTH_IN_MS,
-            sclock,
-            ctx
-        );
-
-        addFund(_admin,
-            pie,
-            @privateFund,
-            b"Private Fund",
-            tge_ms,
-            1200,
-            1000,
-            tge_ms,
-            tge_ms + 12*MONTH_IN_MS,
-            sclock,
-            ctx
-        );
-
-        addFund(_admin,
-            pie,
-            @publicFund,
-            b"Public(IDO) Fund",
-            tge_ms,
-            300,
-            2500,
-            tge_ms,
-            tge_ms + 6*MONTH_IN_MS,
-            sclock,
-            ctx
-        );
-
-        addFund(_admin,
-            pie,
-            @foundationFund,
-            b"Foundation Fund",
-            tge_ms,
-            1500,
-            0,
-            tge_ms + 12* MONTH_IN_MS,
-            tge_ms + 48*MONTH_IN_MS,
-            sclock,
-            ctx
-        );
-
-
-        addFund(_admin,
-            pie,
-            @advisorpartnerFund,
-            b"Advisor/Partner Fund",
-            tge_ms,
-            500,
-            0,
-            tge_ms + 12* MONTH_IN_MS,
-            tge_ms + 36*MONTH_IN_MS,
-            sclock,
-            ctx
-        );
-
-
-        addFund(_admin,
-            pie,
-            @marketingFund,
-            b"Market Fund",
-            tge_ms,
-            1200,
-            500,
-            tge_ms,
-            tge_ms + 36*MONTH_IN_MS,
-            sclock,
-            ctx
-        );
-
-        addFund(_admin,
-            pie,
-            @ecosystemFund,
-            b"Ecosystem Fund",
-            tge_ms,
-            2800,
-            0,
-            tge_ms,
-            tge_ms + 60*MONTH_IN_MS,
-            sclock,
-            ctx
-        );
-
-        addFund(_admin,
-            pie,
-            @daoFund,
-            b"DAO Fund",
-            tge_ms,
-            1500,
-            0,
-            tge_ms + 24* MONTH_IN_MS,
-            tge_ms + 36*MONTH_IN_MS,
-            sclock,
-            ctx
-        );
     }
 }
