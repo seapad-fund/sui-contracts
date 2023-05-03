@@ -24,6 +24,7 @@ module common::referral {
     const ERR_BAD_REFERRAL_INFO: u64 = 1003;
     const ERR_BAD_FUND: u64 = 1004;
     const ERR_DISTRIBUTE_TIME: u64 = 1005;
+    const ERR_OUT_OF_FUND: u64 = 1006;
 
     const STATE_INIT: u8 = 0;
     const STATE_CLAIM: u8 = 1;
@@ -261,12 +262,14 @@ module common::referral {
     public entry fun withdraw_project_fund<COIN>(
         _admin: &AdminCap,
         referral: &mut Referral<COIN>,
+        value: u64,
         to: address,
         ctx: &mut TxContext
     ) {
         assert!(referral.state == STATE_CLOSED, ERR_BAD_STATE);
-        let total = coin::value(&referral.fund);
-        public_transfer(coin::split(&mut referral.fund, total, ctx), to);
+        assert!(coin::value(&referral.fund) >= value, ERR_OUT_OF_FUND);
+        public_transfer(coin::split(&mut referral.fund, value, ctx), to);
+        referral.rewards_total = referral.rewards_total - value;
     }
 
     public entry fun deposit_project_fund<COIN>(
@@ -275,13 +278,14 @@ module common::referral {
         fund: Coin<COIN>,
         _ctx: &mut TxContext
     ) {
-        let moreFund = coin::value(&fund);
-        assert!(moreFund > 0, ERR_BAD_FUND);
+        let more_fund = coin::value(&fund);
+        assert!(more_fund > 0, ERR_BAD_FUND);
         coin::join(&mut referral.fund, fund);
+        referral.rewards_total = referral.rewards_total + more_fund;
 
         emit(ReferralDepositEvent {
             referral: id_address(referral),
-            more_reward: moreFund,
+            more_reward: more_fund,
             fund_total: coin::value(&referral.fund)
         })
     }
