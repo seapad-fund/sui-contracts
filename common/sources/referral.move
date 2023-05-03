@@ -30,15 +30,16 @@ module common::referral {
     const STATE_CLOSED: u8 = 2;
 
     struct ReferralCreatedEvent has drop, copy {
-        Referral: address,
+        referral: address,
         state: u8,
         rewards_total: u64,
         fund_total: u64,
-        user_total: u64
+        user_total: u64,
+        distribute_time_ms: u64
     }
 
     struct ReferralClaimStartedEvent has drop, copy {
-        Referral: address,
+        referral: address,
         state: u8,
         rewards_total: u64,
         fund_total: u64,
@@ -46,7 +47,7 @@ module common::referral {
     }
 
     struct ReferralClosedEvent has drop, copy {
-        Referral: address,
+        referral: address,
         state: u8,
         rewards_total: u64,
         fund_total: u64,
@@ -54,7 +55,7 @@ module common::referral {
     }
 
     struct ReferralUserClaimedEvent has drop, copy {
-        Referral: address,
+        referral: address,
         state: u8,
         rewards_total: u64,
         fund_total: u64,
@@ -63,7 +64,7 @@ module common::referral {
     }
 
     struct ReferralUpsertEvent has drop, copy {
-        Referral: address,
+        referral: address,
         state: u8,
         rewards_total: u64,
         fund_total: u64,
@@ -73,7 +74,7 @@ module common::referral {
     }
 
     struct ReferralRemovedEvent has drop, copy {
-        Referral: address,
+        referral: address,
         state: u8,
         rewards_total: u64,
         fund_total: u64,
@@ -82,7 +83,7 @@ module common::referral {
     }
 
     struct ReferralDepositEvent has drop, copy {
-        Referral: address,
+        referral: address,
         more_reward: u64,
         fund_total: u64,
     }
@@ -118,11 +119,12 @@ module common::referral {
         };
 
         emit(ReferralCreatedEvent {
-            Referral: id_address(&Referral),
-            state: Referral.state,
-            rewards_total: Referral.rewards_total,
-            fund_total: coin::value(&Referral.fund),
-            user_total: table::length(&Referral.rewards)
+            referral: id_address(&referral),
+            state: referral.state,
+            rewards_total: referral.rewards_total,
+            fund_total: coin::value(&referral.fund),
+            user_total: table::length(&referral.rewards),
+            distribute_time_ms
         });
 
         share_object(referral);
@@ -168,7 +170,7 @@ module common::referral {
         };
 
         emit(ReferralUpsertEvent {
-            Referral: id_address(referral),
+            referral: id_address(referral),
             state: referral.state,
             rewards_total: referral.rewards_total,
             fund_total: coin::value(&referral.fund),
@@ -200,7 +202,7 @@ module common::referral {
 
 
         emit(ReferralRemovedEvent {
-            Referral: id_address(referral),
+            referral: id_address(referral),
             state: referral.state,
             rewards_total: referral.rewards_total,
             fund_total: coin::value(&referral.fund),
@@ -215,7 +217,7 @@ module common::referral {
         referral.state = STATE_CLAIM;
 
         emit(ReferralClaimStartedEvent {
-            Referral: id_address(referral),
+            referral: id_address(referral),
             state: referral.state,
             rewards_total: referral.rewards_total,
             fund_total: coin::value(&referral.fund),
@@ -234,7 +236,7 @@ module common::referral {
         referral.rewards_total = referral.rewards_total - reward;
 
         emit(ReferralUserClaimedEvent {
-            Referral: id_address(referral),
+            referral: id_address(referral),
             state: referral.state,
             rewards_total: referral.rewards_total,
             fund_total: coin::value(&referral.fund),
@@ -248,7 +250,7 @@ module common::referral {
         referral.state = STATE_CLOSED;
 
         emit(ReferralClosedEvent {
-            Referral: id_address(referral),
+            referral: id_address(referral),
             state: referral.state,
             rewards_total: referral.rewards_total,
             fund_total: coin::value(&referral.fund),
@@ -278,7 +280,7 @@ module common::referral {
         coin::join(&mut referral.fund, fund);
 
         emit(ReferralDepositEvent {
-            Referral: id_address(referral),
+            referral: id_address(referral),
             more_reward: moreFund,
             fund_total: coin::value(&referral.fund)
         })
