@@ -23,10 +23,13 @@ module seapad::project {
     use sui::clock::{Clock};
     use sui::clock;
     use common::kyc::{Kyc, hasKYC};
+    use seapad::version::{Version, checkVersion};
 
     ///Define model first
 
     struct PROJECT has drop {}
+
+    const VERSION: u64 = 1;
 
     const EInvalidVestingType: u64 = 1000;
     const EInvalidRound: u64 = 1001;
@@ -159,7 +162,10 @@ module seapad::project {
     }
 
     ///change admin
-    public fun change_admin(adminCap: AdminCap, to: address) {
+    public fun change_admin(adminCap: AdminCap,
+                            to: address,
+                            version: &mut Version) {
+        checkVersion(version, VERSION);
         transfer::public_transfer(adminCap, to);
     }
 
@@ -171,7 +177,10 @@ module seapad::project {
                                            coin_decimals_: u8,
                                            token_decimals_: u8,
                                            require_kyc: bool,
+                                           version: &mut Version,
                                            ctx: &mut TxContext) {
+        checkVersion(version, VERSION);
+
         let launchstate = LaunchState<COIN, TOKEN> {
             id: object::new(ctx),
             soft_cap: 0,
@@ -226,8 +235,10 @@ module seapad::project {
     public fun change_owner<COIN, TOKEN>(
         new_owner: address,
         project: &mut Project<COIN, TOKEN>,
+        version: &mut Version,
         ctx: &mut TxContext
     ) {
+        checkVersion(version, VERSION);
         let sender = sender(ctx);
         assert!(sender == project.owner, EInvalidPermission);
         let current_owner = project.owner;
@@ -240,7 +251,11 @@ module seapad::project {
                                           project: &mut Project<COIN, TOKEN>,
                                           time: u64,
                                           percent: u64,
-                                          clock: &Clock) {
+                                          clock: &Clock,
+                                          version: &mut Version,
+    ) {
+        checkVersion(version, VERSION);
+
         let vesting = &mut project.vesting;
         let end_time = project.launch_state.end_time;
 
@@ -253,7 +268,11 @@ module seapad::project {
         validate_mile_stones(milestones, end_time, clock::timestamp_ms(clock));
     }
 
-    public fun reset_milestone<COIN, TOKEN>(_adminCap: &AdminCap, project: &mut Project<COIN, TOKEN>) {
+    public fun reset_milestone<COIN, TOKEN>(_adminCap: &AdminCap,
+                                            project: &mut Project<COIN, TOKEN>,
+                                            version: &mut Version) {
+        checkVersion(version, VERSION);
+
         let vesting = &mut project.vesting;
         vesting.milestones = vector::empty<VestingMileStone>();
     }
@@ -269,7 +288,11 @@ module seapad::project {
                                           end_time: u64,
                                           soft_cap: u64,
                                           hard_cap: u64,
-                                          clock: &Clock) {
+                                          clock: &Clock,
+                                          version: &mut Version
+    ) {
+        checkVersion(version, VERSION);
+
         assert!(end_time > start_time && start_time > clock::timestamp_ms(clock), EInvalidTime);
         project.use_whitelist = usewhitelist;
         let launchstate = &mut project.launch_state;
@@ -300,7 +323,10 @@ module seapad::project {
                                              user: address,
                                              max_allocate: u64,
                                              project: &mut Project<COIN, TOKEN>,
+                                             version: &mut Version,
                                              _ctx: &mut TxContext) {
+        checkVersion(version, VERSION);
+
         let max_allocation = &mut project.launch_state.max_allocations;
         if (table::contains(max_allocation, user)) {
             table::remove<address, u64>(max_allocation, user);
@@ -313,7 +339,10 @@ module seapad::project {
     public fun clear_max_allocate<COIN, TOKEN>(_admin_cap: &AdminCap,
                                                user: address,
                                                project: &mut Project<COIN, TOKEN>,
+                                               version: &mut Version,
                                                _ctx: &mut TxContext) {
+        checkVersion(version, VERSION);
+
         let max_allocation = &mut project.launch_state.max_allocations;
         if (table::contains(max_allocation, user)) {
             table::remove<address, u64>(max_allocation, user);
@@ -324,7 +353,10 @@ module seapad::project {
     public fun add_whitelist<COIN, TOKEN>(_adminCap: &AdminCap,
                                           project: &mut Project<COIN, TOKEN>,
                                           user_list: vector<address>,
+                                          version: &mut Version,
                                           _ctx: &mut TxContext) {
+        checkVersion(version, VERSION);
+
         assert!(project.use_whitelist, EProjectNotWhitelist);
         let whitelist = &mut project.whitelist;
         let temp_list = vector::empty<address>();
@@ -345,7 +377,10 @@ module seapad::project {
     public fun remove_whitelist<COIN, TOKEN>(_adminCap: &AdminCap,
                                              project: &mut Project<COIN, TOKEN>,
                                              user_list: vector<address>,
+                                             version: &mut Version,
                                              _ctx: &mut TxContext) {
+        checkVersion(version, VERSION);
+
         assert!(project.use_whitelist, EProjectNotWhitelist);
         let whitelist = &mut project.whitelist;
         let temp_list = vector::empty<address>();
@@ -366,8 +401,11 @@ module seapad::project {
         _adminCap: &AdminCap,
         project: &mut Project<COIN, TOKEN>,
         _clock: &Clock,
+        version: &mut Version,
         ctx: &mut TxContext
     ) {
+        checkVersion(version, VERSION);
+
         validate_start_fund_raising(project);
         project.launch_state.total_token_sold = 0;
         project.launch_state.participants = 0;
@@ -386,8 +424,11 @@ module seapad::project {
         project: &mut Project<COIN, TOKEN>,
         clock: &Clock,
         kyc: &Kyc,
+        version: &mut Version,
         ctx: &mut TxContext
     ) {
+        checkVersion(version, VERSION);
+
         let coin_amt = payment::take_from(coins, amount, ctx);
         let buyer_address = tx_context::sender(ctx);
         if(project.require_kyc){
@@ -459,8 +500,10 @@ module seapad::project {
         _adminCap: &AdminCap,
         project: &mut Project<COIN, TOKEN>,
         clock: &Clock,
+        version: &mut Version,
         ctx: &mut TxContext
     ) {
+        checkVersion(version, VERSION);
         validate_end_fund_rasing(project, clock::timestamp_ms(clock));
         let total_coin_raised = if (option::is_none(&project.launch_state.coin_raised)) {
             0
@@ -482,7 +525,12 @@ module seapad::project {
         })
     }
 
-    public fun end_refund<COIN, TOKEN>(_adminCap: &AdminCap, project: &mut Project<COIN, TOKEN>, ctx: &mut TxContext) {
+    public fun end_refund<COIN, TOKEN>(_adminCap: &AdminCap,
+                                       project: &mut Project<COIN, TOKEN>,
+                                       version: &mut Version,
+                                       ctx: &mut TxContext) {
+        checkVersion(version, VERSION);
+
         project.launch_state.state = ROUND_STATE_END_REFUND;
         event::emit(RefundClosedEvent {
             project: id_address(project),
@@ -494,8 +542,10 @@ module seapad::project {
     public fun distribute_raised_fund<COIN, TOKEN>(
         _adminCap: &AdminCap,
         project: &mut Project<COIN, TOKEN>,
+        version: &mut Version,
         ctx: &mut TxContext
     ) {
+        checkVersion(version, VERSION);
         validate_allocate_budget(project);
         let budget = option::extract(&mut project.launch_state.coin_raised);
         transfer::public_transfer(budget, project.owner);
@@ -511,8 +561,10 @@ module seapad::project {
     public fun refund_token_to_owner<COIN, TOKEN>(
         _cap: &AdminCap,
         project: &mut Project<COIN, TOKEN>,
+        version: &mut Version,
         _ctx: &mut TxContext
     ) {
+        checkVersion(version, VERSION);
         validate_allocate_budget(project);
         let budget = option::extract(&mut project.launch_state.token_fund);
         transfer::public_transfer(budget, project.owner);
@@ -523,7 +575,10 @@ module seapad::project {
     public fun deposit_by_owner<COIN, TOKEN>(tokens: vector<Coin<TOKEN>>,
                                              value: u64,
                                              project: &mut Project<COIN, TOKEN>,
+                                             version: &mut Version,
                                              ctx: &mut TxContext) {
+        checkVersion(version, VERSION);
+
         validate_deposit(value, project, ctx);
 
         let launchstate = &mut project.launch_state;
@@ -543,7 +598,12 @@ module seapad::project {
         })
     }
 
-    public fun claim_token<COIN, TOKEN>(project: &mut Project<COIN, TOKEN>, clock: &Clock, ctx: &mut TxContext) {
+    public fun claim_token<COIN, TOKEN>(project: &mut Project<COIN, TOKEN>,
+                                        clock: &Clock,
+                                        version: &mut Version,
+                                        ctx: &mut TxContext) {
+        checkVersion(version, VERSION);
+
         validate_vest_token(project);
         let user_ = sender(ctx);
         let launchstate = &mut project.launch_state;
@@ -571,7 +631,11 @@ module seapad::project {
         )
     }
 
-    public fun claim_refund<COIN, TOKEN>(project: &mut Project<COIN, TOKEN>, ctx: &mut TxContext) {
+    public fun claim_refund<COIN, TOKEN>(project: &mut Project<COIN, TOKEN>,
+                                         version: &mut Version,
+                                         ctx: &mut TxContext) {
+        checkVersion(version, VERSION);
+
         validate_refund(project);
         let sender = sender(ctx);
         let order_book = &mut project.launch_state.order_book;
@@ -585,7 +649,11 @@ module seapad::project {
         event::emit(ClaimRefundEvent { project: object::id_address(project), user: sender, coin_fund: amount_fund })
     }
 
-    public fun vote<COIN, TOKEN>(project: &mut Project<COIN, TOKEN>, ctx: &mut TxContext) {
+    public fun vote<COIN, TOKEN>(project: &mut Project<COIN, TOKEN>,
+                                 version: &mut Version,
+                                 ctx: &mut TxContext) {
+        checkVersion(version, VERSION);
+
         let com = &mut project.community;
         let voter_address = sender(ctx);
         assert!(vec_set::contains(&mut com.voters, &voter_address), EVoted);
@@ -605,7 +673,7 @@ module seapad::project {
         *max_allocate
     }
 
-    public fun swap_token<COIN, TOKEN>(coin_value: u64, project: &Project<COIN, TOKEN>): u64 {
+    fun swap_token<COIN, TOKEN>(coin_value: u64, project: &Project<COIN, TOKEN>): u64 {
         let swap_ratio_coin = (project.launch_state.swap_ratio_coin as u128);
         let swap_ratio_token = (project.launch_state.swap_ratio_token as u128);
         let decimal_ratio_coin = (math::pow(10, project.coin_decimals) as u128);
@@ -829,11 +897,14 @@ module seapad::project {
         coin_fund: u64
     }
 
-
-    // For testing
     #[test_only]
     public fun init_for_testing(ctx: &mut TxContext) {
         init(PROJECT {}, ctx);
+    }
+
+    #[test_only]
+    public fun swap_token_for_test<COIN, TOKEN>(coin_value: u64, project: &Project<COIN, TOKEN>): u64 {
+        swap_token(coin_value, project)
     }
 }
 

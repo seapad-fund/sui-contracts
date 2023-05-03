@@ -13,6 +13,9 @@ module seapad::tokenomic {
     use std::vector;
     use sui::math;
     use w3libs::u256;
+    use seapad::version::{Version, checkVersion};
+
+    const VERSION: u64 = 1;
 
     const MONTH_IN_MS: u64 =    2592000000;
     const TEN_YEARS_IN_MS: u64 =    311040000000;
@@ -59,7 +62,10 @@ module seapad::tokenomic {
         transfer::transfer(TAdminCap { id: object::new(ctx) }, sender(ctx));
     }
 
-    public entry fun change_admin(admin: TAdminCap, to: address) {
+    public entry fun change_admin(admin: TAdminCap,
+                                  to: address,
+                                  version: &mut Version) {
+        checkVersion(version, VERSION);
         transfer(admin, to);
     }
 
@@ -67,7 +73,10 @@ module seapad::tokenomic {
                                      total_supply: u64,
                                      tge_ms: u64,
                                      sclock: &Clock,
+                                     version: &mut Version,
                                      ctx: &mut TxContext){
+        checkVersion(version, VERSION);
+
         let now_ms = clock::timestamp_ms(sclock);
         assert!(tge_ms > now_ms, ERR_INVALID_TGE);
         assert!(total_supply > 0 , ERR_INVALID_SUPPLY);
@@ -94,9 +103,12 @@ module seapad::tokenomic {
                                    claim_start_ms: u64,
                                    claim_end_ms: u64,
                                    sclock: &Clock,
+                                   version: &mut Version,
                                    ctx: &mut TxContext
     )
     {
+        checkVersion(version, VERSION);
+
         let now = clock::timestamp_ms(sclock);
         assert!(tge_ms >= now
             && (vector::length<u8>(&name) > 0)
@@ -136,7 +148,12 @@ module seapad::tokenomic {
 
     //Claim fund!
     //Support multiple claim
-    public entry fun claim<COIN>(pie: &mut TokenomicPie<COIN>, sclock: &Clock, ctx: &mut TxContext){
+    public entry fun claim<COIN>(pie: &mut TokenomicPie<COIN>,
+                                 sclock: &Clock,
+                                 version: &mut Version,
+                                 ctx: &mut TxContext){
+        checkVersion(version, VERSION);
+
         let now_ms = clock::timestamp_ms(sclock);
         assert!(now_ms >= pie.tge_ms, ERR_INVALID_TGE);
 
@@ -188,7 +205,12 @@ module seapad::tokenomic {
         public_transfer(claimedCoin, senderAddr);
     }
 
-    public entry fun change_fund_owner<COIN>(pie: &mut TokenomicPie<COIN>, to: address, ctx: &mut TxContext){
+    public entry fun change_fund_owner<COIN>(pie: &mut TokenomicPie<COIN>,
+                                             to: address,
+                                             version: &mut Version,
+                                             ctx: &mut TxContext){
+        checkVersion(version, VERSION);
+
         let senderAddr = sender(ctx);
         assert!(table::contains(&pie.shares, senderAddr)
             && !table::contains(&pie.shares, to), ERR_NO_PERMISSION);
@@ -225,7 +247,6 @@ module seapad::tokenomic {
         let share = table::borrow(&pie.shares, addr);
         coin::value(&share.vesting_fund)
     }
-
 
 
     #[test_only]
