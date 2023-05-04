@@ -1,7 +1,7 @@
 rpc =  "https://fullnode.testnet.sui.io"
 faucet =  "https://faucet.testnet.sui.io/gas"
 ###Seapad
-SPT=0xa66b255e03f7a409d7e9b2b9abcce814185897ea467b79a6766ba937c94cd2f5
+SPT=0x78639b9fff8e7eb50c620a24f1c3bd288257ae55178b9e69b243d3f81856982b
 USDT=0xc313ac8038aec419f8555ab7deef6a3386c2938ad90b7c553c4135d4ff3304fb
 Admin=0x9bd875bac026a63c9be5c6502ce50a08d49b0a128ddebf9465a8501cec7d5e9e
 VersionId=0x24750c4da43beea085caa121477f36eeb529255c867773069d64de153f3a6a09
