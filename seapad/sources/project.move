@@ -170,12 +170,13 @@ module seapad::project {
     }
 
     /// add one project
+    /// @todo validate params
     public fun create_project<COIN, TOKEN>(_adminCap: &AdminCap,
                                            owner: address,
                                            vesting_type: u8,
-                                           linear_time_: u64,
-                                           coin_decimals_: u8,
-                                           token_decimals_: u8,
+                                           linear_time: u64,
+                                           coin_decimals: u8,
+                                           token_decimals: u8,
                                            require_kyc: bool,
                                            version: &mut Version,
                                            ctx: &mut TxContext) {
@@ -210,7 +211,7 @@ module seapad::project {
         let vesting_obj = Vesting {
             id: object::new(ctx),
             type: vesting_type,
-            linear_time: linear_time_,
+            linear_time,
             init_release_time: 0,
             milestones: vector::empty<VestingMileStone>()
         };
@@ -221,8 +222,8 @@ module seapad::project {
             launch_state: launchstate,
             community,
             use_whitelist: false,
-            coin_decimals: coin_decimals_,
-            token_decimals: token_decimals_,
+            coin_decimals,
+            token_decimals,
             vesting: vesting_obj,
             whitelist: table::new(ctx),
             require_kyc
@@ -617,6 +618,7 @@ module seapad::project {
             launchstate.end_time,
             clock::timestamp_ms(clock)
         );
+
         assert!(total_percent > 0, EPercentZero);
         let more_token = order.token_amount / 1000 * (total_percent);
         let more_token_actual = more_token - order.token_released;
@@ -684,6 +686,7 @@ module seapad::project {
         (token_value as u64)
     }
 
+    //@todo review
     fun cal_claim_percent(vesting: &Vesting, end_time: u64, now: u64): u64 {
         let milestones = &vesting.milestones;
         let total_percent = 1000;
