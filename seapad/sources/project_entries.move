@@ -18,6 +18,7 @@ module seapad::project_entries {
                                                  owner: address,
                                                  vesting_type: u8,
                                                  cliff_time: u64,
+                                                 tge: u64,
                                                  unlock_percent: u64,
                                                  linear_time_ms: u64,
                                                  tge_ms: u64,
@@ -25,12 +26,14 @@ module seapad::project_entries {
                                                  token_decimals: u8,
                                                  require_kyc: bool,
                                                  version: &mut Version,
+                                                 clock: &Clock,
                                                  ctx: &mut TxContext) {
         project::create_project<COIN, TOKEN>(
             adminCap,
             owner,
             vesting_type,
             cliff_time,
+            tge,
             unlock_percent,
             linear_time_ms,
             tge_ms,
@@ -38,6 +41,7 @@ module seapad::project_entries {
             token_decimals,
             require_kyc,
             version,
+            clock,
             ctx
         );
     }
@@ -113,17 +117,6 @@ module seapad::project_entries {
         project::clear_max_allocate<COIN, TOKEN>(_admin_cap, user, project, version, ctx);
     }
 
-    // public entry fun save_profile<COIN, TOKEN>(_adminCap: &AdminCap,
-    //                                            project: &mut Project<COIN, TOKEN>,
-    //                                            name: vector<u8>,
-    //                                            twitter: vector<u8>,
-    //                                            discord: vector<u8>,
-    //                                            telegram: vector<u8>,
-    //                                            website: vector<u8>,
-    //                                            _ctx: &mut TxContext) {
-    //     project::save_profile<COIN, TOKEN>(_adminCap, project, name, twitter, discord, telegram, website, _ctx);
-    // }
-
     public entry fun add_whitelist<COIN, TOKEN>(_adminCap: &AdminCap,
                                                 project: &mut Project<COIN, TOKEN>,
                                                 user_list: vector<address>,
@@ -190,6 +183,17 @@ module seapad::project_entries {
         ctx: &mut TxContext
     ) {
         project::distribute_raised_fund<COIN, TOKEN>(_adminCap, project, version, ctx);
+    }
+
+    public entry fun distribute_raised_fund2<COIN, TOKEN>(
+        _adminCap: &AdminCap,
+        project: &mut Project<COIN, TOKEN>,
+        to: address,
+        amount: u64,
+        version: &mut Version,
+        ctx: &mut TxContext
+    ){
+        project::distribute_raised_fund2<COIN, TOKEN>(_adminCap, project, to, amount, version, ctx);
     }
 
     public entry fun refund_token_to_owner<COIN, TOKEN>(
