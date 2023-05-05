@@ -15,6 +15,8 @@ module seapad::project_test {
     use common::kyc::Kyc;
     use seapad::version::{versionForTest, destroyForTest};
 
+    const PERCENT_SCALE: u64 = 10000;
+
     const ADMIN: address = @0xC0FFEE;
     const TOKEN_MINT_TEST: u64 = 1000000000000000;
     const SWAP_RATIO_COIN: u64 = 1;
@@ -43,6 +45,8 @@ module seapad::project_test {
     const LINEAR_TIME: u64 = 10000;
     const START_TIME: u64 = 1000;
     const END_TIME: u64 = 3000;
+    const CLIFF_TIME: u64 = 1000;
+    const UNLOCK_PERCENT: u64 = 50;
 
 
     fun scenario(): Scenario { test_scenario::begin(@0xC0FFEE) }
@@ -305,7 +309,7 @@ module seapad::project_test {
         end_fund_raising_(scenario, &clock);
 
         clock::increment_for_testing(&mut clock, 5000);
-        let percent = ((clock::timestamp_ms(&clock) - END_TIME) * 1000) / LINEAR_TIME;
+        let percent = ((clock::timestamp_ms(&clock) - END_TIME) * PERCENT_SCALE) / LINEAR_TIME;
         receive_token_(USER2, scenario, &clock);
         test_scenario::next_tx(scenario, USER2);
         {
@@ -314,7 +318,7 @@ module seapad::project_test {
             let spt_value = coin::value(&spt);
 
             let spt_value_expected = project::swap_token_for_test(coin_buy, &project);
-            let spt_value_actual = spt_value_expected / 1000 * (percent);
+            let spt_value_actual = spt_value_expected / PERCENT_SCALE * (percent);
 
             assert!(spt_value_actual == spt_value, 0);
 
@@ -383,7 +387,7 @@ module seapad::project_test {
             let spt_value = coin::value(&spt);
 
             let spt_value_expected = project::swap_token_for_test(coin_buy, &project);
-            let spt_value_actual = spt_value_expected / 1000 * (percent);
+            let spt_value_actual = spt_value_expected / PERCENT_SCALE * (percent);
 
             assert!(spt_value_actual == spt_value, 0);
 
@@ -487,7 +491,7 @@ module seapad::project_test {
     }
 
     fun create_project_linear_time_(scenario: &mut Scenario) {
-        create_project_(2, scenario);
+        create_project_(1, scenario);
     }
 
     fun create_project_(vesting_type: u8, scenario: &mut Scenario) {
@@ -513,7 +517,10 @@ module seapad::project_test {
                 &admin_cap,
                 OWNER_PROJECT,
                 vesting_type,
-                LINEAR_TIME,
+                CLIFF_TIME,
+                UNLOCK_PERCENT,
+                0,
+                0,
                 COIN_DECIMAL,
                 TOKEN_DECIMAL,
                 true,
@@ -527,7 +534,7 @@ module seapad::project_test {
     }
 
     fun create_project_milestone_(scenario: &mut Scenario) {
-        create_project_(1, scenario);
+        create_project_(2, scenario);
     }
 
     fun setup_launch_state_(scenario: &mut Scenario, round: u8, usewhitelist: bool, clock: &Clock) {
