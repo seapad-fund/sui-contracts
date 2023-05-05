@@ -25,6 +25,7 @@ module seapad::project {
     use common::kyc::{Kyc, hasKYC};
     use seapad::version::{Version, checkVersion};
     use sui::transfer::public_transfer;
+    use std::debug;
 
     ///Define model first
 
@@ -703,6 +704,7 @@ module seapad::project {
             &project.vesting,
             clock::timestamp_ms(clock)
         );
+        debug::print(&total_percent);
 
         total_percent = math::min(total_percent, TEN_HUNDRED_PERCENT_SCALED);
 
