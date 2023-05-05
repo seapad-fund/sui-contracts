@@ -762,8 +762,7 @@ module seapad::project {
     fun cal_claim_percent(vesting: &Vesting, now: u64): u64 {
         let milestones = &vesting.milestones;
         let tge = vesting.tge;
-        //@fixme why init total_percent = 1000 first ?
-        let total_percent = 1000u64;
+        let total_percent = 0;
 
         if(vesting.type == VESTING_TYPE_MILESTONE_CLIFF_FIRST) {
             if(now >= tge + vesting.cliff_time){
@@ -832,7 +831,8 @@ module seapad::project {
             return total_percent
         };
 
-        total_percent
+        //default value to 1000u64
+        1000u64
     }
 
     fun validate_start_fund_raising<COIN, TOKEN>(project: &mut Project<COIN, TOKEN>) {
