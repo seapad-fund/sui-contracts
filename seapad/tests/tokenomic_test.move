@@ -194,32 +194,32 @@ module seapad::tokenomic_test {
 
         let pie = take_shared<TokenomicPie<XCOIN>>(scenario);
 
-        assert!(tokenomic::getTotalSupply(&pie) == TOTAL_SUPPLY, 1);
-        assert!(tokenomic::getTotalSharesPercent(&pie) == 10000, 1);
+        assert!(tokenomic::getPieTotalSupply(&pie) == TOTAL_SUPPLY, 1);
+        assert!(tokenomic::getPieTotalSharePercent(&pie) == 10000, 1);
 
-        assert!(tokenomic::getShareFundReleasedAtTGE(&pie, @seedFund) == 500000, 1);
-        assert!(tokenomic::getShareFundVestingAvailable(&pie, @seedFund) == (10000000 - 500000), 1);
+        assert!(tokenomic::getFundUnlockPercent(&pie, @seedFund) == 500000, 1);
+        assert!(tokenomic::getFundVestingAvailable(&pie, @seedFund) == (10000000 - 500000), 1);
 
-        assert!(tokenomic::getShareFundReleasedAtTGE(&pie, @privateFund) == 12000000/10, 1);
-        assert!(tokenomic::getShareFundVestingAvailable(&pie, @privateFund) == (12000000 - 12000000/10), 1);
+        assert!(tokenomic::getFundUnlockPercent(&pie, @privateFund) == 12000000/10, 1);
+        assert!(tokenomic::getFundVestingAvailable(&pie, @privateFund) == (12000000 - 12000000/10), 1);
 
-        assert!(tokenomic::getShareFundReleasedAtTGE(&pie, @publicFund) == (3000000 * 25/100), 1);
-        assert!(tokenomic::getShareFundVestingAvailable(&pie, @publicFund) == (3000000 - 3000000 * 25/100), 1);
+        assert!(tokenomic::getFundUnlockPercent(&pie, @publicFund) == (3000000 * 25/100), 1);
+        assert!(tokenomic::getFundVestingAvailable(&pie, @publicFund) == (3000000 - 3000000 * 25/100), 1);
 
-        assert!(tokenomic::getShareFundReleasedAtTGE(&pie, @foundationFund) == 0, 1);
-        assert!(tokenomic::getShareFundVestingAvailable(&pie, @foundationFund) == (15000000), 1);
+        assert!(tokenomic::getFundUnlockPercent(&pie, @foundationFund) == 0, 1);
+        assert!(tokenomic::getFundVestingAvailable(&pie, @foundationFund) == (15000000), 1);
 
-        assert!(tokenomic::getShareFundReleasedAtTGE(&pie, @advisorpartnerFund) == 0, 1);
-        assert!(tokenomic::getShareFundVestingAvailable(&pie, @advisorpartnerFund) == (5000000), 1);
+        assert!(tokenomic::getFundUnlockPercent(&pie, @advisorpartnerFund) == 0, 1);
+        assert!(tokenomic::getFundVestingAvailable(&pie, @advisorpartnerFund) == (5000000), 1);
 
-        assert!(tokenomic::getShareFundReleasedAtTGE(&pie, @marketingFund) == (12000000 * 5/100), 1);
-        assert!(tokenomic::getShareFundVestingAvailable(&pie, @marketingFund) == (12000000 - 12000000 * 5/100), 1);
+        assert!(tokenomic::getFundUnlockPercent(&pie, @marketingFund) == (12000000 * 5/100), 1);
+        assert!(tokenomic::getFundVestingAvailable(&pie, @marketingFund) == (12000000 - 12000000 * 5/100), 1);
 
-        assert!(tokenomic::getShareFundReleasedAtTGE(&pie, @ecosystemFund) == (0), 1);
-        assert!(tokenomic::getShareFundVestingAvailable(&pie, @ecosystemFund) == (28000000), 1);
+        assert!(tokenomic::getFundUnlockPercent(&pie, @ecosystemFund) == (0), 1);
+        assert!(tokenomic::getFundVestingAvailable(&pie, @ecosystemFund) == (28000000), 1);
 
-        assert!(tokenomic::getShareFundReleasedAtTGE(&pie, @daoFund) == (0), 1);
-        assert!(tokenomic::getShareFundVestingAvailable(&pie, @daoFund) == (15000000), 1);
+        assert!(tokenomic::getFundUnlockPercent(&pie, @daoFund) == (0), 1);
+        assert!(tokenomic::getFundVestingAvailable(&pie, @daoFund) == (15000000), 1);
 
         test_scenario::return_shared(clock);
         test_scenario::return_shared(pie);
@@ -398,10 +398,10 @@ module seapad::tokenomic_test {
         test_scenario::next_tx(scenario, @seedFund);
         clock::increment_for_testing(&mut clock, 18*MONTH_IN_MS + TWO_HOURS_IN_MS);
         tokenomic::claim(&mut pie, &clock,  &mut version,test_scenario::ctx(scenario));
-        debug::print(&tokenomic::getShareFundReleasedAtTGE(&pie, @seedFund));
-        assert!(tokenomic::getShareFundReleasedAtTGE(&pie, @seedFund) == 0, 1);
-        debug::print(&tokenomic::getShareFundVestingAvailable(&pie, @seedFund));
-        assert!(tokenomic::getShareFundVestingAvailable(&pie, @seedFund) == 0, 1);
+        debug::print(&tokenomic::getFundUnlockPercent(&pie, @seedFund));
+        assert!(tokenomic::getFundUnlockPercent(&pie, @seedFund) == 0, 1);
+        debug::print(&tokenomic::getFundVestingAvailable(&pie, @seedFund));
+        assert!(tokenomic::getFundVestingAvailable(&pie, @seedFund) == 0, 1);
 
 
         test_scenario::return_shared(clock);
@@ -450,10 +450,10 @@ module seapad::tokenomic_test {
         test_scenario::next_tx(scenario, @seedFund);
         clock::increment_for_testing(&mut clock, TWO_HOURS_IN_MS);
         tokenomic::claim(&mut pie, &clock,   &mut version,test_scenario::ctx(scenario));
-        debug::print(&tokenomic::getShareFundReleasedAtTGE(&pie, @seedFund));
-        assert!(tokenomic::getShareFundReleasedAtTGE(&pie, @seedFund) == 0, 1);
-        debug::print(&tokenomic::getShareFundVestingAvailable(&pie, @seedFund));
-        assert!(tokenomic::getShareFundVestingAvailable(&pie, @seedFund) == 9500000, 1);
+        debug::print(&tokenomic::getFundUnlockPercent(&pie, @seedFund));
+        assert!(tokenomic::getFundUnlockPercent(&pie, @seedFund) == 0, 1);
+        debug::print(&tokenomic::getFundVestingAvailable(&pie, @seedFund));
+        assert!(tokenomic::getFundVestingAvailable(&pie, @seedFund) == 9500000, 1);
 
         test_scenario::return_shared(clock);
         test_scenario::return_shared(pie);
@@ -501,10 +501,10 @@ module seapad::tokenomic_test {
         clock::increment_for_testing(&mut clock, TWO_HOURS_IN_MS + 9*MONTH_IN_MS);
         tokenomic::claim(&mut pie, &clock, &mut version,test_scenario::ctx(scenario));
 
-        debug::print(&tokenomic::getShareFundReleasedAtTGE(&pie, @seedFund));
-        assert!(tokenomic::getShareFundReleasedAtTGE(&pie, @seedFund) == 0, 1);
-        debug::print(&tokenomic::getShareFundVestingAvailable(&pie, @seedFund));
-        assert!(tokenomic::getShareFundVestingAvailable(&pie, @seedFund) == 9500000 - 9500000 * 9/18, 1);
+        debug::print(&tokenomic::getFundUnlockPercent(&pie, @seedFund));
+        assert!(tokenomic::getFundUnlockPercent(&pie, @seedFund) == 0, 1);
+        debug::print(&tokenomic::getFundVestingAvailable(&pie, @seedFund));
+        assert!(tokenomic::getFundVestingAvailable(&pie, @seedFund) == 9500000 - 9500000 * 9/18, 1);
 
         test_scenario::next_tx(scenario, @seedFund);
         let claimedCoin = test_scenario::take_from_sender<Coin<XCOIN>>(scenario);
@@ -562,10 +562,10 @@ module seapad::tokenomic_test {
         tokenomic::claim(&mut pie, &clock, &mut version, test_scenario::ctx(scenario));
         tokenomic::claim(&mut pie, &clock, &mut version, test_scenario::ctx(scenario));
 
-        debug::print(&tokenomic::getShareFundReleasedAtTGE(&pie, @seedFund));
-        assert!(tokenomic::getShareFundReleasedAtTGE(&pie, @seedFund) == 0, 1);
-        debug::print(&tokenomic::getShareFundVestingAvailable(&pie, @seedFund));
-        assert!(tokenomic::getShareFundVestingAvailable(&pie, @seedFund) == 9500000 - 9500000 * 9/18, 1);
+        debug::print(&tokenomic::getFundUnlockPercent(&pie, @seedFund));
+        assert!(tokenomic::getFundUnlockPercent(&pie, @seedFund) == 0, 1);
+        debug::print(&tokenomic::getFundVestingAvailable(&pie, @seedFund));
+        assert!(tokenomic::getFundVestingAvailable(&pie, @seedFund) == 9500000 - 9500000 * 9/18, 1);
 
         test_scenario::next_tx(scenario, @seedFund);
         let claimedCoin = test_scenario::take_from_sender<Coin<XCOIN>>(scenario);
@@ -615,10 +615,10 @@ module seapad::tokenomic_test {
         test_scenario::next_tx(scenario, @seedFund);
         clock::increment_for_testing(&mut clock, 18*MONTH_IN_MS + TWO_HOURS_IN_MS);
         tokenomic::claim(&mut pie, &clock, &mut version,test_scenario::ctx(scenario));
-        debug::print(&tokenomic::getShareFundReleasedAtTGE(&pie, @seedFund));
-        assert!(tokenomic::getShareFundReleasedAtTGE(&pie, @seedFund) == 0, 1);
-        debug::print(&tokenomic::getShareFundVestingAvailable(&pie, @seedFund));
-        assert!(tokenomic::getShareFundVestingAvailable(&pie, @seedFund) == 0, 1);
+        debug::print(&tokenomic::getFundUnlockPercent(&pie, @seedFund));
+        assert!(tokenomic::getFundUnlockPercent(&pie, @seedFund) == 0, 1);
+        debug::print(&tokenomic::getFundVestingAvailable(&pie, @seedFund));
+        assert!(tokenomic::getFundVestingAvailable(&pie, @seedFund) == 0, 1);
 
         test_scenario::next_tx(scenario, @seedFund);
         clock::increment_for_testing(&mut clock, 18*MONTH_IN_MS + TWO_HOURS_IN_MS);
@@ -672,8 +672,8 @@ module seapad::tokenomic_test {
 
 
         test_scenario::next_tx(scenario, SEED_FUND2);
-        assert!(tokenomic::getShareFundReleasedAtTGE(&pie, SEED_FUND2) == 0, 1);
-        assert!(tokenomic::getShareFundVestingAvailable(&pie, SEED_FUND2) == 0, 1);
+        assert!(tokenomic::getFundUnlockPercent(&pie, SEED_FUND2) == 0, 1);
+        assert!(tokenomic::getFundVestingAvailable(&pie, SEED_FUND2) == 0, 1);
 
         test_scenario::return_shared(clock);
         test_scenario::return_shared(pie);

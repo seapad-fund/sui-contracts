@@ -6,7 +6,7 @@ module seapad::tokenomic {
     use sui::coin::{Coin};
     use sui::clock::Clock;
     use sui::coin;
-    use sui::transfer::{share_object, public_transfer, transfer};
+    use sui::transfer::{share_object, transfer};
     use sui::clock;
     use sui::table::Table;
     use sui::table;
@@ -17,17 +17,27 @@ module seapad::tokenomic {
 
     const VERSION: u64 = 1;
 
-    const MONTH_IN_MS: u64 =    2592000000;
-    const TEN_YEARS_IN_MS: u64 =    311040000000;
+    const MONTH_IN_MS: u64 =  2592000000;
+    const TEN_YEARS_IN_MS: u64 = 311040000000;
     const ONE_HUNDRED_PERCENT_SCALED: u64 = 10000;
 
-    const ERR_INVALID_TGE: u64 = 8001;
-    const ERR_INVALID_SUPPLY: u64 = 8002;
-    const ERR_INVALID_FUND_PARAMS: u64 = 8003;
+    const ERR_BAD_TGE: u64 = 8001;
+    const ERR_BAD_SUPPLY: u64 = 8002;
+    const ERR_BAD_FUND_PARAMS: u64 = 8003;
     const ERR_TGE_NOT_STARTED: u64 = 8004;
     const ERR_BAD_VESTING_TIME: u64 = 8005;
     const ERR_NO_PERMISSION: u64 = 8006;
     const ERR_NO_MORE_COIN: u64 = 8007;
+    const ERR_BAD_VESTING_TYPE: u64 = 8008;
+    const ERR_BAD_VESTING_PARAMS: u64 = 8009;
+    const ERR_NO_COIN: u64 = 8010;
+    const ERR_NO_FUND: u64 = 8011;
+
+
+    const VESTING_TYPE_MILESTONE_UNLOCK_FIRST: u8 = 1;
+    const VESTING_TYPE_MILESTONE_CLIFF_FIRST: u8 = 2;
+    const VESTING_TYPE_LINEAR_UNLOCK_FIRST: u8 = 3;
+    const VESTING_TYPE_LINEAR_CLIFF_FIRST: u8 = 4;
 
     struct TOKENOMIC has drop {}
 
@@ -38,15 +48,18 @@ module seapad::tokenomic {
     struct TokenomicFund<phantom COIN> has store {
         owner: address, //owner of fund
         name: vector<u8>, //name
-        tge_ms: u64, //TGE timestamp
-        tge_release_percent: u64, //released at tge, in %
-        claim_start_ms: u64, //time to be able to claim.
-        claim_end_ms: u64, //end tge
-        last_claim_ms: u64,
-        tge_fund: Coin<COIN>,
+        vesting_type: u8,
+        tge_ms: u64, //tge timestamp
+        cliff_ms: u64, //duration
+        unlock_percent: u64, //released at tge, in %
+        linear_vesting_duration_ms: u64, //linear time vesting duration
+        milestone_times: vector<u64>, //list of milestone timestamp
+        milestone_percents: vector<u64>, //list of milestone percents
+        last_claim_ms: u64, //last claim time
         vesting_fund_total: u64, //total of vesting fund, inited just one time, nerver change!
-        vesting_fund: Coin<COIN>,
-        fund_percent: u64
+        vesting_fund_released: u64, //total released
+        vesting_fund: Coin<COIN>, //all locked fund
+        pie_percent: u64 //percent on pie
     }
 
     struct TokenomicPie<phantom COIN> has key, store{
@@ -78,8 +91,8 @@ module seapad::tokenomic {
         checkVersion(version, VERSION);
 
         let now_ms = clock::timestamp_ms(sclock);
-        assert!(tge_ms > now_ms, ERR_INVALID_TGE);
-        assert!(total_supply > 0 , ERR_INVALID_SUPPLY);
+        assert!(tge_ms > now_ms, ERR_BAD_TGE);
+        assert!(total_supply > 0 , ERR_BAD_SUPPLY);
 
         let pie = TokenomicPie {
             id: object::new(ctx),
@@ -97,57 +110,86 @@ module seapad::tokenomic {
                                    pie: &mut TokenomicPie<COIN>,
                                    owner: address,
                                    name: vector<u8>,
-                                   tge_ms: u64,
+                                   vesting_type: u8,
+                                   tge_ms: u64, //timestamp
+                                   cliff_ms: u64, //duration
                                    fund: Coin<COIN>,
-                                   tge_release_percent: u64,
-                                   claim_start_ms: u64,
-                                   claim_end_ms: u64,
+                                   unlock_percent: u64,
+                                   linear_vesting_duration_ms: u64, //duration
                                    sclock: &Clock,
                                    version: &mut Version,
-                                   ctx: &mut TxContext
+                                   milestone_times: vector<u64>, //if milestone mode, timestamps
+                                   milestone_percents: vector<u64>, //if milestone mode
+                                   _ctx: &mut TxContext
     )
     {
         checkVersion(version, VERSION);
 
+        assert!(vesting_type >= VESTING_TYPE_MILESTONE_UNLOCK_FIRST
+            && vesting_type <= VESTING_TYPE_LINEAR_CLIFF_FIRST, ERR_BAD_VESTING_TYPE);
+
         let now = clock::timestamp_ms(sclock);
         assert!(tge_ms >= now
             && (vector::length<u8>(&name) > 0)
-            && (tge_release_percent >= 0 && tge_release_percent <= 10000)
-            && (claim_start_ms >= now && claim_start_ms >= tge_ms)
-            && (claim_end_ms > claim_start_ms && claim_end_ms - claim_start_ms <= TEN_YEARS_IN_MS),
-            ERR_INVALID_FUND_PARAMS);
+            && (unlock_percent >= 0 && unlock_percent <= ONE_HUNDRED_PERCENT_SCALED)
+            && (cliff_ms >= 0),
+            ERR_BAD_FUND_PARAMS);
+
+        //validate milestones
+        if(vesting_type == VESTING_TYPE_MILESTONE_CLIFF_FIRST || vesting_type == VESTING_TYPE_MILESTONE_UNLOCK_FIRST){
+            assert!(vector::length(&milestone_times) == vector::length(&milestone_percents)
+                && vector::length(&milestone_times) >= 0
+                && linear_vesting_duration_ms == 0, ERR_BAD_VESTING_PARAMS);
+            let total = unlock_percent;
+            let index = vector::length(&milestone_times);
+
+            //make sure timestamp ordered!
+            let curTime = 0u64;
+            while (index > 0){
+                index = index - 1;
+                total = total +  *vector::borrow(&milestone_percents, index);
+                let tmpTime = *vector::borrow(&milestone_times, index);
+                assert!(tmpTime >= tge_ms + cliff_ms
+                    && tmpTime > curTime, ERR_BAD_VESTING_PARAMS);
+                curTime = tmpTime;
+            };
+            //make sure total percent is 100%, or fund will be leak!
+            assert!(total == ONE_HUNDRED_PERCENT_SCALED, ERR_BAD_VESTING_PARAMS);
+        }
+        else{
+            assert!(vector::length(&milestone_times) == 0
+                && vector::length(&milestone_percents) == 0
+                && (linear_vesting_duration_ms > 0 && linear_vesting_duration_ms < TEN_YEARS_IN_MS)
+                , ERR_BAD_VESTING_PARAMS);
+        };
 
         pie.total_shares = u256::add_u64(pie.total_shares, coin::value(&fund));
         pie.total_shares_percent = pie.total_shares*10000/pie.total_supply;
 
         let fundAmt = coin::value(&fund);
 
-        let tgeFundCoin = if(tge_release_percent == 0){
-                coin::zero<COIN>(ctx)
-            }
-            else {
-                coin::split(&mut fund, (fundAmt * tge_release_percent)/ ONE_HUNDRED_PERCENT_SCALED, ctx)
-            };
-
         let fund =  TokenomicFund<COIN> {
                 owner,
                 name,
+                vesting_type,
                 tge_ms,
-                tge_release_percent,
-                claim_start_ms,
-                claim_end_ms,
+                cliff_ms,
+                unlock_percent,
+                linear_vesting_duration_ms,
+                milestone_times,
+                milestone_percents,
+
                 last_claim_ms: 0u64,
-                tge_fund: tgeFundCoin,
-                vesting_fund_total: coin::value(& fund),
+                vesting_fund_total: fundAmt,
+                vesting_fund_released: 0,
                 vesting_fund: fund,
-                fund_percent:  fundAmt*100/pie.total_supply
+                pie_percent:  fundAmt*100/pie.total_supply
             };
 
         table::add(&mut pie.shares, owner, fund);
     }
 
-    //Claim fund!
-    //Support multiple claim
+
     public entry fun claim<COIN>(pie: &mut TokenomicPie<COIN>,
                                  sclock: &Clock,
                                  version: &mut Version,
@@ -155,54 +197,106 @@ module seapad::tokenomic {
         checkVersion(version, VERSION);
 
         let now_ms = clock::timestamp_ms(sclock);
-        assert!(now_ms >= pie.tge_ms, ERR_INVALID_TGE);
+        assert!(now_ms >= pie.tge_ms, ERR_TGE_NOT_STARTED);
 
         let senderAddr = sender(ctx);
-        assert!(table::contains(&pie.shares, senderAddr), ERR_NO_PERMISSION);
-
+        assert!(table::contains(&pie.shares, senderAddr), ERR_NO_FUND);
         let fund = table::borrow_mut(&mut pie.shares, senderAddr);
-
         assert!(senderAddr == fund.owner, ERR_NO_PERMISSION);
         assert!(now_ms >= fund.tge_ms, ERR_TGE_NOT_STARTED);
 
-        let tgeFundAmt = coin::value(&fund.tge_fund);
-        let claimedCoin = if(tgeFundAmt <= 0) {
-            coin::zero<COIN>(ctx) }
-        else {
-            coin::split(&mut fund.tge_fund, tgeFundAmt, ctx)
-        };
+        let claimPercent = cal_claim_percent<COIN>(fund, now_ms);
 
-        claimedCoin = if(now_ms < fund.claim_start_ms){
-            claimedCoin
-        }
-        else if(now_ms >= fund.claim_end_ms){
-            let vestingAvail = coin::value(&fund.vesting_fund);
-            if(vestingAvail > 0){
-                coin::join(&mut claimedCoin, coin::split(&mut fund.vesting_fund, vestingAvail , ctx));
-            };
-            claimedCoin
-        }
-        else {
-            let effectiveLastClaimTime = if(fund.last_claim_ms <= fund.claim_start_ms) {
-                fund.claim_start_ms
-            }
-            else{
-                fund.last_claim_ms
-            };
+        claimPercent = math::min(claimPercent, ONE_HUNDRED_PERCENT_SCALED);
 
-            assert!(now_ms >= effectiveLastClaimTime, ERR_BAD_VESTING_TIME);
+        assert!(claimPercent > 0, ERR_NO_COIN);
 
-            let claimValue =  (now_ms - effectiveLastClaimTime) * fund.vesting_fund_total/(fund.claim_end_ms - fund.claim_start_ms);
-            let vestingAvail = coin::value(&fund.vesting_fund);
-            coin::join(&mut claimedCoin, coin::split(&mut fund.vesting_fund, math::min(claimValue, vestingAvail), ctx));
-            claimedCoin
-        };
+        let more_token = (fund.vesting_fund_total * claimPercent)/ONE_HUNDRED_PERCENT_SCALED;
+        let more_token_remain = more_token - fund.vesting_fund_released;
+        assert!(more_token_remain > 0, ERR_NO_MORE_COIN);
 
+        let moreFund = coin::split<COIN>(&mut fund.vesting_fund, more_token_remain, ctx);
+        transfer::public_transfer(moreFund, senderAddr);
+
+        fund.vesting_fund_released = fund.vesting_fund_released + more_token_remain;
         fund.last_claim_ms = now_ms;
+    }
 
-        assert!(coin::value(&claimedCoin) > 0, ERR_NO_MORE_COIN);
+    fun cal_claim_percent<COIN>(vesting: &TokenomicFund<COIN>, now: u64): u64 {
+        let milestone_times = &vesting.milestone_times;
+        let milestone_percents = &vesting.milestone_percents;
 
-        public_transfer(claimedCoin, senderAddr);
+        let tge_ms = vesting.tge_ms;
+        let total_percent = 0;
+
+        if(vesting.vesting_type == VESTING_TYPE_MILESTONE_CLIFF_FIRST) {
+            if(now >= tge_ms + vesting.cliff_ms){
+                total_percent = total_percent + vesting.unlock_percent;
+
+                let (i, n) = (0, vector::length(milestone_times));
+
+                while (i < n) {
+                    let milestone_time = *vector::borrow(milestone_times, i);
+                    let milestone_percent = *vector::borrow(milestone_percents, i);
+
+                    if (now >= milestone_time) {
+                        total_percent = total_percent + milestone_percent;
+                    }else {
+                        break
+                    };
+                    i = i + 1;
+                };
+            };
+
+            return total_percent
+        };
+
+        if (vesting.vesting_type == VESTING_TYPE_MILESTONE_UNLOCK_FIRST) {
+            if(now >= tge_ms){
+                total_percent = total_percent + vesting.unlock_percent;
+
+                if(now >= tge_ms + vesting.cliff_ms){
+                    let (i, n) = (0, vector::length(milestone_times));
+
+                    while (i < n) {
+                        let milestone_time = *vector::borrow(milestone_times, i);
+                        let milestone_percent = *vector::borrow(milestone_percents, i);
+                        if (now >= milestone_time) {
+                            total_percent = total_percent + milestone_percent;
+                        }else {
+                            break
+                        };
+                        i = i + 1;
+                    };
+                }
+            };
+
+            return total_percent
+        };
+
+        if (vesting.vesting_type == VESTING_TYPE_LINEAR_UNLOCK_FIRST) {
+            if (now >= tge_ms) {
+                total_percent = total_percent + vesting.unlock_percent;
+                if(now >= tge_ms + vesting.cliff_ms){
+                    let delta = now - tge_ms - vesting.cliff_ms;
+                    total_percent = total_percent + delta * (ONE_HUNDRED_PERCENT_SCALED - vesting.unlock_percent) / vesting.linear_vesting_duration_ms;
+                }
+            };
+            return total_percent
+        };
+
+        if (vesting.vesting_type == VESTING_TYPE_LINEAR_CLIFF_FIRST) {
+            if (now >= tge_ms + vesting.cliff_ms) {
+                total_percent = total_percent + vesting.unlock_percent;
+                let delta = now - tge_ms - vesting.cliff_ms;
+                total_percent = total_percent + delta * (ONE_HUNDRED_PERCENT_SCALED - vesting.unlock_percent) / vesting.linear_vesting_duration_ms;
+            };
+
+            return total_percent
+        };
+
+        //default value to 0u64
+        0u64
     }
 
     public entry fun change_fund_owner<COIN>(pie: &mut TokenomicPie<COIN>,
@@ -222,32 +316,41 @@ module seapad::tokenomic {
         table::add<address, TokenomicFund<COIN>>(&mut pie.shares, to, fund2);
     }
 
-    public fun getTotalSupply<COIN>(pie: &TokenomicPie<COIN>): u64{
+    public fun getPieTotalSupply<COIN>(pie: &TokenomicPie<COIN>): u64{
         pie.total_supply
     }
 
-    public fun getTotalShares<COIN>(pie: &TokenomicPie<COIN>): u64{
+    public fun getPieTotalShare<COIN>(pie: &TokenomicPie<COIN>): u64{
         pie.total_shares
     }
 
-    public fun getTotalSharesPercent<COIN>(pie: &TokenomicPie<COIN>): u64{
+    public fun getPieTotalSharePercent<COIN>(pie: &TokenomicPie<COIN>): u64{
         pie.total_shares_percent
     }
 
-    public fun getTGETimeMs<COIN>(pie: &TokenomicPie<COIN>): u64{
+    public fun getPieTgeTimeMs<COIN>(pie: &TokenomicPie<COIN>): u64{
         pie.tge_ms
     }
 
-    public fun getShareFundReleasedAtTGE<COIN>(pie: &TokenomicPie<COIN>, addr: address): u64{
+    public fun getFundUnlockPercent<COIN>(pie: &TokenomicPie<COIN>, addr: address): u64{
         let share = table::borrow(&pie.shares, addr);
-        coin::value(&share.tge_fund)
+        share.unlock_percent
     }
 
-    public fun getShareFundVestingAvailable<COIN>(pie: &TokenomicPie<COIN>, addr: address): u64{
+    public fun getFundVestingAvailable<COIN>(pie: &TokenomicPie<COIN>, addr: address): u64{
         let share = table::borrow(&pie.shares, addr);
         coin::value(&share.vesting_fund)
     }
 
+    public fun getFundReleased<COIN>(pie: &TokenomicPie<COIN>, addr: address): u64{
+        let share = table::borrow(&pie.shares, addr);
+        share.vesting_fund_released
+    }
+
+    public fun getFundTotal<COIN>(pie: &TokenomicPie<COIN>, addr: address): u64{
+        let share = table::borrow(&pie.shares, addr);
+        share.vesting_fund_total
+    }
 
     #[test_only]
     public fun init_for_testing(ctx: &mut TxContext) {
