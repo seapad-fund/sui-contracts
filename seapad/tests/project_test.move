@@ -6,7 +6,7 @@ module seapad::project_test {
     use seapad::spt::{Self, SPT};
     use sui::coin::{Self, Coin};
     use sui::math;
-    use sui::test_scenario::{Self, Scenario, return_to_sender, return_shared};
+    use sui::test_scenario::{Self, Scenario, return_to_sender, return_shared, most_recent_id_shared};
     use seapad::usdt;
     use seapad::usdt::USDT;
     use sui::clock;
@@ -14,6 +14,7 @@ module seapad::project_test {
     use common::kyc;
     use common::kyc::Kyc;
     use seapad::version::{versionForTest, destroyForTest};
+    use std::option::{is_none};
 
     const PERCENT_SCALE: u64 = 10000;
 
@@ -503,11 +504,17 @@ module seapad::project_test {
             spt::init_for_testing(ctx);
             usdt::init_for_testing(ctx);
         };
-
+        if(is_none(&most_recent_id_shared<Clock>())){
+            create_clock_time_(scenario);
+        };
         test_scenario::next_tx(scenario, ADMIN);
         {
             let admin_cap = test_scenario::take_from_sender<AdminCap>(scenario);
             let kyc = test_scenario::take_shared<Kyc>(scenario);
+
+
+            let clock = test_scenario::take_shared<Clock>(scenario);
+
             add_whitelist_kyc(&mut kyc, scenario);
 
             let ctx = test_scenario::ctx(scenario);
@@ -520,15 +527,17 @@ module seapad::project_test {
                 CLIFF_TIME,
                 UNLOCK_PERCENT,
                 0,
-                0,
+                5000,
                 COIN_DECIMAL,
                 TOKEN_DECIMAL,
                 true,
                 &mut version,
+                &clock,
                 ctx
             );
             destroyForTest(version);
             return_shared(kyc);
+            return_shared(clock);
             test_scenario::return_to_sender(scenario, admin_cap);
         };
     }
