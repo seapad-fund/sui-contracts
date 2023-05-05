@@ -141,17 +141,17 @@ module seapad::tokenomic {
                 && vector::length(&milestone_times) >= 0
                 && linear_vesting_duration_ms == 0, ERR_BAD_VESTING_PARAMS);
             let total = unlock_percent;
-            let index = vector::length(&milestone_times);
+            let (index, len) = (0, vector::length(&milestone_times));
 
             //make sure timestamp ordered!
             let curTime = 0u64;
-            while (index > 0){
-                index = index - 1;
-                total = total +  *vector::borrow(&milestone_percents, index);
+            while (index < len){
+                total = total + *vector::borrow(&milestone_percents, index);
                 let tmpTime = *vector::borrow(&milestone_times, index);
                 assert!(tmpTime >= tge_ms + cliff_ms
                     && tmpTime > curTime, ERR_BAD_VESTING_PARAMS);
                 curTime = tmpTime;
+                index = index + 1;
             };
             //make sure total percent is 100%, or fund will be leak!
             assert!(total == ONE_HUNDRED_PERCENT_SCALED, ERR_BAD_VESTING_PARAMS);
@@ -163,12 +163,11 @@ module seapad::tokenomic {
                 , ERR_BAD_VESTING_PARAMS);
         };
 
-        pie.total_shares = u256::add_u64(pie.total_shares, coin::value(&fund));
-        pie.total_shares_percent = pie.total_shares*10000/pie.total_supply;
-
         let fundAmt = coin::value(&fund);
+        pie.total_shares = u256::add_u64(pie.total_shares, fundAmt);
+        pie.total_shares_percent = pie.total_shares*ONE_HUNDRED_PERCENT_SCALED/pie.total_supply;
 
-        let fund =  TokenomicFund<COIN> {
+        let tokenFund =  TokenomicFund<COIN> {
                 owner,
                 name,
                 vesting_type,
@@ -178,15 +177,14 @@ module seapad::tokenomic {
                 linear_vesting_duration_ms,
                 milestone_times,
                 milestone_percents,
-
                 last_claim_ms: 0u64,
                 vesting_fund_total: fundAmt,
                 vesting_fund_released: 0,
                 vesting_fund: fund,
-                pie_percent:  fundAmt*100/pie.total_supply
+                pie_percent:  fundAmt * ONE_HUNDRED_PERCENT_SCALED/pie.total_supply
             };
 
-        table::add(&mut pie.shares, owner, fund);
+        table::add(&mut pie.shares, owner, tokenFund);
     }
 
 
@@ -211,14 +209,13 @@ module seapad::tokenomic {
 
         assert!(claimPercent > 0, ERR_NO_COIN);
 
-        let more_token = (fund.vesting_fund_total * claimPercent)/ONE_HUNDRED_PERCENT_SCALED;
-        let more_token_remain = more_token - fund.vesting_fund_released;
-        assert!(more_token_remain > 0, ERR_NO_MORE_COIN);
+        let total_token_amt = (fund.vesting_fund_total * claimPercent)/ONE_HUNDRED_PERCENT_SCALED;
+        let remain_token_val = total_token_amt - fund.vesting_fund_released;
+        assert!(remain_token_val > 0, ERR_NO_MORE_COIN);
 
-        let moreFund = coin::split<COIN>(&mut fund.vesting_fund, more_token_remain, ctx);
-        transfer::public_transfer(moreFund, senderAddr);
+        transfer::public_transfer(coin::split<COIN>(&mut fund.vesting_fund, remain_token_val, ctx), senderAddr);
 
-        fund.vesting_fund_released = fund.vesting_fund_released + more_token_remain;
+        fund.vesting_fund_released = fund.vesting_fund_released + remain_token_val;
         fund.last_claim_ms = now_ms;
     }
 
@@ -241,17 +238,14 @@ module seapad::tokenomic {
 
                     if (now >= milestone_time) {
                         total_percent = total_percent + milestone_percent;
-                    }else {
+                    } else {
                         break
                     };
                     i = i + 1;
                 };
             };
-
-            return total_percent
-        };
-
-        if (vesting.vesting_type == VESTING_TYPE_MILESTONE_UNLOCK_FIRST) {
+        }
+        else if (vesting.vesting_type == VESTING_TYPE_MILESTONE_UNLOCK_FIRST) {
             if(now >= tge_ms){
                 total_percent = total_percent + vesting.unlock_percent;
 
@@ -263,18 +257,15 @@ module seapad::tokenomic {
                         let milestone_percent = *vector::borrow(milestone_percents, i);
                         if (now >= milestone_time) {
                             total_percent = total_percent + milestone_percent;
-                        }else {
+                        } else {
                             break
                         };
                         i = i + 1;
                     };
                 }
             };
-
-            return total_percent
-        };
-
-        if (vesting.vesting_type == VESTING_TYPE_LINEAR_UNLOCK_FIRST) {
+        }
+        else if (vesting.vesting_type == VESTING_TYPE_LINEAR_UNLOCK_FIRST) {
             if (now >= tge_ms) {
                 total_percent = total_percent + vesting.unlock_percent;
                 if(now >= tge_ms + vesting.cliff_ms){
@@ -282,21 +273,16 @@ module seapad::tokenomic {
                     total_percent = total_percent + delta * (ONE_HUNDRED_PERCENT_SCALED - vesting.unlock_percent) / vesting.linear_vesting_duration_ms;
                 }
             };
-            return total_percent
-        };
-
-        if (vesting.vesting_type == VESTING_TYPE_LINEAR_CLIFF_FIRST) {
+        }
+        else if (vesting.vesting_type == VESTING_TYPE_LINEAR_CLIFF_FIRST) {
             if (now >= tge_ms + vesting.cliff_ms) {
                 total_percent = total_percent + vesting.unlock_percent;
                 let delta = now - tge_ms - vesting.cliff_ms;
                 total_percent = total_percent + delta * (ONE_HUNDRED_PERCENT_SCALED - vesting.unlock_percent) / vesting.linear_vesting_duration_ms;
             };
-
-            return total_percent
         };
 
-        //default value to 0u64
-        0u64
+        total_percent
     }
 
     public entry fun change_fund_owner<COIN>(pie: &mut TokenomicPie<COIN>,
