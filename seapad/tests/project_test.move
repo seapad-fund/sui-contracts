@@ -46,8 +46,15 @@ module seapad::project_test {
     const LINEAR_TIME: u64 = 10000;
     const START_TIME: u64 = 1000;
     const END_TIME: u64 = 3000;
+    const TGE: u64 = 4000;
     const CLIFF_TIME: u64 = 1000;
-    const UNLOCK_PERCENT: u64 = 50;
+    const UNLOCK_PERCENT: u64 = 5000;
+    const AMOUNT: u64 = 500000000000;
+
+    const VESTING_TYPE_MILESTONE_UNLOCK_FIRST: u8 = 1;
+    const VESTING_TYPE_MILESTONE_CLIFF_FIRST: u8 = 2;
+    const VESTING_TYPE_LINEAR_UNLOCK_FIRST: u8 = 3;
+    const VESTING_TYPE_LINEAR_CLIFF_FIRST: u8 = 4;
 
 
     fun scenario(): Scenario { test_scenario::begin(@0xC0FFEE) }
@@ -85,11 +92,11 @@ module seapad::project_test {
         create_project_milestone_(scenario);
         setup_launch_state_(scenario, 1, true, &clock);
 
-        add_milestone_(3500, 750, scenario, &clock);//alway pass
-        add_milestone_(4000, 250, scenario, &clock);//must pass
+        add_milestone_(TGE + CLIFF_TIME + 1000, 1000, scenario, &clock);//alway pass
+        add_milestone_(TGE + CLIFF_TIME + 2000, 4000, scenario, &clock);//must pass
 
         reset_milestone_(scenario);
-        add_milestone_(3500, 1000, scenario, &clock);//alway pass
+        add_milestone_(TGE + CLIFF_TIME + 1000, 5000, scenario, &clock);//alway pass
 
         test_scenario::return_shared(clock);
         test_scenario::end(scenario_val);
@@ -125,7 +132,7 @@ module seapad::project_test {
 
         let clock = test_scenario::take_shared<Clock>(scenario);
 
-        create_project_milestone_(scenario);
+        create_project_(VESTING_TYPE_LINEAR_UNLOCK_FIRST, scenario);
         setup_launch_state_(scenario, 1, false, &clock);
         deposit_to_project_(OWNER_PROJECT, DEPOSIT_VALUE, scenario);
         clock::increment_for_testing(&mut clock, 1000);
@@ -144,7 +151,7 @@ module seapad::project_test {
         test_scenario::next_tx(scenario, ADMIN);
         let clock = test_scenario::take_shared<Clock>(scenario);
 
-        create_project_milestone_(scenario);
+        create_project_(VESTING_TYPE_LINEAR_UNLOCK_FIRST, scenario);
         setup_launch_state_(scenario, 1, false, &clock);
         deposit_to_project_(OWNER_PROJECT, DEPOSIT_VALUE, scenario);
 
@@ -164,14 +171,14 @@ module seapad::project_test {
         test_scenario::next_tx(scenario, ADMIN);
         let clock = test_scenario::take_shared<Clock>(scenario);
 
-        create_project_milestone_(scenario);
+        create_project_(VESTING_TYPE_LINEAR_UNLOCK_FIRST, scenario);
         setup_launch_state_(scenario, 1, false, &clock);
         deposit_to_project_(OWNER_PROJECT, DEPOSIT_VALUE, scenario);
 
         clock::increment_for_testing(&mut clock, 1500);
         start_fund_raising_(scenario, &clock);
-        buy_token_(OWNER_PROJECT, 500000000000, scenario, &clock);//pass
-        buy_token_(USER2, 500000000000, scenario, &clock);//pass
+        buy_token_(OWNER_PROJECT, AMOUNT, scenario, &clock);//pass
+        buy_token_(USER2, AMOUNT, scenario, &clock);//pass
 
         test_scenario::return_shared(clock);
         test_scenario::end(scenario_val);
@@ -246,7 +253,7 @@ module seapad::project_test {
 
         let clock = test_scenario::take_shared<Clock>(scenario);
 
-        create_project_milestone_(scenario);
+        create_project_(VESTING_TYPE_LINEAR_UNLOCK_FIRST, scenario);
         setup_launch_state_(scenario, 1, false, &clock);
         deposit_to_project_(OWNER_PROJECT, DEPOSIT_VALUE, scenario);
 
@@ -272,7 +279,7 @@ module seapad::project_test {
 
         let clock = test_scenario::take_shared<Clock>(scenario);
 
-        create_project_milestone_(scenario);
+        create_project_(VESTING_TYPE_LINEAR_UNLOCK_FIRST, scenario);
         setup_launch_state_(scenario, 1, true, &clock);
         deposit_to_project_(OWNER_PROJECT, DEPOSIT_VALUE, scenario);
 
@@ -287,7 +294,7 @@ module seapad::project_test {
     }
 
     #[test]
-    fun test_claim_project_by_linear() {
+    fun test_claim_project_linear_unlock_first() {
         let scenario_val = scenario();
         let scenario = &mut scenario_val;
         create_clock_time_(scenario);
@@ -295,22 +302,20 @@ module seapad::project_test {
 
         let clock = test_scenario::take_shared<Clock>(scenario);
 
-        create_project_linear_time_(scenario);
+        create_project_(VESTING_TYPE_LINEAR_UNLOCK_FIRST, scenario);
         setup_launch_state_(scenario, 1, false, &clock);
         deposit_to_project_(OWNER_PROJECT, DEPOSIT_VALUE, scenario);
 
-        clock::increment_for_testing(&mut clock, 1500);
+        clock::increment_for_testing(&mut clock, CLIFF_TIME);
         start_fund_raising_(scenario, &clock);
 
-        // add_whitelist_(USER1, scenario);
-        let coin_buy = 500000000000;
-        buy_token_(USER2, coin_buy, scenario, &clock);
-        buy_token_(USER3, coin_buy, scenario, &clock);
-        clock::increment_for_testing(&mut clock, 1500);
+        buy_token_(USER2, AMOUNT, scenario, &clock);
+        buy_token_(USER3, AMOUNT, scenario, &clock);
+        clock::increment_for_testing(&mut clock, END_TIME - START_TIME);
         end_fund_raising_(scenario, &clock);
 
-        clock::increment_for_testing(&mut clock, 5000);
-        let percent = ((clock::timestamp_ms(&clock) - END_TIME) * PERCENT_SCALE) / LINEAR_TIME;
+        clock::increment_for_testing(&mut clock, LINEAR_TIME / 2);
+        let percent = (PERCENT_SCALE - UNLOCK_PERCENT) + (PERCENT_SCALE - UNLOCK_PERCENT) / 2;
         receive_token_(USER2, scenario, &clock);
         test_scenario::next_tx(scenario, USER2);
         {
@@ -318,7 +323,7 @@ module seapad::project_test {
             let project = test_scenario::take_shared<Project<USDT, SPT>>(scenario);
             let spt_value = coin::value(&spt);
 
-            let spt_value_expected = project::swap_token_for_test(coin_buy, &project);
+            let spt_value_expected = project::swap_token_for_test(AMOUNT, &project);
             let spt_value_actual = spt_value_expected / PERCENT_SCALE * (percent);
 
             assert!(spt_value_actual == spt_value, 0);
@@ -353,7 +358,7 @@ module seapad::project_test {
     }
 
     #[test]
-    fun test_claim_project_by_milestone() {
+    fun test_claim_project_2() {
         let scenario_val = scenario();
         let scenario = &mut scenario_val;
         create_clock_time_(scenario);
@@ -428,7 +433,7 @@ module seapad::project_test {
         test_scenario::next_tx(scenario, ADMIN);
 
         let clock = test_scenario::take_shared<Clock>(scenario);
-        create_project_milestone_(scenario);
+        create_project_(VESTING_TYPE_LINEAR_UNLOCK_FIRST, scenario);
         setup_launch_state_(scenario, 1, false, &clock);
 
         let deposit_value = DEPOSIT_VALUE;
@@ -495,6 +500,10 @@ module seapad::project_test {
         create_project_(1, scenario);
     }
 
+    fun create_project_milestone_(scenario: &mut Scenario) {
+        create_project_(2, scenario);
+    }
+
     fun create_project_(vesting_type: u8, scenario: &mut Scenario) {
         test_scenario::next_tx(scenario, ADMIN);
         {
@@ -504,7 +513,7 @@ module seapad::project_test {
             spt::init_for_testing(ctx);
             usdt::init_for_testing(ctx);
         };
-        if(is_none(&most_recent_id_shared<Clock>())){
+        if (is_none(&most_recent_id_shared<Clock>())) {
             create_clock_time_(scenario);
         };
         test_scenario::next_tx(scenario, ADMIN);
@@ -525,9 +534,9 @@ module seapad::project_test {
                 OWNER_PROJECT,
                 vesting_type,
                 CLIFF_TIME,
+                TGE,
                 UNLOCK_PERCENT,
-                0,
-                5000,
+                LINEAR_TIME,
                 COIN_DECIMAL,
                 TOKEN_DECIMAL,
                 true,
@@ -540,10 +549,6 @@ module seapad::project_test {
             return_shared(clock);
             test_scenario::return_to_sender(scenario, admin_cap);
         };
-    }
-
-    fun create_project_milestone_(scenario: &mut Scenario) {
-        create_project_(2, scenario);
     }
 
     fun setup_launch_state_(scenario: &mut Scenario, round: u8, usewhitelist: bool, clock: &Clock) {
