@@ -118,7 +118,7 @@ module seapad::project {
         start_time: u64,
         end_time: u64,
         //when project stop fund-raising, to claim or refund
-        token_fund: Option<Coin<TOKEN>>,
+        token_fund: Option<Coin<TOKEN>>, //@todo use coin::zero
         coin_raised: Option<Coin<COIN>>,
         order_book: Table<address, Order>,
         default_max_allocate: u64,
@@ -477,7 +477,7 @@ module seapad::project {
         let buyer_address = tx_context::sender(ctx);
         let now_ms = clock::timestamp_ms(sclock);
         assert!(!project.require_kyc || hasKYC(buyer_address, kyc), ENotKYC);
-        validate_state_for_buy(project, buyer_address, now_ms);
+        validate_buy(project, buyer_address, now_ms);
 
         let coin_out = payment::take_from(coins, amount, ctx);
         let coin_out_val = coin::value(&coin_out);
@@ -550,12 +550,13 @@ module seapad::project {
         _ctx: &mut TxContext
     ) {
         checkVersion(version, VERSION);
-        validate_end_fund_rasing(project, clock::timestamp_ms(sclock));
+        validate_end_fundraising(project, clock::timestamp_ms(sclock));
         let total_coin_raised = if (option::is_none(&project.launch_state.coin_raised)) {
             0
         } else {
             coin::value(option::borrow(&project.launch_state.coin_raised))
         };
+
         if (total_coin_raised < project.launch_state.soft_cap) {
             project.launch_state.state = ROUND_STATE_REFUNDING;
         }else {
@@ -625,7 +626,6 @@ module seapad::project {
         })
     }
 
-    /// - refund token to owner when failed to make fund-raising
     public fun refund_token_to_owner<COIN, TOKEN>(
         _cap: &AdminCap,
         project: &mut Project<COIN, TOKEN>,
@@ -639,7 +639,6 @@ module seapad::project {
     }
 
 
-    /// - withdraw all remaining token fund after refund or distributed
     public fun withdraw_token<COIN, TOKEN>(_adminCap: &AdminCap,
                                            project: &mut Project<COIN, TOKEN>,
                                            version: &mut Version,
@@ -652,7 +651,6 @@ module seapad::project {
         public_transfer(coin::split(option::borrow_mut(&mut project.launch_state.token_fund), amount, ctx), to)
     }
 
-    /// - make sure token deposit match the market cap & swap ratio
     public fun deposit_by_owner<COIN, TOKEN>(tokens: vector<Coin<TOKEN>>,
                                              value: u64,
                                              project: &mut Project<COIN, TOKEN>,
@@ -685,14 +683,13 @@ module seapad::project {
                                         ctx: &mut TxContext) {
         checkVersion(version, VERSION);
 
-        validate_vest_token(project);
-        let userAddr = sender(ctx);
+        validate_claim(project);
+        let senderAddr = sender(ctx);
         let state = &mut project.launch_state;
         let orderBook = &mut state.order_book;
 
-        assert!(table::contains(orderBook, userAddr), ENoOrder);
-
-        let order = table::borrow_mut(orderBook, userAddr);
+        assert!(table::contains(orderBook, senderAddr), ENoOrder);
+        let order = table::borrow_mut(orderBook, senderAddr);
 
         let total_percent = cal_claim_percent(
             &project.vesting,
@@ -703,18 +700,18 @@ module seapad::project {
 
         assert!(total_percent > 0, EPercentZero);
 
-        let more_token = (order.token_amount * total_percent) / ONE_HUNDRED_PERCENT_SCALED;
-        let more_token_actual = more_token - order.token_released;
+        let total_token = (order.token_amount * total_percent) / ONE_HUNDRED_PERCENT_SCALED;
+        let token_remain = total_token - order.token_released;
 
-        assert!(more_token_actual > 0, EClaimZero);
-        order.token_released = order.token_released + more_token_actual;
-        let token = coin::split<TOKEN>(option::borrow_mut(&mut state.token_fund), more_token_actual, ctx);
-        transfer::public_transfer(token, userAddr);
+        assert!(token_remain > 0, EClaimZero);
+        order.token_released = order.token_released + token_remain;
+        let token = coin::split<TOKEN>(option::borrow_mut(&mut state.token_fund), token_remain, ctx);
+        transfer::public_transfer(token, senderAddr);
 
         event::emit(ClaimTokenEvent {
             project: object::id_address(project),
-            user: userAddr,
-            token_amount: more_token_actual
+            user: senderAddr,
+            token_amount: token_remain
         })
     }
 
@@ -785,15 +782,14 @@ module seapad::project {
                     let milestone = vector::borrow(milestones, i);
                     if (now >= milestone.time) {
                         total_percent = total_percent + milestone.percent;
-                    }else {
+                    } else {
                         break
                     };
                     i = i + 1;
                 };
             };
-        };
-
-        if (vesting.type == VESTING_TYPE_MILESTONE_UNLOCK_FIRST) {
+        }
+        else if (vesting.type == VESTING_TYPE_MILESTONE_UNLOCK_FIRST) {
             if (now >= tge) {
                 total_percent = total_percent + vesting.unlock_percent;
 
@@ -804,27 +800,24 @@ module seapad::project {
                         let milestone = vector::borrow(milestones, i);
                         if (now >= milestone.time) {
                             total_percent = total_percent + milestone.percent;
-                        }else {
+                        } else {
                             break
                         };
                         i = i + 1;
                     };
                 }
             };
-        };
-
-        if (vesting.type == VESTING_TYPE_LINEAR_UNLOCK_FIRST) {
+        }
+        else if (vesting.type == VESTING_TYPE_LINEAR_UNLOCK_FIRST) {
             if (now >= tge) {
                 total_percent = total_percent + vesting.unlock_percent;
                 if (now >= tge + vesting.cliff_time) {
                     let delta = now - tge - vesting.cliff_time;
-                    //@fixme review: percent should be the remain after reducing unlock_percent
                     total_percent = total_percent + delta * (ONE_HUNDRED_PERCENT_SCALED - vesting.unlock_percent) / vesting.linear_time;
                 }
             };
-        };
-
-        if (vesting.type == VESTING_TYPE_LINEAR_CLIFF_FIRST) {
+        }
+        else if (vesting.type == VESTING_TYPE_LINEAR_CLIFF_FIRST) {
             if (now >= tge + vesting.cliff_time) {
                 total_percent = total_percent + vesting.unlock_percent;
                 let delta = now - tge - vesting.cliff_time;
@@ -835,52 +828,50 @@ module seapad::project {
         total_percent
     }
 
-    //@todo
-    // - review allow start fundraising even when not enough token fund!
-    // - review prevent fund leak with milestones: total vesting must be 100%
+    fun sum_milestones_percent(milestones: &vector<VestingMileStone>): u64 {
+        let total = 0u64;
+        let index = vector::length(milestones);
+        while (index > 0) {
+            index = index - 1;
+            total = total + vector::borrow(milestones, index).percent;
+        };
+        total
+    }
+
+    // - Allow start fundraising even when not enough token fund!
+    // - Prevent fund leak with vesting type milestone: total vesting must be 100%
     fun validate_start_fund_raising<COIN, TOKEN>(project: &mut Project<COIN, TOKEN>) {
         let state = project.launch_state.state;
         assert!(state == ROUND_STATE_INIT, EInvalidRoundState);
         let vesting = &project.vesting;
         if (vesting.type == VESTING_TYPE_MILESTONE_UNLOCK_FIRST || vesting.type == VESTING_TYPE_MILESTONE_CLIFF_FIRST)
-            {
-                let total = vesting.unlock_percent;
-                let index = vector::length(&vesting.milestones);
-                while (index > 0) {
-                    index = index - 1;
-                    total = total + vector::borrow(&vesting.milestones, index).percent;
-                };
-
-                assert!(total == ONE_HUNDRED_PERCENT_SCALED, EInvalidVestingParam);
-            }
+        {
+            assert!(vesting.unlock_percent + sum_milestones_percent(&vesting.milestones) == ONE_HUNDRED_PERCENT_SCALED, EInvalidVestingParam);
+        }
     }
 
     /// -Make sure that sum of all milestone is <= 100%
     /// -Milestones is ordered [min=0 --> max=length-1]
     fun validate_mile_stones(vesting: &Vesting, end_time_ms: u64, now_ms: u64) {
-        let total_percent = vesting.unlock_percent;
-        let (i, n) = (0, vector::length(&vesting.milestones));
+        assert!(sum_milestones_percent(&vesting.milestones) + vesting.unlock_percent <= ONE_HUNDRED_PERCENT_SCALED, EExceedPercent);
 
+        let (i, n) = (0, vector::length(&vesting.milestones));
         while (i < n) {
             let milestone = vector::borrow(&vesting.milestones, i);
             assert!(milestone.time > now_ms && milestone.time > end_time_ms, EInvalidTime);
-            if (i < n - 1) {
-                assert!(milestone.time < vector::borrow(&vesting.milestones, i + 1).time, ETimeGENext);
-            };
-            total_percent = total_percent + milestone.percent;
+            assert!((i >= n - 1) || milestone.time < vector::borrow(&vesting.milestones, i + 1).time, ETimeGENext);
             i = i + 1;
         };
-        assert!(total_percent <= ONE_HUNDRED_PERCENT_SCALED, EExceedPercent);
     }
 
-    fun validate_state_for_buy<COIN, TOKEN>(project: &mut Project<COIN, TOKEN>, buyer_addr: address, now_ms: u64) {
+    fun validate_buy<COIN, TOKEN>(project: &mut Project<COIN, TOKEN>, buyer_addr: address, now_ms: u64) {
         let state = &project.launch_state;
         assert!(state.state == ROUND_STATE_RASING, EInvalidRoundState);
         assert!(state.start_time <= now_ms && state.end_time >= now_ms, EInvalidTime);
         assert!(!project.use_whitelist || table::contains( &project.whitelist, buyer_addr), ENotWhitelist);
     }
 
-    fun validate_vest_token<COIN, TOKEN>(project: &mut Project<COIN, TOKEN>) {
+    fun validate_claim<COIN, TOKEN>(project: &mut Project<COIN, TOKEN>) {
         assert!(project.launch_state.state == ROUND_STATE_CLAIMING, EInvalidRoundState);
     }
 
@@ -888,7 +879,7 @@ module seapad::project {
         assert!(project.launch_state.state == ROUND_STATE_REFUNDING, EInvalidRoundState);
     }
 
-    fun validate_end_fund_rasing<COIN, TOKEN>(project: &mut Project<COIN, TOKEN>, now: u64) {
+    fun validate_end_fundraising<COIN, TOKEN>(project: &mut Project<COIN, TOKEN>, now: u64) {
         let state = &project.launch_state;
         assert!(state.end_time <= now || state.start_time < now, EInvalidTime);
         assert!(state.state == ROUND_STATE_RASING, EInvalidRoundState);
