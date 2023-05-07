@@ -44,7 +44,7 @@ module seapad::project {
     const ETimeGENext: u64 = 1012;
     const EInvalidTime: u64 = 1013;
     const EPercentZero: u64 = 1014;
-    const EDepositHardcap: u64 = 1015;
+    const EInsufficientTokenFund: u64 = 1015;
     const ENotEnoughTokenFund: u64 = 1016;
     const ENoOrder: u64 = 1017;
     const ENotOwner: u64 = 1018;
@@ -627,7 +627,6 @@ module seapad::project {
                                           version: &mut Version,
                                           ctx: &mut TxContext) {
         checkVersion(version, VERSION);
-        validate_deposit_token(value, project);
         coin::join(&mut project.launch_state.token_fund, payment::take_from(tokens, value, ctx));
         event::emit(ProjectDepositFundEvent {
             project: id_address(project),
@@ -803,13 +802,14 @@ module seapad::project {
         let state = project.launch_state.state;
         assert!(state == ROUND_STATE_INIT, EInvalidRoundState);
         let vesting = &project.vesting;
-        if (vesting.type == VESTING_TYPE_MILESTONE_UNLOCK_FIRST || vesting.type == VESTING_TYPE_MILESTONE_CLIFF_FIRST)
-            {
-                assert!(
-                    vesting.unlock_percent + sum_milestones_percent(&vesting.milestones) == ONE_HUNDRED_PERCENT_SCALED,
-                    EInvalidVestingParam
-                );
-            }
+        if (vesting.type == VESTING_TYPE_MILESTONE_UNLOCK_FIRST || vesting.type == VESTING_TYPE_MILESTONE_CLIFF_FIRST) {
+            assert!(
+                vesting.unlock_percent + sum_milestones_percent(&vesting.milestones) == ONE_HUNDRED_PERCENT_SCALED,
+                EInvalidVestingParam
+            );
+        };
+        let token_hard_cap = swap_token(project.launch_state.hard_cap, project);
+        assert!(coin::value(&project.launch_state.token_fund) >= token_hard_cap, EInsufficientTokenFund);
     }
 
     /// -Make sure that sum of all milestone is <= 100%
@@ -857,13 +857,6 @@ module seapad::project {
         if (state == ROUND_STATE_CLAIMING) {
             assert!(coin::value<COIN>(&project.launch_state.coin_raised) > 0, ENotEnoughCoinFund);
         }
-    }
-
-    fun validate_deposit_token<COIN, TOKEN>(
-        value_deposit: u64,
-        project: &mut Project<COIN, TOKEN>) {
-        let token_hard_cap = swap_token(project.launch_state.hard_cap, project);
-        assert!(value_deposit >= token_hard_cap, EDepositHardcap);
     }
 
 
