@@ -175,12 +175,11 @@ module seapad::project_entries {
     }
 
     public entry fun distribute_raised_fund<COIN, TOKEN>(
-        _adminCap: &AdminCap,
         project: &mut Project<COIN, TOKEN>,
         version: &mut Version,
         ctx: &mut TxContext
     ) {
-        project::distribute_raised_fund<COIN, TOKEN>(_adminCap, project, version, ctx);
+        project::distribute_raised_fund<COIN, TOKEN>(project, version, ctx);
     }
 
     public entry fun distribute_raised_fund2<COIN, TOKEN>(
@@ -195,15 +194,14 @@ module seapad::project_entries {
     }
 
     public entry fun refund_token_to_owner<COIN, TOKEN>(
-        _adminCap: &AdminCap,
         project: &mut Project<COIN, TOKEN>,
         version: &mut Version,
         ctx: &mut TxContext
     ) {
-        project::refund_token_to_owner<COIN, TOKEN>(_adminCap, project, version, ctx);
+        project::refund_token_to_owner<COIN, TOKEN>(project, version, ctx);
     }
 
-    public entry fun deposit_by_owner<COIN, TOKEN>(
+    public entry fun deposit_token<COIN, TOKEN>(
         token: Coin<TOKEN>,
         value: u64,
         project: &mut Project<COIN, TOKEN>,
@@ -212,7 +210,7 @@ module seapad::project_entries {
     ) {
         let tokens = vector::empty<Coin<TOKEN>>();
         vector::push_back(&mut tokens, token);
-        project::deposit_by_owner<COIN, TOKEN>(tokens, value, project, version, ctx);
+        project::deposit_token<COIN, TOKEN>(tokens, value, project, version, ctx);
     }
 
     public entry fun claim_token<COIN, TOKEN>(project: &mut Project<COIN, TOKEN>,
