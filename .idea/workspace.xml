@@ -4,7 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="10b876f6-5f11-44d6-9e4a-d6252006a611" name="Changes" comment="change validate end raising">
+    <list default="true" id="10b876f6-5f11-44d6-9e4a-d6252006a611" name="Changes" comment="build new contract">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/contract/testnet.toml" beforeDir="false" afterPath="$PROJECT_DIR$/contract/testnet.toml" afterDir="false" />
     </list>
@@ -187,20 +187,6 @@
       <workItem from="1680008715445" duration="9703000" />
       <workItem from="1680195522478" duration="17666000" />
       <workItem from="1680619443954" duration="90000" />
-    </task>
-    <task id="LOCAL-00061" summary="update stake">
-      <created>1681747528727</created>
-      <option name="number" value="00061" />
-      <option name="presentableId" value="LOCAL-00061" />
-      <option name="project" value="LOCAL" />
-      <updated>1681747528727</updated>
-    </task>
-    <task id="LOCAL-00062" summary="update lib address">
-      <created>1681748901026</created>
-      <option name="number" value="00062" />
-      <option name="presentableId" value="LOCAL-00062" />
-      <option name="project" value="LOCAL" />
-      <updated>1681748901026</updated>
     </task>
     <task id="LOCAL-00063" summary="update stake">
       <created>1681907917711</created>
@@ -531,7 +517,21 @@
       <option name="project" value="LOCAL" />
       <updated>1683441071470</updated>
     </task>
-    <option name="localTasksCounter" value="110" />
+    <task id="LOCAL-00110" summary="build new contract">
+      <created>1683441420364</created>
+      <option name="number" value="00110" />
+      <option name="presentableId" value="LOCAL-00110" />
+      <option name="project" value="LOCAL" />
+      <updated>1683441420364</updated>
+    </task>
+    <task id="LOCAL-00111" summary="build new contract">
+      <created>1683446625675</created>
+      <option name="number" value="00111" />
+      <option name="presentableId" value="LOCAL-00111" />
+      <option name="project" value="LOCAL" />
+      <updated>1683446625675</updated>
+    </task>
+    <option name="localTasksCounter" value="112" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -600,11 +600,11 @@
     <MESSAGE value="change devnet config" />
     <MESSAGE value="refactor" />
     <MESSAGE value="merge project" />
-    <MESSAGE value="build new contract" />
     <MESSAGE value="not use admin with owner" />
     <MESSAGE value="remove refund2" />
     <MESSAGE value="change validate end raising" />
-    <option name="LAST_COMMIT_MESSAGE" value="change validate end raising" />
+    <MESSAGE value="build new contract" />
+    <option name="LAST_COMMIT_MESSAGE" value="build new contract" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />
