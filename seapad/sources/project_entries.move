@@ -165,15 +165,6 @@ module seapad::project_entries {
         project::end_fund_raising<COIN, TOKEN>(_adminCap, project, clock, version, ctx);
     }
 
-    public entry fun end_refund<COIN, TOKEN>(
-        _adminCap: &AdminCap,
-        project: &mut Project<COIN, TOKEN>,
-        version: &mut Version,
-        ctx: &mut TxContext
-    ) {
-        project::end_refund<COIN, TOKEN>(_adminCap, project, version, ctx);
-    }
-
     public entry fun distribute_raised_fund<COIN, TOKEN>(
         project: &mut Project<COIN, TOKEN>,
         version: &mut Version,

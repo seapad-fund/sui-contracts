@@ -698,8 +698,6 @@ module seapad::project_test {
             test_scenario::return_to_address(USER2, coin_bought);
         };
 
-        end_refund_(scenario);
-
         test_scenario::next_tx(scenario, OWNER_PROJECT);
         {
             //refund token to owner
@@ -854,20 +852,6 @@ module seapad::project_test {
 
         let version = versionForTest(ctx);
         project::end_fund_raising(&admin_cap, &mut ido, clock, &mut version, ctx);
-        destroyForTest(version);
-
-        test_scenario::return_to_sender(scenario, admin_cap);
-        test_scenario::return_shared(ido);
-    }
-
-    fun end_refund_(scenario: &mut Scenario) {
-        test_scenario::next_tx(scenario, ADMIN);
-        let admin_cap = test_scenario::take_from_sender<AdminCap>(scenario);
-        let ido = test_scenario::take_shared<Project<USDT, SPT>>(scenario);
-        let ctx = test_scenario::ctx(scenario);
-
-        let version = versionForTest(ctx);
-        project::end_refund(&admin_cap, &mut ido, &mut version, ctx);
         destroyForTest(version);
 
         test_scenario::return_to_sender(scenario, admin_cap);

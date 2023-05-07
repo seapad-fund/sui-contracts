@@ -70,7 +70,6 @@ module seapad::project {
     const ROUND_STATE_PREPARE: u8 = 2;
     const ROUND_STATE_RASING: u8 = 3;
     const ROUND_STATE_REFUNDING: u8 = 4;
-    const ROUND_STATE_END_REFUND: u8 = 5;
     //complete & start refunding
     const ROUND_STATE_CLAIMING: u8 = 6;
     //complete & ready to claim token
@@ -567,20 +566,6 @@ module seapad::project {
         })
     }
 
-    public fun end_refund<COIN, TOKEN>(_adminCap: &AdminCap,
-                                       project: &mut Project<COIN, TOKEN>,
-                                       version: &mut Version,
-                                       ctx: &mut TxContext) {
-        checkVersion(version, VERSION);
-
-        project.launch_state.state = ROUND_STATE_END_REFUND;
-        event::emit(RefundClosedEvent {
-            project: id_address(project),
-            coin_refunded: project.launch_state.total_token_sold,
-            epoch: tx_context::epoch(ctx)
-        })
-    }
-
     public fun distribute_raised_fund<COIN, TOKEN>(
         project: &mut Project<COIN, TOKEN>,
         version: &mut Version,
@@ -613,7 +598,7 @@ module seapad::project {
 
         let token_fund = &mut project.launch_state.token_fund;
         let token_fund_val = 0;
-        if (state == ROUND_STATE_END_REFUND) {
+        if (state == ROUND_STATE_REFUNDING) {
             token_fund_val = coin::value(token_fund);
         };
         if (state == ROUND_STATE_CLAIMING) {
@@ -861,14 +846,14 @@ module seapad::project {
 
     fun validate_end_fundraising<COIN, TOKEN>(project: &mut Project<COIN, TOKEN>, now: u64) {
         let state = &project.launch_state;
-        assert!(state.end_time <= now || state.start_time < now, EInvalidTime);
+        assert!(state.end_time <= now || state.start_time > now, EInvalidTime);
         assert!(state.state == ROUND_STATE_RASING, EInvalidRoundState);
     }
 
     fun validate_refund_or_distribute<COIN, TOKEN>(project: &mut Project<COIN, TOKEN>, ctx: &mut TxContext) {
         assert!(sender(ctx) == project.owner, EInvalidPermission);
         let state = project.launch_state.state;
-        assert!(state == ROUND_STATE_END_REFUND || state == ROUND_STATE_CLAIMING, EInvalidRoundState);
+        assert!(state == ROUND_STATE_REFUNDING || state == ROUND_STATE_CLAIMING, EInvalidRoundState);
         if (state == ROUND_STATE_CLAIMING) {
             assert!(coin::value<COIN>(&project.launch_state.coin_raised) > 0, ENotEnoughCoinFund);
         }
