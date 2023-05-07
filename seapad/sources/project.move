@@ -601,26 +601,6 @@ module seapad::project {
         })
     }
 
-    public fun distribute_raised_fund2<COIN, TOKEN>(
-        _adminCap: &AdminCap,
-        project: &mut Project<COIN, TOKEN>,
-        to: address,
-        amount: u64,
-        version: &mut Version,
-        ctx: &mut TxContext
-    ) {
-        checkVersion(version, VERSION);
-        validate_refund_or_distribute(project, ctx);
-        let state = &mut project.launch_state;
-        assert!(amount > 0 && coin::value<COIN>(&state.coin_raised) > amount, ENotEnoughCoinFund);
-        transfer::public_transfer(coin::split<COIN>(&mut state.coin_raised, amount, ctx), to);
-        event::emit(DistributeRaisedFundEvent2 {
-            project: id_address(project),
-            to,
-            amount
-        })
-    }
-
     public fun refund_token_to_owner<COIN, TOKEN>(
         project: &mut Project<COIN, TOKEN>,
         version: &mut Version,
@@ -720,7 +700,7 @@ module seapad::project {
         let order = table::borrow_mut(order_book, sender);
         let refund_amt = order.coin_amount;
         assert!(refund_amt > 0, EClaimZero);
-        state.total_token_sold = state.total_token_sold - refund_amt;
+        state.total_token_sold = state.total_token_sold - order.token_amount;
         order.coin_amount = 0;
 
         transfer::public_transfer(coin::split(&mut state.coin_raised, refund_amt, ctx), sender);

@@ -182,17 +182,6 @@ module seapad::project_entries {
         project::distribute_raised_fund<COIN, TOKEN>(project, version, ctx);
     }
 
-    public entry fun distribute_raised_fund2<COIN, TOKEN>(
-        _adminCap: &AdminCap,
-        project: &mut Project<COIN, TOKEN>,
-        to: address,
-        amount: u64,
-        version: &mut Version,
-        ctx: &mut TxContext
-    ){
-        project::distribute_raised_fund2<COIN, TOKEN>(_adminCap, project, to, amount, version, ctx);
-    }
-
     public entry fun refund_token_to_owner<COIN, TOKEN>(
         project: &mut Project<COIN, TOKEN>,
         version: &mut Version,

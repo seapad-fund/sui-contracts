@@ -4,10 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="10b876f6-5f11-44d6-9e4a-d6252006a611" name="Changes" comment="build new contract">
+    <list default="true" id="10b876f6-5f11-44d6-9e4a-d6252006a611" name="Changes" comment="not use admin with owner">
+      <change beforePath="$PROJECT_DIR$/../seapad-sdk/src/lauchpad/seapad-input.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../seapad-sdk/src/lauchpad/seapad-input.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/seapad/sources/project.move" beforeDir="false" afterPath="$PROJECT_DIR$/seapad/sources/project.move" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/seapad/tests/project_test.move" beforeDir="false" afterPath="$PROJECT_DIR$/seapad/tests/project_test.move" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/seapad/sources/project_entries.move" beforeDir="false" afterPath="$PROJECT_DIR$/seapad/sources/project_entries.move" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -188,13 +189,6 @@
       <workItem from="1680008715445" duration="9703000" />
       <workItem from="1680195522478" duration="17666000" />
       <workItem from="1680619443954" duration="90000" />
-    </task>
-    <task id="LOCAL-00058" summary="update contract">
-      <created>1681632727839</created>
-      <option name="number" value="00058" />
-      <option name="presentableId" value="LOCAL-00058" />
-      <option name="project" value="LOCAL" />
-      <updated>1681632727839</updated>
     </task>
     <task id="LOCAL-00059" summary="add token test">
       <created>1681663650068</created>
@@ -532,7 +526,14 @@
       <option name="project" value="LOCAL" />
       <updated>1683303478722</updated>
     </task>
-    <option name="localTasksCounter" value="107" />
+    <task id="LOCAL-00107" summary="not use admin with owner">
+      <created>1683436670784</created>
+      <option name="number" value="00107" />
+      <option name="presentableId" value="LOCAL-00107" />
+      <option name="project" value="LOCAL" />
+      <updated>1683436670784</updated>
+    </task>
+    <option name="localTasksCounter" value="108" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -580,7 +581,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="update stake" />
     <MESSAGE value="update lib testnet" />
     <MESSAGE value="update contract stake" />
     <MESSAGE value="refactor name" />
@@ -605,7 +605,8 @@
     <MESSAGE value="refactor" />
     <MESSAGE value="merge project" />
     <MESSAGE value="build new contract" />
-    <option name="LAST_COMMIT_MESSAGE" value="build new contract" />
+    <MESSAGE value="not use admin with owner" />
+    <option name="LAST_COMMIT_MESSAGE" value="not use admin with owner" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />
