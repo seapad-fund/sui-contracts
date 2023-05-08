@@ -1,12 +1,12 @@
 [package]
 name = "Common"
-version = "0.0.1"
-published-at = "0xf4118007744e45682736d6ab40a2d0e5764a605128d67615881275812623092f"
+version = "1.0.0"
+published-at = "0x66f92778014f9518bd4a5a10e65bb3e62efc69121d1538d9e50085e510306e45"
 
 [dependencies]
 Sui = { git = "https://github.com/MystenLabs/sui", subdir = "crates/sui-framework/packages/sui-framework", rev = "mainnet" }
 W3libs = { git = "https://github.com/seapad-fund/w3libs", rev = "mainnet" }
 
 [addresses]
-common =  "0xf4118007744e45682736d6ab40a2d0e5764a605128d67615881275812623092f"
+common =  "0x66f92778014f9518bd4a5a10e65bb3e62efc69121d1538d9e50085e510306e45"
 sui= "0x02"

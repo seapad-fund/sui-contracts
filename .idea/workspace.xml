@@ -4,12 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="10b876f6-5f11-44d6-9e4a-d6252006a611" name="Changes" comment="build new contract">
+    <list default="true" id="10b876f6-5f11-44d6-9e4a-d6252006a611" name="Changes" comment="release 1.0.0">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/contract/testnet.toml" beforeDir="false" afterPath="$PROJECT_DIR$/contract/testnet.toml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/seapad/sources/project.move" beforeDir="false" afterPath="$PROJECT_DIR$/seapad/sources/project.move" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/seapad/sources/project_entries.move" beforeDir="false" afterPath="$PROJECT_DIR$/seapad/sources/project_entries.move" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/seapad/tests/project_test.move" beforeDir="false" afterPath="$PROJECT_DIR$/seapad/tests/project_test.move" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/common/Move.toml" beforeDir="false" afterPath="$PROJECT_DIR$/common/Move.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/contract/mainnet.toml" beforeDir="false" afterPath="$PROJECT_DIR$/contract/mainnet.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/seapad/Move.toml" beforeDir="false" afterPath="$PROJECT_DIR$/seapad/Move.toml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -26,16 +25,22 @@
     </option>
   </component>
   <component name="Git.Merge.Settings">
-    <option name="BRANCH" value="devnet" />
+    <option name="BRANCH" value="origin/testnet" />
   </component>
   <component name="Git.Rebase.Settings">
     <option name="NEW_BASE" value="origin/devnet" />
   </component>
   <component name="Git.Settings">
+    <option name="PUSH_TAGS">
+      <GitPushTagMode>
+        <option name="argument" value="--tags" />
+        <option name="title" value="All" />
+      </GitPushTagMode>
+    </option>
     <option name="RECENT_BRANCH_BY_REPOSITORY">
       <map>
         <entry key="$PROJECT_DIR$/../seapad-frontend" value="develop" />
-        <entry key="$PROJECT_DIR$" value="devnet" />
+        <entry key="$PROJECT_DIR$" value="testnet" />
         <entry key="$PROJECT_DIR$/../w3libs" value="testnet" />
       </map>
     </option>
@@ -98,12 +103,12 @@
               <option name="branches">
                 <list>
                   <RecentBranch>
-                    <option name="branchName" value="testnet" />
-                    <option name="lastUsedInstant" value="1683015947" />
+                    <option name="branchName" value="mainnet" />
+                    <option name="lastUsedInstant" value="1683561747" />
                   </RecentBranch>
                   <RecentBranch>
-                    <option name="branchName" value="devnet" />
-                    <option name="lastUsedInstant" value="1683006868" />
+                    <option name="branchName" value="testnet" />
+                    <option name="lastUsedInstant" value="1683015947" />
                   </RecentBranch>
                   <RecentBranch>
                     <option name="branchName" value="master" />
@@ -190,13 +195,6 @@
       <workItem from="1680008715445" duration="9703000" />
       <workItem from="1680195522478" duration="17666000" />
       <workItem from="1680619443954" duration="90000" />
-    </task>
-    <task id="LOCAL-00068" summary="update lib testnet">
-      <created>1681987529622</created>
-      <option name="number" value="00068" />
-      <option name="presentableId" value="LOCAL-00068" />
-      <option name="project" value="LOCAL" />
-      <updated>1681987529622</updated>
     </task>
     <task id="LOCAL-00069" summary="update contract stake">
       <created>1681987587562</created>
@@ -534,7 +532,14 @@
       <option name="project" value="LOCAL" />
       <updated>1683512954220</updated>
     </task>
-    <option name="localTasksCounter" value="117" />
+    <task id="LOCAL-00117" summary="release 1.0.0">
+      <created>1683562474823</created>
+      <option name="number" value="00117" />
+      <option name="presentableId" value="LOCAL-00117" />
+      <option name="project" value="LOCAL" />
+      <updated>1683562474823</updated>
+    </task>
+    <option name="localTasksCounter" value="118" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -582,7 +587,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="add tra token" />
     <MESSAGE value="add linear time" />
     <MESSAGE value="update contract seapad" />
     <MESSAGE value="rollback take_from" />
@@ -607,7 +611,8 @@
     <MESSAGE value="change validate end raising" />
     <MESSAGE value="update refund to owner" />
     <MESSAGE value="build new contract" />
-    <option name="LAST_COMMIT_MESSAGE" value="build new contract" />
+    <MESSAGE value="release 1.0.0" />
+    <option name="LAST_COMMIT_MESSAGE" value="release 1.0.0" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />
