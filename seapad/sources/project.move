@@ -356,40 +356,58 @@ module seapad::project {
         });
     }
 
-    public fun set_max_allocate<COIN, TOKEN>(_adminCap: &AdminCap,
-                                             user: address,
-                                             max_allocate: u64,
+    public fun add_max_allocations<COIN, TOKEN>(_adminCap: &AdminCap,
+                                             users: vector<address>,
+                                             max_allocates: vector<u64>,
                                              project: &mut Project<COIN, TOKEN>,
                                              version: &mut Version,
                                              _ctx: &mut TxContext) {
         checkVersion(version, VERSION);
+        assert!(vector::length(&users) == vector::length(&max_allocates), 0);
+        let launch_state = &mut project.launch_state;
+        let max_allocations = &mut launch_state.max_allocations;
 
-        assert!(
-            project.launch_state.hard_cap > 0 && max_allocate > 0 && max_allocate < project.launch_state.hard_cap,
-            EInvalidMaxAllocate
-        );
+        let (i, n) = (0, vector::length(&users));
+        while (i < n){
+            let user = *vector::borrow(&users, i);
+            let max_allocate = *vector::borrow(&max_allocates, i);
+            assert!(launch_state.hard_cap > 0
+                && max_allocate > 0
+                && max_allocate < launch_state.hard_cap,
+                EInvalidMaxAllocate
+            );
 
-        let max_allocations = &mut project.launch_state.max_allocations;
-        if (table::contains(max_allocations, user)) {
-            table::remove<address, u64>(max_allocations, user);
+            if (table::contains(max_allocations, user)) {
+                table::remove<address, u64>(max_allocations, user);
+            };
+            table::add(max_allocations, user, max_allocate);
+
+            i = i + 1;
         };
-        table::add(max_allocations, user, max_allocate);
 
-        event::emit(AddMaxAllocateEvent { project: id_address(project), user, max_allocate })
+        event::emit(AddMaxAllocateEvent { project: id_address(project), users, max_allocates })
     }
 
     public fun clear_max_allocate<COIN, TOKEN>(_adminCap: &AdminCap,
-                                               user: address,
+                                               users: vector<address>,
                                                project: &mut Project<COIN, TOKEN>,
                                                version: &mut Version,
                                                _ctx: &mut TxContext) {
         checkVersion(version, VERSION);
-
         let max_allocation = &mut project.launch_state.max_allocations;
-        if (table::contains(max_allocation, user)) {
-            table::remove<address, u64>(max_allocation, user);
+
+        let (i, n) = (0, vector::length(&users));
+        while (i < n){
+            let user = *vector::borrow(&users, i);
+
+            if (table::contains(max_allocation, user)) {
+                table::remove<address, u64>(max_allocation, user);
+            };
+
+            i = i + 1;
         };
-        event::emit(RemoveMaxAllocateEvent { project: id_address(project), user })
+
+        event::emit(RemoveMaxAllocateEvent { project: id_address(project), users })
     }
 
     public fun add_whitelist<COIN, TOKEN>(_adminCap: &AdminCap,
@@ -961,13 +979,13 @@ module seapad::project {
 
     struct AddMaxAllocateEvent has copy, drop {
         project: address,
-        user: address,
-        max_allocate: u64
+        users: vector<address>,
+        max_allocates: vector<u64>
     }
 
     struct RemoveMaxAllocateEvent has copy, drop {
         project: address,
-        user: address
+        users: vector<address>
     }
 
     struct ChangeProjectOwnerEvent has copy, drop {

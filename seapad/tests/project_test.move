@@ -1056,7 +1056,13 @@ module seapad::project_test {
 
         let ctx = test_scenario::ctx(scenario);
         let version = versionForTest(ctx);
-        project::set_max_allocate(&admin_cap, user, max_allocate, &mut project, &mut version, ctx);
+
+        let users = vector::empty<address>();
+        let max_allocates = vector::empty<u64>();
+        vector::push_back(&mut users, user);
+        vector::push_back(&mut max_allocates, max_allocate);
+
+        project::add_max_allocations(&admin_cap, users, max_allocates, &mut project, &mut version, ctx);
 
         destroyForTest(version);
         test_scenario::return_shared(project);
@@ -1070,7 +1076,9 @@ module seapad::project_test {
 
         let ctx = test_scenario::ctx(scenario);
         let version = versionForTest(ctx);
-        project::clear_max_allocate(&admin_cap, user, &mut project, &mut version, ctx);
+        let users = vector::empty<address>();
+        vector::push_back(&mut users, user);
+        project::clear_max_allocate(&admin_cap, users, &mut project, &mut version, ctx);
         destroyForTest(version);
 
         test_scenario::return_shared(project);
