@@ -116,6 +116,7 @@ module seapad::project {
         end_time: u64,
         //when project stop fund-raising, to claim or refund
         token_fund: Coin<TOKEN>,
+        total_token_deposited: u64,
         coin_raised: Coin<COIN>,
         order_book: Table<address, Order>,
         default_max_allocate: u64,
@@ -216,6 +217,7 @@ module seapad::project {
             start_time: 0,
             end_time: 0,
             token_fund: coin::zero<TOKEN>(ctx),
+            total_token_deposited: 0,
             coin_raised: coin::zero<COIN>(ctx),
             order_book: table::new(ctx),
             default_max_allocate: 0,
@@ -354,40 +356,58 @@ module seapad::project {
         });
     }
 
-    public fun set_max_allocate<COIN, TOKEN>(_adminCap: &AdminCap,
-                                             user: address,
-                                             max_allocate: u64,
+    public fun add_max_allocations<COIN, TOKEN>(_adminCap: &AdminCap,
+                                             users: vector<address>,
+                                             max_allocates: vector<u64>,
                                              project: &mut Project<COIN, TOKEN>,
                                              version: &mut Version,
                                              _ctx: &mut TxContext) {
         checkVersion(version, VERSION);
+        assert!(vector::length(&users) == vector::length(&max_allocates), 0);
+        let launch_state = &mut project.launch_state;
+        let max_allocations = &mut launch_state.max_allocations;
 
-        assert!(
-            project.launch_state.hard_cap > 0 && max_allocate > 0 && max_allocate < project.launch_state.hard_cap,
-            EInvalidMaxAllocate
-        );
+        let (i, n) = (0, vector::length(&users));
+        while (i < n){
+            let user = *vector::borrow(&users, i);
+            let max_allocate = *vector::borrow(&max_allocates, i);
+            assert!(launch_state.hard_cap > 0
+                && max_allocate > 0
+                && max_allocate < launch_state.hard_cap,
+                EInvalidMaxAllocate
+            );
 
-        let max_allocations = &mut project.launch_state.max_allocations;
-        if (table::contains(max_allocations, user)) {
-            table::remove<address, u64>(max_allocations, user);
+            if (table::contains(max_allocations, user)) {
+                table::remove<address, u64>(max_allocations, user);
+            };
+            table::add(max_allocations, user, max_allocate);
+
+            i = i + 1;
         };
-        table::add(max_allocations, user, max_allocate);
 
-        event::emit(AddMaxAllocateEvent { project: id_address(project), user, max_allocate })
+        event::emit(AddMaxAllocateEvent { project: id_address(project), users, max_allocates })
     }
 
     public fun clear_max_allocate<COIN, TOKEN>(_adminCap: &AdminCap,
-                                               user: address,
+                                               users: vector<address>,
                                                project: &mut Project<COIN, TOKEN>,
                                                version: &mut Version,
                                                _ctx: &mut TxContext) {
         checkVersion(version, VERSION);
-
         let max_allocation = &mut project.launch_state.max_allocations;
-        if (table::contains(max_allocation, user)) {
-            table::remove<address, u64>(max_allocation, user);
+
+        let (i, n) = (0, vector::length(&users));
+        while (i < n){
+            let user = *vector::borrow(&users, i);
+
+            if (table::contains(max_allocation, user)) {
+                table::remove<address, u64>(max_allocation, user);
+            };
+
+            i = i + 1;
         };
-        event::emit(RemoveMaxAllocateEvent { project: id_address(project), user })
+
+        event::emit(RemoveMaxAllocateEvent { project: id_address(project), users })
     }
 
     public fun add_whitelist<COIN, TOKEN>(_adminCap: &AdminCap,
@@ -572,7 +592,7 @@ module seapad::project {
         ctx: &mut TxContext
     ) {
         checkVersion(version, VERSION);
-        validate_refund_or_distribute(project, ctx);
+        validate_distribute_fund(project, ctx);
         let launch_state = &mut project.launch_state;
         let coin_raised_val = coin::value<COIN>(&launch_state.coin_raised);
         transfer::public_transfer(
@@ -592,17 +612,17 @@ module seapad::project {
         ctx: &mut TxContext
     ) {
         checkVersion(version, VERSION);
-        validate_refund_or_distribute(project, ctx);
-        let state = project.launch_state.state;
-        let total_token_sold = project.launch_state.total_token_sold;
+        validate_refund_to_owner(project, ctx);
+        let launch_state = &mut project.launch_state;
+        let redundant = launch_state.total_token_deposited - launch_state.total_token_sold;
 
-        let token_fund = &mut project.launch_state.token_fund;
+        let token_fund = &mut launch_state.token_fund;
         let token_fund_val = 0;
-        if (state == ROUND_STATE_REFUNDING) {
+        if (launch_state.state == ROUND_STATE_REFUNDING) {
             token_fund_val = coin::value(token_fund);
         };
-        if (state == ROUND_STATE_CLAIMING) {
-            token_fund_val = coin::value(token_fund) - total_token_sold;
+        if (launch_state.state == ROUND_STATE_CLAIMING) {
+            token_fund_val = redundant;
         };
         transfer::public_transfer(coin::split(token_fund, token_fund_val, ctx), project.owner);
     }
@@ -628,6 +648,7 @@ module seapad::project {
                                           ctx: &mut TxContext) {
         checkVersion(version, VERSION);
         coin::join(&mut project.launch_state.token_fund, payment::take_from(tokens, value, ctx));
+        project.launch_state.total_token_deposited = project.launch_state.total_token_deposited + value;
         event::emit(ProjectDepositFundEvent {
             project: id_address(project),
             depositor: sender(ctx),
@@ -850,13 +871,17 @@ module seapad::project {
         assert!(state.state == ROUND_STATE_RASING, EInvalidRoundState);
     }
 
-    fun validate_refund_or_distribute<COIN, TOKEN>(project: &mut Project<COIN, TOKEN>, ctx: &mut TxContext) {
+    fun validate_distribute_fund<COIN, TOKEN>(project: &mut Project<COIN, TOKEN>, ctx: &mut TxContext){
+        assert!(sender(ctx) == project.owner, EInvalidPermission);
+        let state = project.launch_state.state;
+        assert!(state == ROUND_STATE_CLAIMING, EInvalidRoundState);
+        assert!(coin::value<COIN>(&project.launch_state.coin_raised) > 0, ENotEnoughCoinFund);
+    }
+
+    fun validate_refund_to_owner<COIN, TOKEN>(project: &mut Project<COIN, TOKEN>, ctx: &mut TxContext) {
         assert!(sender(ctx) == project.owner, EInvalidPermission);
         let state = project.launch_state.state;
         assert!(state == ROUND_STATE_REFUNDING || state == ROUND_STATE_CLAIMING, EInvalidRoundState);
-        if (state == ROUND_STATE_CLAIMING) {
-            assert!(coin::value<COIN>(&project.launch_state.coin_raised) > 0, ENotEnoughCoinFund);
-        }
     }
 
 
@@ -954,13 +979,13 @@ module seapad::project {
 
     struct AddMaxAllocateEvent has copy, drop {
         project: address,
-        user: address,
-        max_allocate: u64
+        users: vector<address>,
+        max_allocates: vector<u64>
     }
 
     struct RemoveMaxAllocateEvent has copy, drop {
         project: address,
-        user: address
+        users: vector<address>
     }
 
     struct ChangeProjectOwnerEvent has copy, drop {

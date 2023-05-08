@@ -99,20 +99,20 @@ module seapad::project_entries {
     }
 
     public entry fun add_max_allocate<COIN, TOKEN>(admin_cap: &AdminCap,
-                                                   user: address,
-                                                   max_allocate: u64,
+                                                   users: vector<address>,
+                                                   max_allocates: vector<u64>,
                                                    project: &mut Project<COIN, TOKEN>,
                                                    version: &mut Version,
                                                    ctx: &mut TxContext) {
-        project::set_max_allocate<COIN, TOKEN>(admin_cap, user, max_allocate, project, version, ctx);
+        project::add_max_allocations<COIN, TOKEN>(admin_cap, users, max_allocates, project, version, ctx);
     }
 
     public entry fun remove_max_allocate<COIN, TOKEN>(_admin_cap: &AdminCap,
-                                                      user: address,
+                                                      users: vector<address>,
                                                       project: &mut Project<COIN, TOKEN>,
                                                       version: &mut Version,
                                                       ctx: &mut TxContext) {
-        project::clear_max_allocate<COIN, TOKEN>(_admin_cap, user, project, version, ctx);
+        project::clear_max_allocate<COIN, TOKEN>(_admin_cap, users, project, version, ctx);
     }
 
     public entry fun add_whitelist<COIN, TOKEN>(_adminCap: &AdminCap,
