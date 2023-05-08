@@ -57,6 +57,11 @@ module seapad::version {
     }
 
     #[test_only]
+    public fun initForTest(ctx: &mut TxContext) {
+        init(VERSION {}, ctx);
+    }
+
+    #[test_only]
     public fun destroyForTest(version: Version) {
        let Version {
             id,

@@ -140,7 +140,7 @@ module seapad::tokenomic {
         checkVersion(version, VERSION);
 
         let now_ms = clock::timestamp_ms(sclock);
-        assert!(tge_ms > now_ms, ERR_BAD_TGE);
+        assert!(tge_ms >= now_ms, ERR_BAD_TGE);
         assert!(total_supply > 0 , ERR_BAD_SUPPLY);
 
         let pie = TokenomicPie {
@@ -254,7 +254,7 @@ module seapad::tokenomic {
 
     public fun claim<COIN>(pie: &mut TokenomicPie<COIN>,
                                  sclock: &Clock,
-                                 version: &mut Version,
+                                 version: &Version,
                                  ctx: &mut TxContext){
         checkVersion(version, VERSION);
 
