@@ -116,6 +116,7 @@ module seapad::project {
         end_time: u64,
         //when project stop fund-raising, to claim or refund
         token_fund: Coin<TOKEN>,
+        total_token_deposited: u64,
         coin_raised: Coin<COIN>,
         order_book: Table<address, Order>,
         default_max_allocate: u64,
@@ -216,6 +217,7 @@ module seapad::project {
             start_time: 0,
             end_time: 0,
             token_fund: coin::zero<TOKEN>(ctx),
+            total_token_deposited: 0,
             coin_raised: coin::zero<COIN>(ctx),
             order_book: table::new(ctx),
             default_max_allocate: 0,
@@ -572,7 +574,7 @@ module seapad::project {
         ctx: &mut TxContext
     ) {
         checkVersion(version, VERSION);
-        validate_refund_or_distribute(project, ctx);
+        validate_distribute_fund(project, ctx);
         let launch_state = &mut project.launch_state;
         let coin_raised_val = coin::value<COIN>(&launch_state.coin_raised);
         transfer::public_transfer(
@@ -592,9 +594,9 @@ module seapad::project {
         ctx: &mut TxContext
     ) {
         checkVersion(version, VERSION);
-        validate_refund_or_distribute(project, ctx);
+        validate_refund_to_owner(project, ctx);
         let state = project.launch_state.state;
-        let total_token_sold = project.launch_state.total_token_sold;
+        let redundant = project.launch_state.total_token_deposited - project.launch_state.total_token_sold;
 
         let token_fund = &mut project.launch_state.token_fund;
         let token_fund_val = 0;
@@ -602,7 +604,7 @@ module seapad::project {
             token_fund_val = coin::value(token_fund);
         };
         if (state == ROUND_STATE_CLAIMING) {
-            token_fund_val = coin::value(token_fund) - total_token_sold;
+            token_fund_val = redundant;
         };
         transfer::public_transfer(coin::split(token_fund, token_fund_val, ctx), project.owner);
     }
@@ -628,6 +630,7 @@ module seapad::project {
                                           ctx: &mut TxContext) {
         checkVersion(version, VERSION);
         coin::join(&mut project.launch_state.token_fund, payment::take_from(tokens, value, ctx));
+        project.launch_state.total_token_deposited = project.launch_state.total_token_deposited + value;
         event::emit(ProjectDepositFundEvent {
             project: id_address(project),
             depositor: sender(ctx),
@@ -850,13 +853,17 @@ module seapad::project {
         assert!(state.state == ROUND_STATE_RASING, EInvalidRoundState);
     }
 
-    fun validate_refund_or_distribute<COIN, TOKEN>(project: &mut Project<COIN, TOKEN>, ctx: &mut TxContext) {
+    fun validate_distribute_fund<COIN, TOKEN>(project: &mut Project<COIN, TOKEN>, ctx: &mut TxContext){
+        assert!(sender(ctx) == project.owner, EInvalidPermission);
+        let state = project.launch_state.state;
+        assert!(state == ROUND_STATE_CLAIMING, EInvalidRoundState);
+        assert!(coin::value<COIN>(&project.launch_state.coin_raised) > 0, ENotEnoughCoinFund);
+    }
+
+    fun validate_refund_to_owner<COIN, TOKEN>(project: &mut Project<COIN, TOKEN>, ctx: &mut TxContext) {
         assert!(sender(ctx) == project.owner, EInvalidPermission);
         let state = project.launch_state.state;
         assert!(state == ROUND_STATE_REFUNDING || state == ROUND_STATE_CLAIMING, EInvalidRoundState);
-        if (state == ROUND_STATE_CLAIMING) {
-            assert!(coin::value<COIN>(&project.launch_state.coin_raised) > 0, ENotEnoughCoinFund);
-        }
     }
 
 

@@ -6,7 +6,8 @@
   <component name="ChangeListManager">
     <list default="true" id="10b876f6-5f11-44d6-9e4a-d6252006a611" name="Changes" comment="build new contract">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/contract/testnet.toml" beforeDir="false" afterPath="$PROJECT_DIR$/contract/testnet.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/seapad/sources/project.move" beforeDir="false" afterPath="$PROJECT_DIR$/seapad/sources/project.move" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/seapad/tests/project_test.move" beforeDir="false" afterPath="$PROJECT_DIR$/seapad/tests/project_test.move" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -187,20 +188,6 @@
       <workItem from="1680008715445" duration="9703000" />
       <workItem from="1680195522478" duration="17666000" />
       <workItem from="1680619443954" duration="90000" />
-    </task>
-    <task id="LOCAL-00063" summary="update stake">
-      <created>1681907917711</created>
-      <option name="number" value="00063" />
-      <option name="presentableId" value="LOCAL-00063" />
-      <option name="project" value="LOCAL" />
-      <updated>1681907917711</updated>
-    </task>
-    <task id="LOCAL-00064" summary="update address">
-      <created>1681918907905</created>
-      <option name="number" value="00064" />
-      <option name="presentableId" value="LOCAL-00064" />
-      <option name="project" value="LOCAL" />
-      <updated>1681918907905</updated>
     </task>
     <task id="LOCAL-00065" summary="change config">
       <created>1681920618621</created>
@@ -531,7 +518,21 @@
       <option name="project" value="LOCAL" />
       <updated>1683446625675</updated>
     </task>
-    <option name="localTasksCounter" value="112" />
+    <task id="LOCAL-00112" summary="build new contract">
+      <created>1683453015605</created>
+      <option name="number" value="00112" />
+      <option name="presentableId" value="LOCAL-00112" />
+      <option name="project" value="LOCAL" />
+      <updated>1683453015605</updated>
+    </task>
+    <task id="LOCAL-00113" summary="build new contract">
+      <created>1683463390111</created>
+      <option name="number" value="00113" />
+      <option name="presentableId" value="LOCAL-00113" />
+      <option name="project" value="LOCAL" />
+      <updated>1683463390111</updated>
+    </task>
+    <option name="localTasksCounter" value="114" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
