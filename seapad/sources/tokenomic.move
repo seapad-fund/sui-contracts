@@ -14,6 +14,7 @@ module seapad::tokenomic {
     use sui::math;
     use w3libs::u256;
     use seapad::version::{Version, checkVersion};
+    use sui::event::emit;
 
     const VERSION: u64 = 1;
 
@@ -45,44 +46,92 @@ module seapad::tokenomic {
         id: UID
     }
 
+    struct TokenomicFundAddedEvent has drop, copy {
+        owner: address,
+        name: vector<u8>,
+        vesting_type: u8,
+        tge_ms: u64,
+        cliff_ms: u64,
+        unlock_percent: u64,
+        linear_vesting_duration_ms: u64,
+        milestone_times: vector<u64>,
+        milestone_percents: vector<u64>,
+        vesting_fund_total: u64,
+        pie_percent: u64
+    }
+
+    struct TokenomicFundClaimEvent has drop, copy {
+        owner: address,
+        name: vector<u8>,
+        vesting_type: u8,
+        tge_ms: u64,
+        cliff_ms: u64,
+        unlock_percent: u64,
+        linear_vesting_duration_ms: u64,
+        milestone_times: vector<u64>,
+        milestone_percents: vector<u64>,
+        last_claim_ms: u64,
+        vesting_fund_total: u64,
+        vesting_fund_total_released: u64,
+        vesting_fund_claimed: u64,
+        pie_percent: u64
+    }
+
+    struct TokenomicFundOwnerChangedEvent has drop, copy {
+        owner: address,
+        name: vector<u8>,
+        vesting_type: u8,
+        tge_ms: u64,
+        cliff_ms: u64,
+        unlock_percent: u64,
+        linear_vesting_duration_ms: u64,
+        milestone_times: vector<u64>,
+        milestone_percents: vector<u64>,
+        last_claim_ms: u64,
+        vesting_fund_total: u64,
+        vesting_fund_total_released: u64,
+        pie_percent: u64,
+        new_owner: address
+    }
+
     struct TokenomicFund<phantom COIN> has store {
         owner: address, //owner of fund
         name: vector<u8>, //name
         vesting_type: u8,
         tge_ms: u64, //tge timestamp
-        cliff_ms: u64, //duration
-        unlock_percent: u64, //released at tge, in %
+        cliff_ms: u64, //lock duration before start vesting
+        unlock_percent: u64, //in %
         linear_vesting_duration_ms: u64, //linear time vesting duration
         milestone_times: vector<u64>, //list of milestone timestamp
         milestone_percents: vector<u64>, //list of milestone percents
         last_claim_ms: u64, //last claim time
         vesting_fund_total: u64, //total of vesting fund, inited just one time, nerver change!
-        vesting_fund_released: u64, //total released
         vesting_fund: Coin<COIN>, //all locked fund
+        vesting_fund_released: u64, //total released
         pie_percent: u64 //percent on pie
     }
 
     struct TokenomicPie<phantom COIN> has key, store{
         id: UID,
         tge_ms: u64, //TGE timestamp
-        total_supply: u64, //total supply of coin value, preset and nerver change!
-        total_shares: u64,
-        total_shares_percent: u64,
-        shares: Table<address, TokenomicFund<COIN>> //all shares
+        total_supply: u64, //total supply of coin's tokenomic, pre-set and nerver change!
+        total_shares: u64, //total shared coin amount by funds
+        total_shares_percent: u64, //total shared coin amount by funds
+        shares: Table<address, TokenomicFund<COIN>> //shares details
     }
 
     fun init(_witness: TOKENOMIC, ctx: &mut TxContext) {
         transfer::transfer(TAdminCap { id: object::new(ctx) }, sender(ctx));
     }
 
-    public entry fun change_admin(admin: TAdminCap,
+    public fun change_admin(admin: TAdminCap,
                                   to: address,
                                   version: &mut Version) {
         checkVersion(version, VERSION);
         transfer(admin, to);
     }
 
-    public entry fun init_tokenomic<COIN>(_admin: &TAdminCap,
+    public fun init_tokenomic<COIN>(_admin: &TAdminCap,
                                      total_supply: u64,
                                      tge_ms: u64,
                                      sclock: &Clock,
@@ -106,7 +155,7 @@ module seapad::tokenomic {
     }
 
 
-    public entry fun addFund<COIN>(_admin: &TAdminCap,
+    public fun addFund<COIN>(_admin: &TAdminCap,
                                    pie: &mut TokenomicPie<COIN>,
                                    owner: address,
                                    name: vector<u8>,
@@ -134,6 +183,9 @@ module seapad::tokenomic {
             && (unlock_percent >= 0 && unlock_percent <= ONE_HUNDRED_PERCENT_SCALED)
             && (cliff_ms >= 0),
             ERR_BAD_FUND_PARAMS);
+
+        let fundAmt = coin::value(&fund);
+        assert!(fundAmt > 0 , ERR_BAD_FUND_PARAMS);
 
         //validate milestones
         if(vesting_type == VESTING_TYPE_MILESTONE_CLIFF_FIRST || vesting_type == VESTING_TYPE_MILESTONE_UNLOCK_FIRST){
@@ -163,10 +215,9 @@ module seapad::tokenomic {
                 , ERR_BAD_VESTING_PARAMS);
         };
 
-        let fundAmt = coin::value(&fund);
         pie.total_shares = u256::add_u64(pie.total_shares, fundAmt);
-        pie.total_shares_percent = pie.total_shares*ONE_HUNDRED_PERCENT_SCALED/pie.total_supply;
-
+        pie.total_shares_percent = pie.total_shares * ONE_HUNDRED_PERCENT_SCALED/pie.total_supply;
+        let pie_percent = fundAmt * ONE_HUNDRED_PERCENT_SCALED/pie.total_supply;
         let tokenFund =  TokenomicFund<COIN> {
                 owner,
                 name,
@@ -181,14 +232,27 @@ module seapad::tokenomic {
                 vesting_fund_total: fundAmt,
                 vesting_fund_released: 0,
                 vesting_fund: fund,
-                pie_percent:  fundAmt * ONE_HUNDRED_PERCENT_SCALED/pie.total_supply
+                pie_percent
             };
 
         table::add(&mut pie.shares, owner, tokenFund);
+
+        emit(TokenomicFundAddedEvent {
+            owner,
+            name,
+            vesting_type,
+            tge_ms,
+            cliff_ms,
+            unlock_percent,
+            linear_vesting_duration_ms,
+            milestone_times,
+            milestone_percents,
+            vesting_fund_total: fundAmt,
+            pie_percent
+        })
     }
 
-
-    public entry fun claim<COIN>(pie: &mut TokenomicPie<COIN>,
+    public fun claim<COIN>(pie: &mut TokenomicPie<COIN>,
                                  sclock: &Clock,
                                  version: &mut Version,
                                  ctx: &mut TxContext){
@@ -199,13 +263,12 @@ module seapad::tokenomic {
 
         let senderAddr = sender(ctx);
         assert!(table::contains(&pie.shares, senderAddr), ERR_NO_FUND);
+
         let fund = table::borrow_mut(&mut pie.shares, senderAddr);
         assert!(senderAddr == fund.owner, ERR_NO_PERMISSION);
         assert!(now_ms >= fund.tge_ms, ERR_TGE_NOT_STARTED);
 
         let claimPercent = cal_claim_percent<COIN>(fund, now_ms);
-
-        claimPercent = math::min(claimPercent, ONE_HUNDRED_PERCENT_SCALED);
 
         assert!(claimPercent > 0, ERR_NO_COIN);
 
@@ -214,9 +277,25 @@ module seapad::tokenomic {
         assert!(remain_token_val > 0, ERR_NO_MORE_COIN);
 
         transfer::public_transfer(coin::split<COIN>(&mut fund.vesting_fund, remain_token_val, ctx), senderAddr);
-
         fund.vesting_fund_released = fund.vesting_fund_released + remain_token_val;
         fund.last_claim_ms = now_ms;
+
+        emit(TokenomicFundClaimEvent {
+            owner: fund.owner,
+            name: fund.name,
+            vesting_type: fund.vesting_type,
+            tge_ms: fund.tge_ms,
+            cliff_ms: fund.cliff_ms,
+            unlock_percent: fund.unlock_percent,
+            linear_vesting_duration_ms: fund.linear_vesting_duration_ms,
+            milestone_times: fund.milestone_times,
+            milestone_percents: fund.milestone_percents,
+            last_claim_ms: fund.last_claim_ms,
+            vesting_fund_total: fund.vesting_fund_total,
+            vesting_fund_total_released: fund.vesting_fund_released,
+            vesting_fund_claimed: remain_token_val,
+            pie_percent: fund.pie_percent
+        })
     }
 
     fun cal_claim_percent<COIN>(vesting: &TokenomicFund<COIN>, now: u64): u64 {
@@ -282,10 +361,10 @@ module seapad::tokenomic {
             };
         };
 
-        total_percent
+        math::min(total_percent, ONE_HUNDRED_PERCENT_SCALED)
     }
 
-    public entry fun change_fund_owner<COIN>(pie: &mut TokenomicPie<COIN>,
+    public fun change_fund_owner<COIN>(pie: &mut TokenomicPie<COIN>,
                                              to: address,
                                              version: &mut Version,
                                              ctx: &mut TxContext){
@@ -295,11 +374,31 @@ module seapad::tokenomic {
         assert!(table::contains(&pie.shares, senderAddr)
             && !table::contains(&pie.shares, to), ERR_NO_PERMISSION);
 
-        let fund = table::borrow_mut<address, TokenomicFund<COIN>>(&mut pie.shares, senderAddr);
-        fund.owner = to;
+        let fund0 = table::borrow_mut<address, TokenomicFund<COIN>>(&mut pie.shares, senderAddr);
+        let oldOwner = fund0.owner;
+        fund0.owner = to;
 
         let fund2 = table::remove<address, TokenomicFund<COIN>>(&mut pie.shares, senderAddr);
         table::add<address, TokenomicFund<COIN>>(&mut pie.shares, to, fund2);
+
+        let fund = table::borrow<address, TokenomicFund<COIN>>(&mut pie.shares, senderAddr);
+
+        emit(TokenomicFundOwnerChangedEvent {
+            owner: oldOwner,
+            name: fund.name,
+            vesting_type: fund.vesting_type,
+            tge_ms: fund.tge_ms,
+            cliff_ms: fund.cliff_ms,
+            unlock_percent: fund.unlock_percent,
+            linear_vesting_duration_ms: fund.linear_vesting_duration_ms,
+            milestone_times: fund.milestone_times,
+            milestone_percents: fund.milestone_percents,
+            last_claim_ms: fund.last_claim_ms,
+            vesting_fund_total: fund.vesting_fund_total,
+            vesting_fund_total_released: fund.vesting_fund_released,
+            pie_percent: fund.pie_percent,
+            new_owner: fund.owner
+        })
     }
 
     public fun getPieTotalSupply<COIN>(pie: &TokenomicPie<COIN>): u64{
