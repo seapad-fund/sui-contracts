@@ -595,15 +595,15 @@ module seapad::project {
     ) {
         checkVersion(version, VERSION);
         validate_refund_to_owner(project, ctx);
-        let state = project.launch_state.state;
-        let redundant = project.launch_state.total_token_deposited - project.launch_state.total_token_sold;
+        let launch_state = &mut project.launch_state;
+        let redundant = launch_state.total_token_deposited - launch_state.total_token_sold;
 
-        let token_fund = &mut project.launch_state.token_fund;
+        let token_fund = &mut launch_state.token_fund;
         let token_fund_val = 0;
-        if (state == ROUND_STATE_REFUNDING) {
+        if (launch_state.state == ROUND_STATE_REFUNDING) {
             token_fund_val = coin::value(token_fund);
         };
-        if (state == ROUND_STATE_CLAIMING) {
+        if (launch_state.state == ROUND_STATE_CLAIMING) {
             token_fund_val = redundant;
         };
         transfer::public_transfer(coin::split(token_fund, token_fund_val, ctx), project.owner);
