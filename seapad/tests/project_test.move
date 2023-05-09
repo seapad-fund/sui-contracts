@@ -3,18 +3,20 @@ module seapad::project_test {
     use std::vector;
 
     use seapad::project::{Self, AdminCap, Project};
-    use seapad::spt::{Self, SPT};
     use sui::coin::{Self, Coin};
     use sui::math;
     use sui::test_scenario::{Self, Scenario, return_to_sender, return_shared, most_recent_id_shared};
-    use seapad::usdt;
-    use seapad::usdt::USDT;
     use sui::clock;
     use sui::clock::Clock;
     use common::kyc;
     use common::kyc::Kyc;
     use seapad::version::{versionForTest, destroyForTest};
     use std::option::{is_none};
+
+    struct SPT has drop {}
+
+    struct USDT has drop {}
+
 
     const PERCENT_SCALE: u64 = 10000;
 
@@ -856,8 +858,6 @@ module seapad::project_test {
             let ctx = test_scenario::ctx(scenario);
             project::init_for_testing(ctx);
             kyc::init_for_testing(ctx);
-            spt::init_for_testing(ctx);
-            usdt::init_for_testing(ctx);
         };
         if (is_none(&most_recent_id_shared<Clock>())) {
             create_clock_time_(scenario);
