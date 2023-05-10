@@ -1,7 +1,7 @@
 // Copyright (c) Web3 Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-module seapad::usdt {
+module seapad::usdt_test {
     use std::ascii::string;
     use std::option;
 
@@ -19,11 +19,11 @@ module seapad::usdt {
     const DECIMAL: u8 = 9;
     const ICON_URL: vector<u8> = b"https://seapad.s3.ap-southeast-1.amazonaws.com/uploads/TEST/public/media/images/logo_1679906850804.png";
 
-    struct USDT has drop {}
+    struct USDT_TEST has drop {}
 
-    ///initialize USDT
-    fun init(witness: USDT, ctx: &mut TxContext) {
-        let (treasury_cap, coin_metadata) = coin::create_currency<USDT>(
+    ///initialize USDT_TEST
+    fun init(witness: USDT_TEST, ctx: &mut TxContext) {
+        let (treasury_cap, coin_metadata) = coin::create_currency<USDT_TEST>(
             witness,
             DECIMAL,
             SYMBOL,
@@ -36,17 +36,17 @@ module seapad::usdt {
         transfer::public_transfer(treasury_cap, sender(ctx));
     }
 
-    public entry fun minto(treasury_cap: &mut TreasuryCap<USDT>, to: address, amount: u64, ctx: &mut TxContext) {
+    public entry fun minto(treasury_cap: &mut TreasuryCap<USDT_TEST>, to: address, amount: u64, ctx: &mut TxContext) {
         coin::mint_and_transfer(treasury_cap, amount, to, ctx);
     }
 
-    public entry fun increase_supply(treasury_cap: &mut TreasuryCap<USDT>, value: u64, ctx: &mut TxContext) {
+    public entry fun increase_supply(treasury_cap: &mut TreasuryCap<USDT_TEST>, value: u64, ctx: &mut TxContext) {
         minto(treasury_cap, sender(ctx), value, ctx);
     }
 
     public entry fun decrease_supply(
-        treasury_cap: &mut TreasuryCap<USDT>,
-        coins: vector<Coin<USDT>>,
+        treasury_cap: &mut TreasuryCap<USDT_TEST>,
+        coins: vector<Coin<USDT_TEST>>,
         value: u64,
         ctx: &mut TxContext
     ) {
@@ -56,8 +56,8 @@ module seapad::usdt {
         balance::decrease_supply(total_supply, coin::into_balance(take));
     }
 
-    public entry fun burn(treasury_cap: &mut TreasuryCap<USDT>,
-                          coins: vector<Coin<USDT>>,
+    public entry fun burn(treasury_cap: &mut TreasuryCap<USDT_TEST>,
+                          coins: vector<Coin<USDT_TEST>>,
                           value: u64,
                           ctx: &mut TxContext) {
         let take = payment::take_from(coins, value, ctx);
@@ -66,6 +66,6 @@ module seapad::usdt {
 
     #[test_only]
     public fun init_for_testing(ctx: &mut TxContext) {
-        init(USDT {}, ctx);
+        init(USDT_TEST {}, ctx);
     }
 }
