@@ -11,8 +11,8 @@ sui =  "0x02"
 
 
 # staking admin
-treasury_admin = "0x01a7e3c7a16c9c4caa61941ccb30a336dc38673e0ee6cd19491ff71415eea869"
-stake_emergency_admin = "0x01a7e3c7a16c9c4caa61941ccb30a336dc38673e0ee6cd19491ff71415eea869"
+treasury_admin = "0x98a890e3a370a3e4005460bfcd31dd4adf0f36af6d760bfd2c7014ac6ee2b17e"
+stake_emergency_admin = "0x98a890e3a370a3e4005460bfcd31dd4adf0f36af6d760bfd2c7014ac6ee2b17e"
 
 # staking test addresses.
 treasury = "0x13"

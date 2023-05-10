@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/sui-contracts.iml" filepath="$PROJECT_DIR$/.idea/sui-contracts.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../w3libs/w3libs.iml" filepath="$PROJECT_DIR$/../w3libs/w3libs.iml" />
     </modules>
   </component>
 </project>
