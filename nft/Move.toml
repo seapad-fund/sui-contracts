@@ -5,12 +5,11 @@ version = "0.0.1"
 [dependencies]
 Sui = { git = "https://github.com/MystenLabs/sui", subdir = "crates/sui-framework/packages/sui-framework", rev = "testnet" }
 W3libs = { git = "https://github.com/seapad-fund/w3libs", rev = "testnet" }
-#W3libs = { local = "../../w3libs" }
 Common = { local = "../common" }
 
 
 [addresses]
 seapad="0x0"
 sui="0x2"
-nftbox_admin = "0x01a7e3c7a16c9c4caa61941ccb30a336dc38673e0ee6cd19491ff71415eea869"
-nftbox_treasury_admin = "0x01a7e3c7a16c9c4caa61941ccb30a336dc38673e0ee6cd19491ff71415eea869"
+nftbox_admin = "0x98a890e3a370a3e4005460bfcd31dd4adf0f36af6d760bfd2c7014ac6ee2b17e"
+nftbox_treasury_admin = "0x98a890e3a370a3e4005460bfcd31dd4adf0f36af6d760bfd2c7014ac6ee2b17e"
