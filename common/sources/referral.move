@@ -109,7 +109,7 @@ module common::referral {
     }
 
 
-    public entry fun create_project<COIN>(_admin: &AdminCap, distribute_time_ms: u64, ctx: &mut TxContext) {
+    public entry fun create<COIN>(_admin: &AdminCap, distribute_time_ms: u64, ctx: &mut TxContext) {
         let referral = Referral<COIN> {
             id: object::new(ctx),
             state: STATE_INIT,
@@ -139,7 +139,7 @@ module common::referral {
         referral.distribute_time_ms = distribute_time_ms;
     }
 
-    public entry fun upsert_Referral<COIN>(
+    public entry fun upsert<COIN>(
         _admin: &AdminCap,
         referral: &mut Referral<COIN>,
         users: vector<address>,
@@ -181,7 +181,7 @@ module common::referral {
         })
     }
 
-    public entry fun remove_Referral<COIN>(
+    public entry fun remove<COIN>(
         _admin: &AdminCap,
         referral: &mut Referral<COIN>,
         users: vector<address>,
@@ -246,7 +246,7 @@ module common::referral {
         })
     }
 
-    public entry fun close_project<COIN>(_admin: &AdminCap, referral: &mut Referral<COIN>, _ctx: &mut TxContext) {
+    public entry fun close<COIN>(_admin: &AdminCap, referral: &mut Referral<COIN>, _ctx: &mut TxContext) {
         assert!(referral.state < STATE_CLOSED, ERR_BAD_STATE);
         referral.state = STATE_CLOSED;
 
@@ -259,7 +259,7 @@ module common::referral {
         })
     }
 
-    public entry fun withdraw_project_fund<COIN>(
+    public entry fun withdraw_fund<COIN>(
         _admin: &AdminCap,
         referral: &mut Referral<COIN>,
         value: u64,
@@ -269,14 +269,12 @@ module common::referral {
         assert!(referral.state == STATE_CLOSED, ERR_BAD_STATE);
         assert!(coin::value(&referral.fund) >= value, ERR_OUT_OF_FUND);
         public_transfer(coin::split(&mut referral.fund, value, ctx), to);
-        referral.rewards_total = referral.rewards_total - value;
     }
 
-    public entry fun deposit_project_fund<COIN>(referral: &mut Referral<COIN>, fund: Coin<COIN>) {
+    public entry fun deposit_fund<COIN>(referral: &mut Referral<COIN>, fund: Coin<COIN>) {
         let more_fund = coin::value(&fund);
         assert!(more_fund > 0, ERR_BAD_FUND);
         coin::join(&mut referral.fund, fund);
-        referral.rewards_total = referral.rewards_total + more_fund;
 
         emit(ReferralDepositEvent {
             referral: id_address(referral),

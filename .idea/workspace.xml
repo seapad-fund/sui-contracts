@@ -4,12 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="10b876f6-5f11-44d6-9e4a-d6252006a611" name="Changes" comment="build new contract">
+    <list default="true" id="10b876f6-5f11-44d6-9e4a-d6252006a611" name="Changes" comment="build testnet">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/contract/testnet.toml" beforeDir="false" afterPath="$PROJECT_DIR$/contract/testnet.toml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/seapad/sources/project.move" beforeDir="false" afterPath="$PROJECT_DIR$/seapad/sources/project.move" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/seapad/sources/project_entries.move" beforeDir="false" afterPath="$PROJECT_DIR$/seapad/sources/project_entries.move" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/seapad/tests/project_test.move" beforeDir="false" afterPath="$PROJECT_DIR$/seapad/tests/project_test.move" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/common/sources/referral.move" beforeDir="false" afterPath="$PROJECT_DIR$/common/sources/referral.move" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -36,7 +33,7 @@
       <map>
         <entry key="$PROJECT_DIR$/../seapad-frontend" value="develop" />
         <entry key="$PROJECT_DIR$" value="devnet" />
-        <entry key="$PROJECT_DIR$/../w3libs" value="testnet" />
+        <entry key="$PROJECT_DIR$/../w3libs" value="mainnet" />
       </map>
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -71,33 +68,6 @@
               <option name="branches">
                 <list>
                   <RecentBranch>
-                    <option name="branchName" value="dev" />
-                    <option name="lastUsedInstant" value="1683006782" />
-                  </RecentBranch>
-                  <RecentBranch>
-                    <option name="branchName" value="testnet" />
-                    <option name="lastUsedInstant" value="1682933167" />
-                  </RecentBranch>
-                  <RecentBranch>
-                    <option name="branchName" value="w3l" />
-                    <option name="lastUsedInstant" value="1681748621" />
-                  </RecentBranch>
-                  <RecentBranch>
-                    <option name="branchName" value="main" />
-                    <option name="lastUsedInstant" value="1680009723" />
-                  </RecentBranch>
-                  <RecentBranch>
-                    <option name="branchName" value="devnet0x3575" />
-                    <option name="lastUsedInstant" value="1679414737" />
-                  </RecentBranch>
-                </list>
-              </option>
-              <option name="repositoryRootUrl" value="file://$PROJECT_DIR$/../w3libs" />
-            </RecentBranchesForRepo>
-            <RecentBranchesForRepo>
-              <option name="branches">
-                <list>
-                  <RecentBranch>
                     <option name="branchName" value="testnet" />
                     <option name="lastUsedInstant" value="1683015947" />
                   </RecentBranch>
@@ -112,6 +82,25 @@
                 </list>
               </option>
               <option name="repositoryRootUrl" value="file://$PROJECT_DIR$" />
+            </RecentBranchesForRepo>
+            <RecentBranchesForRepo>
+              <option name="branches">
+                <list>
+                  <RecentBranch>
+                    <option name="branchName" value="testnet" />
+                    <option name="lastUsedInstant" value="1683822613" />
+                  </RecentBranch>
+                  <RecentBranch>
+                    <option name="branchName" value="main" />
+                    <option name="lastUsedInstant" value="1680009723" />
+                  </RecentBranch>
+                  <RecentBranch>
+                    <option name="branchName" value="devnet0x3575" />
+                    <option name="lastUsedInstant" value="1679414737" />
+                  </RecentBranch>
+                </list>
+              </option>
+              <option name="repositoryRootUrl" value="file://$PROJECT_DIR$/../w3libs" />
             </RecentBranchesForRepo>
           </list>
         </option>
@@ -190,20 +179,6 @@
       <workItem from="1680008715445" duration="9703000" />
       <workItem from="1680195522478" duration="17666000" />
       <workItem from="1680619443954" duration="90000" />
-    </task>
-    <task id="LOCAL-00068" summary="update lib testnet">
-      <created>1681987529622</created>
-      <option name="number" value="00068" />
-      <option name="presentableId" value="LOCAL-00068" />
-      <option name="project" value="LOCAL" />
-      <updated>1681987529622</updated>
-    </task>
-    <task id="LOCAL-00069" summary="update contract stake">
-      <created>1681987587562</created>
-      <option name="number" value="00069" />
-      <option name="presentableId" value="LOCAL-00069" />
-      <option name="project" value="LOCAL" />
-      <updated>1681987587562</updated>
     </task>
     <task id="LOCAL-00070" summary="refactor name">
       <created>1681988452633</created>
@@ -534,7 +509,21 @@
       <option name="project" value="LOCAL" />
       <updated>1683512954220</updated>
     </task>
-    <option name="localTasksCounter" value="117" />
+    <task id="LOCAL-00117" summary="build testnet">
+      <created>1683822817288</created>
+      <option name="number" value="00117" />
+      <option name="presentableId" value="LOCAL-00117" />
+      <option name="project" value="LOCAL" />
+      <updated>1683822817288</updated>
+    </task>
+    <task id="LOCAL-00118" summary="build testnet">
+      <created>1683824045030</created>
+      <option name="number" value="00118" />
+      <option name="presentableId" value="LOCAL-00118" />
+      <option name="project" value="LOCAL" />
+      <updated>1683824045033</updated>
+    </task>
+    <option name="localTasksCounter" value="119" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -582,7 +571,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="add tra token" />
     <MESSAGE value="add linear time" />
     <MESSAGE value="update contract seapad" />
     <MESSAGE value="rollback take_from" />
@@ -607,7 +595,8 @@
     <MESSAGE value="change validate end raising" />
     <MESSAGE value="update refund to owner" />
     <MESSAGE value="build new contract" />
-    <option name="LAST_COMMIT_MESSAGE" value="build new contract" />
+    <MESSAGE value="build testnet" />
+    <option name="LAST_COMMIT_MESSAGE" value="build testnet" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />
