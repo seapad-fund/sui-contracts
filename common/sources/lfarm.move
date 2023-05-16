@@ -64,6 +64,16 @@ module common::lfarm {
         });
     }
 
+    ///Bizz:
+    /// - user freely to lock their token & receiv stake position. minimum of time periods required
+    /// - User receive a stake position NFT with timestamp, expire time, yield rate (zero now)
+    /// - user can freely transfer that NFT, we can't limit this!!!
+    /// - anyone has the NFT has the permission of: unlock, transfer, split, merge that Positions
+    /// - because user freely to transfer their asset, cant' snapshot this NFT. for example:
+    ///   * user A has the NFT, some app take snapshot
+    ///   * after that A transfer to B, B might has the snapshot again
+    ///   * your bizz is hacked
+    /// So the "lock power" accounted by event: LockEvent issued by the locker.
     public entry fun lock<TOKEN>(
         deal: Coin<TOKEN>, pool: &mut Pool<TOKEN>, lockPeriodMs: u64, sclock: &Clock, ctx: &mut TxContext){
         let value = coin::value(&deal);
@@ -73,7 +83,7 @@ module common::lfarm {
         coin::join(&mut pool.fund, deal);
 
         let timestamp = clock::timestamp_ms(sclock);
-        let expire = timestamp + math::max(lockPeriodMs, pool.lockPeriodMs)
+        let expire = timestamp + math::max(lockPeriodMs, pool.lockPeriodMs);
         let sender = sender(ctx);
         transfer::public_transfer(StakePosititon {
             id: object::new(ctx),
@@ -91,6 +101,8 @@ module common::lfarm {
         })
     }
 
+    ///Future:
+    /// - with yield info, every time user unlock, real yield will be estimated & fund to owner
     public entry fun unlock<TOKEN>(deal: StakePosititon, pool: &mut Pool<TOKEN>, sclock: &Clock, ctx: &mut TxContext){
         let timestamp = clock::timestamp_ms(sclock);
         let sender = sender(ctx);
@@ -115,15 +127,8 @@ module common::lfarm {
         })
     }
 
+    ///Warning: it will limit time locked & maximum expire time
     public entry fun merge<TOKEN>(deals: vector<StakePosititon>, ctx: &mut TxContext){
-        let sumPos = StakePosititon {
-            id: object::new(ctx),
-            value: 0, //token value
-            timestamp: 0, //deposit time
-            expire: 0, //expire time
-            yield: 0 //future
-        };
-
         let value = 0u64;
         let diff = 0;
         let expire = 0;
@@ -164,7 +169,7 @@ module common::lfarm {
             timestamp: deal.timestamp,
             expire: deal.expire,
             yield: deal.yield
-        });
+        }, sender(ctx));
     }
 
     fun destroy(sp: StakePosititon){
