@@ -108,7 +108,6 @@ module common::referral {
         transfer(admin, to);
     }
 
-
     public entry fun create<COIN>(_admin: &AdminCap, distribute_time_ms: u64, ctx: &mut TxContext) {
         let referral = Referral<COIN> {
             id: object::new(ctx),
@@ -188,6 +187,7 @@ module common::referral {
         _ctx: &mut TxContext
     ) {
         assert!(referral.state == STATE_INIT, ERR_BAD_STATE);
+        //@fixme use vector_pop
         let index = vector::length(&users);
 
         assert!(index > 0, ERR_BAD_REFERRAL_INFO);
