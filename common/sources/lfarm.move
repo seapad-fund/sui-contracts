@@ -74,7 +74,6 @@ module common::lfarm {
         let sender = sender(ctx);
         transfer::public_transfer(StakePosititon {
             id: object::new(ctx),
-            root_depositor: sender(ctx),
             value,
             timestamp: nowMs,
             expire: nowMs + math::max(lockPeriodMs, pool.lockPeriodMs),
@@ -101,8 +100,8 @@ module common::lfarm {
             id,
             root_depositor: _root_depositor, //the genesis user who lock first, never changed!
             value: _value,
-            timestamp: u64_timestamp,
-            expire: u64_expire,
+            timestamp: _timestamp,
+            expire: _expire,
         } = deal;
 
         object::delete(id);
