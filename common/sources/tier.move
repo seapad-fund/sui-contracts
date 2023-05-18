@@ -57,6 +57,10 @@ module common::tier {
         transfer::public_transfer(adminCap, sender(ctx));
     }
 
+    public entry fun change_admin(admin_cap: TAdminCap, to: address) {
+        transfer::public_transfer(admin_cap, to);
+    }
+
     public entry fun createPool<TOKEN>(_admin: &TAdminCap, minLock: u64, lockPeriodMs: u64, ctx: &mut TxContext){
         assert!(lockPeriodMs > 0, ErrInvalidParams);
         share_object(Pool<TOKEN<>>{
