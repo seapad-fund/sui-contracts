@@ -8,47 +8,48 @@ module common::tier {
     use sui::coin;
     use sui::clock::Clock;
     use sui::clock;
-    use sui::math;
     use sui::event;
     use sui::table::Table;
-    use sui::table_vec::TableVec;
     use sui::table;
-    use sui::table_vec;
 
     struct TIER has drop {}
 
-    const ErrInvalidToken: u64 = 1001;
-    const ErrInvalidParams: u64 = 1002;
+    const ErrInvalidParams: u64 = 1001;
+    const ErrMinLock: u64 = 1002;
+    const ErrNotEmergency: u64 = 1003;
+    const ErrEmergency: u64 = 1004;
 
     struct TAdminCap has key, store {
         id: UID
     }
 
     struct StakePosititon has store{
-        value: u64, //token value
-        timestamp: u64, //deposit time
-        expire: u64, //expire time
+        value: u64,
+        timestamp: u64,
+        expire: u64,
     }
 
     struct Pool<phantom TOKEN> has key, store {
         id: UID,
+        emergency: bool,
         fund: Coin<TOKEN>,
         minLock: u64,
         lockPeriodMs: u64,
-        funds: Table<address, TableVec<StakePosititon>>
+        funds: Table<address, StakePosititon>
     }
 
     struct LockEvent has drop, copy {
         sender: address,
         value: u64,
-        timestamp: u64, //deposit time
-        expire: u64, //expire time
+        timestamp: u64,
+        expire: u64,
     }
 
     struct UnlockEvent has drop, copy {
         sender: address,
         value: u64,
-        timestamp: u64
+        timestamp: u64,
+        emergency: bool
     }
 
     fun init(_witness: TIER, ctx: &mut TxContext) {
@@ -57,9 +58,10 @@ module common::tier {
     }
 
     public entry fun createPool<TOKEN>(_admin: &TAdminCap, minLock: u64, lockPeriodMs: u64, ctx: &mut TxContext){
-        assert!(minLock > 0 && lockPeriodMs > 0, ErrInvalidParams);
+        assert!(lockPeriodMs > 0, ErrInvalidParams);
         share_object(Pool<TOKEN<>>{
             id: object::new(ctx),
+            emergency: false,
             fund: coin::zero(ctx),
             minLock,
             lockPeriodMs,
@@ -67,28 +69,35 @@ module common::tier {
         });
     }
 
-    public entry fun lock<TOKEN>(
-        deal: Coin<TOKEN>, pool: &mut Pool<TOKEN>, lockPeriodMs: u64, sclock: &Clock, ctx: &mut TxContext){
+    public entry fun setEmergency<TOKEN>(_admin: &TAdminCap, pool: &mut Pool<TOKEN<>>, emergency: bool, _ctx: &mut TxContext){
+        assert!(pool.emergency != emergency, ErrInvalidParams);
+        pool.emergency = emergency;
+    }
+
+    public entry fun lock<TOKEN>(deal: Coin<TOKEN>, pool: &mut Pool<TOKEN>, sclock: &Clock, ctx: &mut TxContext){
+        assert!(!pool.emergency, ErrEmergency);
         let value = coin::value(&deal);
-
-        assert!(value > 0 && pool.lockPeriodMs <= lockPeriodMs, ErrInvalidParams);
-
-        coin::join(&mut pool.fund, deal);
-
         let timestamp = clock::timestamp_ms(sclock);
-        let expire = timestamp + math::max(lockPeriodMs, pool.lockPeriodMs);
+        let expire = timestamp + pool.lockPeriodMs;
         let sender = sender(ctx);
 
         if(!table::contains(&pool.funds, sender)) {
-                table::add(&mut pool.funds, sender,  table_vec::empty(ctx))
+                table::add(&mut pool.funds, sender,  StakePosititon {
+                    value,
+                    timestamp,
+                    expire
+                })
+        } else{
+            let fund = table::borrow_mut(&mut pool.funds, sender);
+            value = value + fund.value;
+            fund.value = value;
+            fund.timestamp = timestamp;
+            fund.expire = expire
         };
 
-        let ufunds = table::borrow_mut(&mut pool.funds, sender);
-        table_vec::push_back(ufunds, StakePosititon {
-            value,
-            timestamp,
-            expire: timestamp + math::max(lockPeriodMs, pool.lockPeriodMs),
-        });
+        assert!(value >= pool.minLock, ErrMinLock);
+
+        coin::join(&mut pool.fund, deal);
 
         event::emit(LockEvent {
             sender,
@@ -98,55 +107,47 @@ module common::tier {
         })
     }
 
-    ///Future:
-    /// - with yield info, every time user unlock, real yield will be estimated & fund to owner
     public entry fun unlock<TOKEN>(pool: &mut Pool<TOKEN>, sclock: &Clock, ctx: &mut TxContext){
+        assert!(!pool.emergency, ErrEmergency);
         let timestamp = clock::timestamp_ms(sclock);
         let sender = sender(ctx);
-        assert!(table::contains(&mut pool.funds, sender), ErrInvalidParams);
+        assert!(table::contains(&mut pool.funds, sender)
+                && table::borrow(&pool.funds, sender).expire <= timestamp, ErrInvalidParams);
 
-        let ufunds = table::remove(&mut pool.funds, sender);
-        let newUFunds = table_vec::empty(ctx);
-        let value = 0;
+        let StakePosititon {
+            value,
+            timestamp: _timestamp,
+            expire: _expire,
+        } = table::remove(&mut pool.funds, sender);
 
-        //collect
-        while (!table_vec::is_empty(&ufunds)){
-            let deal = table_vec::pop_back(&mut ufunds);
-            if(timestamp <= deal.timestamp){
-                value = value + deal.value;
-                destroy(deal);
-            }
-            else {
-                table_vec::push_back(&mut newUFunds, deal);
-            }
-        };
-
-        //update
-        table_vec::destroy_empty(ufunds);
-        if(table_vec::length(&newUFunds) > 0 ){
-            table::add (&mut pool.funds, sender, newUFunds);
-        }
-        else {
-            table_vec::destroy_empty(newUFunds);
-        };
-
-        //fund back
         public_transfer(coin::split(&mut pool.fund, value, ctx), sender);
 
-        //event
         event::emit(UnlockEvent {
             sender,
             value,
-            timestamp
+            timestamp,
+            emergency: false
         })
     }
 
+    public entry fun unlockEmergency<TOKEN>(pool: &mut Pool<TOKEN>, sclock: &Clock, ctx: &mut TxContext){
+        assert!(pool.emergency, ErrNotEmergency);
+        let sender = sender(ctx);
+        assert!(table::contains(&mut pool.funds, sender), ErrInvalidParams);
 
-    fun destroy(sp: StakePosititon){
         let StakePosititon {
-            value: _value,
+            value,
             timestamp: _timestamp,
             expire: _expire,
-        } = sp;
+        } = table::remove(&mut pool.funds, sender);
+
+        public_transfer(coin::split(&mut pool.fund, value, ctx), sender);
+
+        event::emit(UnlockEvent {
+            sender,
+            value,
+            timestamp: clock::timestamp_ms(sclock),
+            emergency: true
+        })
     }
 }
