@@ -154,4 +154,9 @@ module common::tier {
             emergency: true
         })
     }
+
+    #[test_only]
+    public fun init_for_testing(ctx: &mut TxContext){
+        init(TIER{}, ctx);
+    }
 }
