@@ -39,11 +39,14 @@ module seapad::version {
         })
     }
 
-    public fun checkVersion(version: &Version, modVersion: u64) {
+    public fun checkVersion(version: &Version,
+                            modVersion: u64) {
         assert!(modVersion == version.version, ERR_WRONG_VERSION)
     }
 
-    public entry fun migrate(admin: &VAdminCap, ver: &mut Version, newVer: u64 ){
+    public entry fun migrate(admin: &VAdminCap,
+                             ver: &mut Version,
+                             newVer: u64 ){
         assert!(object::id(admin) == ver.admin, ERR_NOT_ADMIN);
         assert!(newVer > ver.version, ERR_WRONG_VERSION);
         ver.version = newVer

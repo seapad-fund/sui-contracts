@@ -128,8 +128,8 @@ module seapad::tokenomic {
     }
 
     public fun change_admin(admin: TAdminCap,
-                                  to: address,
-                                  version: &mut Version) {
+                            to: address,
+                            version: &mut Version) {
         checkVersion(version, VERSION);
         transfer(admin, to);
     }
@@ -159,21 +159,20 @@ module seapad::tokenomic {
 
 
     public fun addFund<COIN>(_admin: &TAdminCap,
-                                   pie: &mut TokenomicPie<COIN>,
-                                   owner: address,
-                                   name: vector<u8>,
-                                   vesting_type: u8,
-                                   tge_ms: u64, //timestamp
-                                   cliff_ms: u64, //duration
-                                   fund: Coin<COIN>,
-                                   unlock_percent: u64,
-                                   linear_vesting_duration_ms: u64, //duration
-                                   sclock: &Clock,
-                                   version: &mut Version,
-                                   milestone_times: vector<u64>, //if milestone mode, timestamps
-                                   milestone_percents: vector<u64>, //if milestone mode
-                                   _ctx: &mut TxContext
-    )
+                             pie: &mut TokenomicPie<COIN>,
+                             owner: address,
+                             name: vector<u8>,
+                             vesting_type: u8,
+                             tge_ms: u64, //timestamp
+                             cliff_ms: u64, //duration
+                             fund: Coin<COIN>,
+                             unlock_percent: u64,
+                             linear_vesting_duration_ms: u64, //duration
+                             sclock: &Clock,
+                             version: &mut Version,
+                             milestone_times: vector<u64>, //if milestone mode, timestamps
+                             milestone_percents: vector<u64>, //if milestone mode
+                             _ctx: &mut TxContext)
     {
         checkVersion(version, VERSION);
 
@@ -256,9 +255,9 @@ module seapad::tokenomic {
     }
 
     public fun claim<COIN>(pie: &mut TokenomicPie<COIN>,
-                                 sclock: &Clock,
-                                 version: &Version,
-                                 ctx: &mut TxContext){
+                           sclock: &Clock,
+                           version: &Version,
+                           ctx: &mut TxContext){
         checkVersion(version, VERSION);
 
         let now_ms = clock::timestamp_ms(sclock);
@@ -301,7 +300,8 @@ module seapad::tokenomic {
         })
     }
 
-    fun cal_claim_percent<COIN>(vesting: &TokenomicFund<COIN>, now: u64): u64 {
+    fun cal_claim_percent<COIN>(vesting: &TokenomicFund<COIN>,
+                                now: u64): u64 {
         let milestone_times = &vesting.milestone_times;
         let milestone_percents = &vesting.milestone_percents;
 
@@ -368,9 +368,9 @@ module seapad::tokenomic {
     }
 
     public fun change_fund_owner<COIN>(pie: &mut TokenomicPie<COIN>,
-                                             to: address,
-                                             version: &mut Version,
-                                             ctx: &mut TxContext){
+                                       to: address,
+                                       version: &mut Version,
+                                       ctx: &mut TxContext){
         checkVersion(version, VERSION);
 
         let senderAddr = sender(ctx);
