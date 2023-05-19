@@ -8,5 +8,5 @@ Sui = { git = "https://github.com/MystenLabs/sui", subdir = "crates/sui-framewor
 W3libs = { git = "https://github.com/seapad-fund/w3libs", rev = "1.0.1" }
 
 [addresses]
-seapad =  "0x00"
+seapad =  "0x3f665ba1f799c0fa73236c95ea4de1558b5ba692cefb04d960d10610c86b677f"
 sui =  "0x02"
