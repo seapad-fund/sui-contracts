@@ -1,0 +1,25 @@
+---
+compiled_package_info:
+  package_name: Common
+  address_alias_instantiation:
+    common: "0000000000000000000000000000000000000000000000000000000000000000"
+    std: "0000000000000000000000000000000000000000000000000000000000000001"
+    sui: "0000000000000000000000000000000000000000000000000000000000000002"
+    w3libs: da3ad9e9049055af712fdc9b985dcd22dc860bd276ce3efdd3bc092e1306e673
+  source_digest: BD967805ABE702ED5894CA408D2D326F17742E19BC2981D06F282CFACADDCF90
+  build_flags:
+    dev_mode: false
+    test_mode: false
+    generate_docs: false
+    generate_abis: false
+    install_dir: ~
+    force_recompilation: true
+    lock_file: "./Move.lock"
+    additional_named_addresses: {}
+    architecture: ~
+    fetch_deps_only: false
+    skip_fetch_latest_git_deps: false
+dependencies:
+  - MoveStdlib
+  - Sui
+  - W3libs

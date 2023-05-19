@@ -86,11 +86,11 @@ module common::tier {
         let sender = sender(ctx);
 
         if(!table::contains(&pool.funds, sender)) {
-            table::add(&mut pool.funds, sender,  StakePosititon {
-                value,
-                timestamp,
-                expire
-            })
+                table::add(&mut pool.funds, sender,  StakePosititon {
+                    value,
+                    timestamp,
+                    expire
+                })
         } else{
             let fund = table::borrow_mut(&mut pool.funds, sender);
             value = value + fund.value;
@@ -116,7 +116,7 @@ module common::tier {
         let timestamp = clock::timestamp_ms(sclock);
         let sender = sender(ctx);
         assert!(table::contains(&mut pool.funds, sender)
-            && table::borrow(&pool.funds, sender).expire <= timestamp, ErrInvalidParams);
+                && table::borrow(&pool.funds, sender).expire <= timestamp, ErrInvalidParams);
 
         let StakePosititon {
             value,
