@@ -5,3 +5,5 @@
 /tokens/build/
 /common/build/
 /stake/build/
+/sui-contracts.iml
+/.idea
