@@ -7,7 +7,7 @@ module seapad::stake {
     use sui::tx_context::{TxContext, sender};
     use seapad::stake_config::GlobalConfig;
     use sui::coin;
-    use seapad::math128;
+    use w3libs::math128;
     use sui::table;
     use sui::transfer::share_object;
     use sui::object::UID;
