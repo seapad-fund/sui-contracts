@@ -1,1 +1,0 @@
-module seapad::marketplace {}
