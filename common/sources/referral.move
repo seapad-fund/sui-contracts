@@ -1,3 +1,6 @@
+// Copyright (c) Web3 Labs, Inc.
+// SPDX-License-Identifier: GPL-3.0
+
 module common::referral {
     use sui::object::{UID, id_address};
     use sui::coin::Coin;

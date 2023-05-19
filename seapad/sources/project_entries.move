@@ -1,3 +1,6 @@
+// Copyright (c) Web3 Labs, Inc.
+// SPDX-License-Identifier: GPL-3.0
+
 module seapad::project_entries {
     use seapad::project::{AdminCap, Project};
     use sui::tx_context::TxContext;

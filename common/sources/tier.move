@@ -1,3 +1,6 @@
+// Copyright (c) Web3 Labs, Inc.
+// SPDX-License-Identifier: GPL-3.0
+
 module common::tier {
     use sui::object::UID;
     use sui::tx_context::{TxContext, sender};

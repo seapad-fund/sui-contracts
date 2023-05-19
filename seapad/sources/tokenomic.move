@@ -1,3 +1,6 @@
+// Copyright (c) Web3 Labs, Inc.
+// SPDX-License-Identifier: GPL-3.0
+
 module seapad::tokenomic {
     use sui::tx_context::{TxContext, sender};
     use sui::object::UID;

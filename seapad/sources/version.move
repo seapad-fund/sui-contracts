@@ -1,3 +1,6 @@
+// Copyright (c) Web3 Labs, Inc.
+// SPDX-License-Identifier: GPL-3.0
+
 module seapad::version {
     use sui::object::{UID, id, ID};
     use sui::tx_context::{TxContext, sender};
@@ -14,7 +17,6 @@ module seapad::version {
     const ERR_NOT_ADMIN: u64 = 1002;
 
     struct VERSION has drop {}
-
 
     struct VAdminCap has key, store {
         id: UID
