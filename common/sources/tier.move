@@ -18,6 +18,8 @@ module common::tier {
     const ErrMinLock: u64 = 1002;
     const ErrNotEmergency: u64 = 1003;
     const ErrEmergency: u64 = 1004;
+    const ErrValuePosititon: u64 = 1005;
+
 
     struct TAdminCap has key, store {
         id: UID
@@ -111,19 +113,24 @@ module common::tier {
         })
     }
 
-    public entry fun unlock<TOKEN>(pool: &mut Pool<TOKEN>, sclock: &Clock, ctx: &mut TxContext){
+    public entry fun unlock<TOKEN>(value: u64, pool: &mut Pool<TOKEN>, sclock: &Clock, ctx: &mut TxContext){
         assert!(!pool.emergency, ErrEmergency);
         let timestamp = clock::timestamp_ms(sclock);
         let sender = sender(ctx);
-        assert!(table::contains(&mut pool.funds, sender)
-                && table::borrow(&pool.funds, sender).expire <= timestamp, ErrInvalidParams);
+        assert!(table::contains(&mut pool.funds, sender) && table::borrow(&pool.funds, sender).expire <= timestamp, ErrInvalidParams);
 
-        let StakePosititon {
-            value,
-            timestamp: _timestamp,
-            expire: _expire,
-        } = table::remove(&mut pool.funds, sender);
+        let stakePosititon = table::borrow_mut(&mut pool.funds, sender);
+        assert!(value <= stakePosititon.value, ErrValuePosititon);
 
+        if(value < coin::value(&pool.fund)){
+            stakePosititon.value = stakePosititon.value - value;
+        } else {
+            let StakePosititon {
+                value: _value,
+                timestamp: _timestamp,
+                expire: _expire,
+            } = table::remove(&mut pool.funds, sender);
+        };
         public_transfer(coin::split(&mut pool.fund, value, ctx), sender);
 
         event::emit(UnlockEvent {
