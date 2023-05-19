@@ -1,3 +1,6 @@
+// Copyright (c) Web3 Labs, Inc.
+// SPDX-License-Identifier: GPL-3.0
+
 #[test_only]
 module seapad::emergency_tests {
     use sui::test_scenario::{Scenario, next_tx, ctx, return_shared, end, take_from_sender, return_to_sender};
@@ -25,7 +28,6 @@ module seapad::emergency_tests {
     const DECIMAL_S: u8 = 9;
     const DECIMAL_R: u8 = 9;
 
-    // utilities
     fun scenario(): Scenario { test_scenario::begin(@stake_emergency_admin) }
 
     fun admins(): (address, address) { (@stake_emergency_admin, @treasury) }
@@ -68,11 +70,9 @@ module seapad::emergency_tests {
         let ctx = ctx(scenario);
         let clock = clock::create_for_testing(ctx);
 
-        //create pool
         next_tx(scenario, @treasury_admin);
         register_pool(&clock, scenario);
 
-        //stake
         next_tx(scenario, @alice);
         stake(MAX_STAKE_VALUE + 1, &clock, scenario);
 
@@ -87,22 +87,18 @@ module seapad::emergency_tests {
         let ctx = ctx(scenario);
         let clock = clock::create_for_testing(ctx);
 
-        //create pool
         next_tx(scenario, @treasury_admin);
         register_pool(&clock, scenario);
 
-        //stake
         next_tx(scenario, @alice);
         stake(STAKE_VALUE, &clock, scenario);
 
         clock::increment_for_testing(&mut clock, DURATION_UNSTAKE_MS);
 
-        //unstake
         let unstake_amount = STAKE_VALUE / 2;
         next_tx(scenario, @alice);
         unstake(unstake_amount, &clock, scenario);
 
-        //check coin
         next_tx(scenario, @alice);
         {
             let coin_unstake = take_from_sender<Coin<STAKE_COIN>>(scenario);
@@ -116,7 +112,6 @@ module seapad::emergency_tests {
     }
 
     #[test]
-    //@TODO
     fun test_harvest() {
         let scenario_val = test_scenario::begin(@treasury_admin);
         let scenario = &mut scenario_val;
@@ -193,9 +188,7 @@ module seapad::emergency_tests {
             let config = test_scenario::take_shared<GlobalConfig>(scenario);
             let ctx = test_scenario::ctx(scenario);
             let stake_coin = coin::mint_for_testing<STAKE_COIN>(stake_value, ctx);
-
             stake_entries::stake(&mut pool, stake_coin, &config, clock, ctx);
-
             return_shared(pool);
             return_shared(config)
         }
