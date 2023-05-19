@@ -9,7 +9,6 @@ module common::kyc {
     use sui::table::Table;
     use sui::table;
 
-    ///Witness
     struct KYC has drop {}
 
     struct AdminCap has key, store {
@@ -23,6 +22,7 @@ module common::kyc {
 
     const ERR_ALREADY_KYC: u64 = 1001;
     const ERR_NOT_KYC: u64 = 1002;
+    const ERR_BAD_PARAMS: u64 = 1003;
 
     struct Kyc has key, store {
         id: UID,
@@ -44,35 +44,28 @@ module common::kyc {
     }
 
     public entry fun add(_admin_cap: &AdminCap, users: vector<address>, kyc: &mut Kyc){
+        assert!(vector::length(&users) > 0, ERR_BAD_PARAMS);
+        emit(AddKycEvent {
+            users
+        });
 
-        let index = vector::length<address>(&users);
-
-        while (index > 0) {
-            index = index - 1;
-            let userAddr = *vector::borrow(&users, index);
+        while (!vector::is_empty(&users)) {
+            let userAddr = vector::pop_back(&mut users);
             assert!(!table::contains(&kyc.whitelist, userAddr), ERR_ALREADY_KYC);
             table::add(&mut kyc.whitelist, userAddr, KYC_LEVEL_ONE);
         };
-
-        emit(AddKycEvent {
-            users
-        })
     }
 
     public entry fun remove(_admin_cap: &AdminCap, users: vector<address>, kyc: &mut Kyc){
-
-        let index = vector::length<address>(&users);
-
-        while (index > 0) {
-            index = index - 1;
-            let userAddr = *vector::borrow(&users, index);
+        assert!(vector::length(&users) > 0, ERR_BAD_PARAMS);
+        emit(RemoveKycEvent {
+            users
+        });
+        while (!vector::is_empty(&users)) {
+            let userAddr = vector::pop_back(&mut users);
             assert!(table::contains(&kyc.whitelist, userAddr), ERR_NOT_KYC);
             table::remove(&mut kyc.whitelist, userAddr);
         };
-
-        emit(RemoveKycEvent {
-            users
-        })
     }
 
     public fun hasKYC(user: address, kyc: &Kyc): bool{

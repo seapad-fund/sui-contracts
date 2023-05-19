@@ -146,17 +146,12 @@ module common::referral {
         _ctx: &mut TxContext
     ) {
         assert!(referral.state == STATE_INIT, ERR_BAD_STATE);
-        let index = vector::length(&users);
-        let rsize = vector::length(&rewards);
+        assert!(vector::length(&users) == vector::length(&rewards) && vector::length(&rewards) > 0, ERR_BAD_REFERRAL_INFO);
 
-        assert!(index == rsize && index > 0, ERR_BAD_REFERRAL_INFO);
-
-        while (index > 0) {
-            index = index - 1;
-            let user = *vector::borrow(&users, index);
-            let reward = *vector::borrow(&rewards, index);
+        while (!vector::is_empty(&users) ) {
+            let user = vector::pop_back(&mut users);
+            let reward = vector::pop_back(&mut rewards);
             assert!(reward > 0, ERR_BAD_REFERRAL_INFO);
-
             if (table::contains(&referral.rewards, user)) {
                 let oldReward = table::remove(&mut referral.rewards, user);
                 table::add(&mut referral.rewards, user, reward);
@@ -184,23 +179,17 @@ module common::referral {
         _admin: &AdminCap,
         referral: &mut Referral<COIN>,
         users: vector<address>,
-        _ctx: &mut TxContext
     ) {
         assert!(referral.state == STATE_INIT, ERR_BAD_STATE);
-        //@fixme use vector_pop
-        let index = vector::length(&users);
+        assert!(vector::length(&users) > 0, ERR_BAD_REFERRAL_INFO);
 
-        assert!(index > 0, ERR_BAD_REFERRAL_INFO);
-
-        while (index > 0) {
-            index = index - 1;
-            let user = *vector::borrow(&users, index);
+        while (!vector::is_empty(&users)) {
+            let user = vector::pop_back(&mut users);
             assert!(table::contains(&referral.rewards, user), ERR_BAD_REFERRAL_INFO);
             let oldReward = table::remove(&mut referral.rewards, user);
             assert!(referral.rewards_total >= oldReward, ERR_BAD_REFERRAL_INFO);
             referral.rewards_total = referral.rewards_total - oldReward;
         };
-
 
         emit(ReferralRemovedEvent {
             referral: id_address(referral),
