@@ -1,3 +1,6 @@
+// Copyright (c) Web3 Labs, Inc.
+// SPDX-License-Identifier: GPL-3.0
+
 module seapad::nftbox_entries {
 
     use seapad::nftbox::{NftAdminCap, NftPool, NftTreasuryCap};
