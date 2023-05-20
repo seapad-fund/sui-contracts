@@ -1,5 +1,5 @@
 module common::tier {
-    use sui::object::UID;
+    use sui::object::{UID, id_address};
     use sui::tx_context::{TxContext, sender};
     use sui::object;
     use sui::transfer;
@@ -35,23 +35,27 @@ module common::tier {
         id: UID,
         emergency: bool,
         fund: Coin<TOKEN>,
-        minLock: u64,
-        lockPeriodMs: u64,
+        min_lock: u64,
+        lock_period_ms: u64,
         funds: Table<address, StakePosititon>
     }
 
     struct LockEvent has drop, copy {
+        pool_tier: address,
         sender: address,
         value: u64,
         timestamp: u64,
         expire: u64,
+        lock_amount: u64
     }
 
     struct UnlockEvent has drop, copy {
+        pool_tier: address,
         sender: address,
         value: u64,
         timestamp: u64,
-        emergency: bool
+        emergency: bool,
+        lock_amount: u64
     }
 
     fun init(_witness: TIER, ctx: &mut TxContext) {
@@ -69,13 +73,13 @@ module common::tier {
             id: object::new(ctx),
             emergency: false,
             fund: coin::zero(ctx),
-            minLock,
-            lockPeriodMs,
+            min_lock: minLock,
+            lock_period_ms: lockPeriodMs,
             funds: table::new(ctx)
         });
     }
 
-    public entry fun setEmergency<TOKEN>(_admin: &TAdminCap, pool: &mut Pool<TOKEN<>>, emergency: bool, _ctx: &mut TxContext){
+    public entry fun set_emergency<TOKEN>(_admin: &TAdminCap, pool: &mut Pool<TOKEN<>>, emergency: bool, _ctx: &mut TxContext){
         assert!(pool.emergency != emergency, ErrInvalidParams);
         pool.emergency = emergency;
     }
@@ -84,9 +88,11 @@ module common::tier {
         assert!(!pool.emergency, ErrEmergency);
         let value = coin::value(&deal);
         let timestamp = clock::timestamp_ms(sclock);
-        let expire = timestamp + pool.lockPeriodMs;
+        let expire = timestamp + pool.lock_period_ms;
         let sender = sender(ctx);
+        assert!(value >= pool.min_lock, ErrMinLock);
 
+        let lock_amount = value;
         if(!table::contains(&pool.funds, sender)) {
                 table::add(&mut pool.funds, sender,  StakePosititon {
                     value,
@@ -95,21 +101,23 @@ module common::tier {
                 })
         } else{
             let fund = table::borrow_mut(&mut pool.funds, sender);
-            value = value + fund.value;
-            fund.value = value;
+            fund.value = fund.value + value;
             fund.timestamp = timestamp;
-            fund.expire = expire
+            fund.expire = expire;
+
+            lock_amount = fund.value;
         };
 
-        assert!(value >= pool.minLock, ErrMinLock);
 
         coin::join(&mut pool.fund, deal);
 
         event::emit(LockEvent {
+            pool_tier: id_address(pool),
             sender,
             value,
             timestamp,
-            expire
+            expire,
+            lock_amount
         })
     }
 
@@ -122,8 +130,10 @@ module common::tier {
         let stakePosititon = table::borrow_mut(&mut pool.funds, sender);
         assert!(value <= stakePosititon.value, ErrValuePosititon);
 
+        let lock_amount = 0;
         if(value < coin::value(&pool.fund)){
             stakePosititon.value = stakePosititon.value - value;
+            lock_amount = stakePosititon.value;
         } else {
             let StakePosititon {
                 value: _value,
@@ -134,14 +144,16 @@ module common::tier {
         public_transfer(coin::split(&mut pool.fund, value, ctx), sender);
 
         event::emit(UnlockEvent {
+            pool_tier: id_address(pool),
             sender,
             value,
             timestamp,
-            emergency: false
+            emergency: false,
+            lock_amount
         })
     }
 
-    public entry fun unlockEmergency<TOKEN>(pool: &mut Pool<TOKEN>, sclock: &Clock, ctx: &mut TxContext){
+    public entry fun unlock_emergency<TOKEN>(pool: &mut Pool<TOKEN>, sclock: &Clock, ctx: &mut TxContext){
         assert!(pool.emergency, ErrNotEmergency);
         let sender = sender(ctx);
         assert!(table::contains(&mut pool.funds, sender), ErrInvalidParams);
@@ -155,10 +167,12 @@ module common::tier {
         public_transfer(coin::split(&mut pool.fund, value, ctx), sender);
 
         event::emit(UnlockEvent {
+            pool_tier: id_address(pool),
             sender,
             value,
             timestamp: clock::timestamp_ms(sclock),
-            emergency: true
+            emergency: true,
+            lock_amount: 0
         })
     }
 }
