@@ -303,7 +303,7 @@ module seapad::project {
         assert!(start_time > clock::timestamp_ms(clock) && end_time > start_time, EInvalidTime);
         assert!(hard_cap > soft_cap && soft_cap > 0, EInvalidCap);
         assert!(swap_ratio_coin > 0 && swap_ratio_token > 0, EInvalidSwapRatio);
-        assert!(round >= ROUND_SEED && round <= ROUND_PRIVATE, EInvalidRound);
+        assert!(round >= ROUND_SEED && round <= ROUND_PUBLIC, EInvalidRound);
 
         let state = &mut project.launch_state;
         assert!(state.state == ROUND_STATE_INIT, EInvalidRoundState);

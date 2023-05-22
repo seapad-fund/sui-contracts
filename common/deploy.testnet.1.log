@@ -1,0 +1,131 @@
+UPDATING GIT DEPENDENCY https://github.com/MystenLabs/sui
+UPDATING GIT DEPENDENCY https://github.com/seapad-fund/w3libs
+INCLUDING DEPENDENCY W3libs
+INCLUDING DEPENDENCY Sui
+INCLUDING DEPENDENCY MoveStdlib
+BUILDING Common
+Successfully verified dependencies on-chain against source.
+----- Transaction Digest ----
+Hkt4oYvnoA4mEqcCjrEvpMpyP6WPtC3XcJSwCCwo1R8Y
+----- Transaction Data ----
+Transaction Signature: [Signature(Ed25519SuiSignature(Ed25519SuiSignature([0, 8, 136, 65, 5, 76, 70, 31, 15, 73, 167, 34, 37, 189, 39, 35, 67, 150, 112, 146, 215, 222, 225, 155, 69, 143, 148, 72, 136, 95, 196, 16, 102, 120, 162, 160, 103, 111, 21, 79, 69, 130, 98, 192, 209, 59, 197, 230, 177, 68, 55, 130, 181, 128, 96, 50, 161, 21, 94, 177, 238, 187, 63, 42, 10, 147, 151, 119, 38, 159, 78, 84, 12, 92, 188, 228, 245, 103, 26, 210, 162, 162, 209, 199, 84, 218, 25, 163, 24, 117, 249, 154, 120, 24, 243, 231, 43])))]
+Transaction Kind : Programmable
+Inputs: [Pure(SuiPureValue { value_type: Some(Address), value: "0x9d6f2e34e937842df89642cd96fba8509d4e47d297f716ce3a44df3070a79851" })]
+Commands: [
+  Publish(<modules>,0x0000000000000000000000000000000000000000000000000000000000000001,0x0000000000000000000000000000000000000000000000000000000000000002,0xda3ad9e9049055af712fdc9b985dcd22dc860bd276ce3efdd3bc092e1306e673),
+  TransferObjects([Result(0)],Input(0)),
+]
+
+Sender: 0x9d6f2e34e937842df89642cd96fba8509d4e47d297f716ce3a44df3070a79851
+Gas Payment: Object ID: 0x86f51bd404c56ed43f0f51320c5c6a5f45fd7b6292bbcd6df7f736c84886fc89, version: 0x42, digest: BisXbBAnjduJsdudfmgQSTMmvgRyaWcFNZhdzsk7wN5G
+Gas Owner: 0x9d6f2e34e937842df89642cd96fba8509d4e47d297f716ce3a44df3070a79851
+Gas Price: 1000
+Gas Budget: 200000000
+
+----- Transaction Effects ----
+Status : Success
+Created Objects:
+  - ID: 0x3f390503f5c6d492d51dc270a416a0314cf820ccd944ab7f3934e9ed836eb291 , Owner: Account Address ( 0x9d6f2e34e937842df89642cd96fba8509d4e47d297f716ce3a44df3070a79851 )
+  - ID: 0x46e85414d26d040a88ca62680a1daf5eaa56f997983ac3e2c479214b376b6da8 , Owner: Shared
+  - ID: 0x69890bfad2acd57a787b5265d5519ca6b711a06f9ba597213fd047fb4575c777 , Owner: Immutable
+  - ID: 0xb83faf41ff51c68a2d8a098283a5200fc01adb29497a13aaeeca5b570d613a7e , Owner: Account Address ( 0x9d6f2e34e937842df89642cd96fba8509d4e47d297f716ce3a44df3070a79851 )
+  - ID: 0xcc94f6f296252c3a015e3c37366edd931f96faae1c1683f32314d47b7fb83bfe , Owner: Account Address ( 0x9d6f2e34e937842df89642cd96fba8509d4e47d297f716ce3a44df3070a79851 )
+  - ID: 0xff3de3bde9aa046d2e44dde67545b921de142c50497036bc61be83564e5dfb09 , Owner: Account Address ( 0x9d6f2e34e937842df89642cd96fba8509d4e47d297f716ce3a44df3070a79851 )
+Mutated Objects:
+  - ID: 0x86f51bd404c56ed43f0f51320c5c6a5f45fd7b6292bbcd6df7f736c84886fc89 , Owner: Account Address ( 0x9d6f2e34e937842df89642cd96fba8509d4e47d297f716ce3a44df3070a79851 )
+
+----- Events ----
+Array []
+----- Object changes ----
+Array [
+    Object {
+        "type": String("mutated"),
+        "sender": String("0x9d6f2e34e937842df89642cd96fba8509d4e47d297f716ce3a44df3070a79851"),
+        "owner": Object {
+            "AddressOwner": String("0x9d6f2e34e937842df89642cd96fba8509d4e47d297f716ce3a44df3070a79851"),
+        },
+        "objectType": String("0x2::coin::Coin<0x2::sui::SUI>"),
+        "objectId": String("0x86f51bd404c56ed43f0f51320c5c6a5f45fd7b6292bbcd6df7f736c84886fc89"),
+        "version": String("67"),
+        "previousVersion": String("66"),
+        "digest": String("D4MgzGjpppFQcXcxHitnyfA7GzTcT3pnzkjjvHfrfwZT"),
+    },
+    Object {
+        "type": String("created"),
+        "sender": String("0x9d6f2e34e937842df89642cd96fba8509d4e47d297f716ce3a44df3070a79851"),
+        "owner": Object {
+            "AddressOwner": String("0x9d6f2e34e937842df89642cd96fba8509d4e47d297f716ce3a44df3070a79851"),
+        },
+        "objectType": String("0x69890bfad2acd57a787b5265d5519ca6b711a06f9ba597213fd047fb4575c777::tier::TAdminCap"),
+        "objectId": String("0x3f390503f5c6d492d51dc270a416a0314cf820ccd944ab7f3934e9ed836eb291"),
+        "version": String("67"),
+        "digest": String("HkvGxKubJXi3rqfyPxTMqXd1j1dBuVpnXkKn39LqWCG4"),
+    },
+    Object {
+        "type": String("created"),
+        "sender": String("0x9d6f2e34e937842df89642cd96fba8509d4e47d297f716ce3a44df3070a79851"),
+        "owner": Object {
+            "Shared": Object {
+                "initial_shared_version": Number(67),
+            },
+        },
+        "objectType": String("0x69890bfad2acd57a787b5265d5519ca6b711a06f9ba597213fd047fb4575c777::kyc::Kyc"),
+        "objectId": String("0x46e85414d26d040a88ca62680a1daf5eaa56f997983ac3e2c479214b376b6da8"),
+        "version": String("67"),
+        "digest": String("5WZXjBtTv2jzBwLMcooS1THw6V6EGk51dTDu8V2e3ZNY"),
+    },
+    Object {
+        "type": String("published"),
+        "packageId": String("0x69890bfad2acd57a787b5265d5519ca6b711a06f9ba597213fd047fb4575c777"),
+        "version": String("1"),
+        "digest": String("6ieaoHrzjYdPnhwGzNqZTh6T2xcr1idKCWzBhGZecaLz"),
+        "modules": Array [
+            String("kyc"),
+            String("referral"),
+            String("tier"),
+        ],
+    },
+    Object {
+        "type": String("created"),
+        "sender": String("0x9d6f2e34e937842df89642cd96fba8509d4e47d297f716ce3a44df3070a79851"),
+        "owner": Object {
+            "AddressOwner": String("0x9d6f2e34e937842df89642cd96fba8509d4e47d297f716ce3a44df3070a79851"),
+        },
+        "objectType": String("0x2::package::UpgradeCap"),
+        "objectId": String("0xb83faf41ff51c68a2d8a098283a5200fc01adb29497a13aaeeca5b570d613a7e"),
+        "version": String("67"),
+        "digest": String("9J9L56maaMqK7LJYtEGZHua1AeWjrpTquKKqmycA23fV"),
+    },
+    Object {
+        "type": String("created"),
+        "sender": String("0x9d6f2e34e937842df89642cd96fba8509d4e47d297f716ce3a44df3070a79851"),
+        "owner": Object {
+            "AddressOwner": String("0x9d6f2e34e937842df89642cd96fba8509d4e47d297f716ce3a44df3070a79851"),
+        },
+        "objectType": String("0x69890bfad2acd57a787b5265d5519ca6b711a06f9ba597213fd047fb4575c777::referral::AdminCap"),
+        "objectId": String("0xcc94f6f296252c3a015e3c37366edd931f96faae1c1683f32314d47b7fb83bfe"),
+        "version": String("67"),
+        "digest": String("GxZp2Q43NjmbkzLjUeN16ZYJGq63CXbVCX1dU8SNemoB"),
+    },
+    Object {
+        "type": String("created"),
+        "sender": String("0x9d6f2e34e937842df89642cd96fba8509d4e47d297f716ce3a44df3070a79851"),
+        "owner": Object {
+            "AddressOwner": String("0x9d6f2e34e937842df89642cd96fba8509d4e47d297f716ce3a44df3070a79851"),
+        },
+        "objectType": String("0x69890bfad2acd57a787b5265d5519ca6b711a06f9ba597213fd047fb4575c777::kyc::AdminCap"),
+        "objectId": String("0xff3de3bde9aa046d2e44dde67545b921de142c50497036bc61be83564e5dfb09"),
+        "version": String("67"),
+        "digest": String("ENpN7iaH8Q8wh7y6hLtdmHYP5cXb7os7KuCkaUqU5oNU"),
+    },
+]
+----- Balance changes ----
+Array [
+    Object {
+        "owner": Object {
+            "AddressOwner": String("0x9d6f2e34e937842df89642cd96fba8509d4e47d297f716ce3a44df3070a79851"),
+        },
+        "coinType": String("0x2::sui::SUI"),
+        "amount": String("-58253080"),
+    },
+]
