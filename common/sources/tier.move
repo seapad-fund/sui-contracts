@@ -11,6 +11,7 @@ module common::tier {
     use sui::event;
     use sui::table::Table;
     use sui::table;
+    use sui::event::emit;
 
     struct TIER has drop {}
 
@@ -38,6 +39,12 @@ module common::tier {
         min_lock: u64,
         lock_period_ms: u64,
         funds: Table<address, StakePosititon>
+    }
+
+    struct UpdateMinLockEvent has drop, copy{
+        pool_tier: address,
+        min_lock: u64,
+        lock_period_ms: u64
     }
 
     struct LockEvent has drop, copy {
@@ -173,6 +180,17 @@ module common::tier {
             timestamp: clock::timestamp_ms(sclock),
             emergency: true,
             lock_amount: 0
+        })
+    }
+
+    public entry fun update_min_lock<TOKEN>(_admin: &TAdminCap, pool: &mut Pool<TOKEN>, minLock: u64, lockPeriodMs: u64){
+        pool.min_lock = minLock;
+        pool.lock_period_ms = lockPeriodMs;
+
+        emit(UpdateMinLockEvent{
+            pool_tier: id_address(pool),
+            min_lock: minLock,
+            lock_period_ms: lockPeriodMs
         })
     }
 }
