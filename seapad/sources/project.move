@@ -351,7 +351,7 @@ module seapad::project {
             let user = vector::pop_back(&mut users);
             let max_allocate = vector::pop_back(&mut max_allocates);
             assert!(launch_state.hard_cap > 0
-                && max_allocate > 0
+                && max_allocate >= 0
                 && max_allocate < launch_state.hard_cap,
                 EInvalidMaxAllocate
             );
