@@ -372,7 +372,7 @@ module seapad::project {
             let user = *vector::borrow(&users, i);
             let max_allocate = *vector::borrow(&max_allocates, i);
             assert!(launch_state.hard_cap > 0
-                && max_allocate > 0
+                && max_allocate >= 0
                 && max_allocate < launch_state.hard_cap,
                 EInvalidMaxAllocate
             );
