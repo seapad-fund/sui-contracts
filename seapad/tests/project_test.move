@@ -136,7 +136,7 @@ module seapad::project_test {
 
         create_project_(VESTING_TYPE_LINEAR_UNLOCK_FIRST, scenario);
         setup_launch_state_(scenario, 1, false, &clock);
-        deposit_to_project_(OWNER_PROJECT, DEPOSIT_VALUE, scenario);
+        // deposit_to_project_(OWNER_PROJECT, DEPOSIT_VALUE, scenario);
         clock::increment_for_testing(&mut clock, 1000);
         start_fund_raising_(scenario, &clock);
 

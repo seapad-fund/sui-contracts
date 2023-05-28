@@ -569,20 +569,23 @@ module seapad::project {
         validate_end_fundraising(project, clock::timestamp_ms(sclock));
         let projectAddr = id_address(project);
 
-        let launch_state = &mut project.launch_state;
-        let total_coin_raised = coin::value<COIN>(&launch_state.coin_raised);
-        launch_state.state = if (total_coin_raised < launch_state.soft_cap) {
+        let total_coin_raised = coin::value<COIN>(&project.launch_state.coin_raised);
+        project.launch_state.state = if (total_coin_raised < project.launch_state.soft_cap) {
             ROUND_STATE_REFUNDING
         } else {
             ROUND_STATE_CLAIMING
         };
+        if(project.launch_state.state == ROUND_STATE_CLAIMING){
+            let token_hard_cap = swap_token(project.launch_state.hard_cap, project);
+            assert!(coin::value( &project.launch_state.token_fund) >= token_hard_cap, EInsufficientTokenFund);
+        };
 
         event::emit(LaunchStateEvent {
             project: projectAddr,
-            total_sold: launch_state.total_token_sold,
+            total_sold: project.launch_state.total_token_sold,
             epoch: clock::timestamp_ms(sclock),
-            state: launch_state.state,
-            end_time: launch_state.end_time
+            state: project.launch_state.state,
+            end_time: project.launch_state.end_time
         })
     }
 
@@ -829,8 +832,6 @@ module seapad::project {
                 EInvalidVestingParam
             );
         };
-        let token_hard_cap = swap_token(project.launch_state.hard_cap, project);
-        assert!(coin::value(&project.launch_state.token_fund) >= token_hard_cap, EInsufficientTokenFund);
     }
 
     /// -Make sure that sum of all milestone is <= 100%
