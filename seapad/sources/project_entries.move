@@ -211,4 +211,7 @@ module seapad::project_entries {
                                        ctx: &mut TxContext) {
         project::vote<COIN, TOKEN>(project, version, ctx);
     }
+    public entry fun set_state_refund<COIN, TOKEN>(admin_cap: &AdminCap,  version: &mut Version, project: &mut Project<COIN, TOKEN>) {
+        project::set_state_refund<COIN, TOKEN>(admin_cap, version, project);
+    }
 }

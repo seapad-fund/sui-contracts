@@ -73,8 +73,6 @@ module seapad::project {
     //complete & start refunding
     const ROUND_STATE_CLAIMING: u8 = 6;
     //complete & ready to claim token
-    const ROUND_STATE_END: u8 = 7; //close project
-
     const ONE_HUNDRED_PERCENT_SCALED: u64 = 10000;
 
 
@@ -121,6 +119,7 @@ module seapad::project {
         order_book: Table<address, Order>,
         default_max_allocate: u64,
         max_allocations: Table<address, u64>,
+        deposited_enough: bool
     }
 
     struct Community has key, store {
@@ -222,6 +221,7 @@ module seapad::project {
             order_book: table::new(ctx),
             default_max_allocate: 0,
             max_allocations: table::new(ctx),
+            deposited_enough: false
         };
 
         let community = Community {
@@ -546,19 +546,6 @@ module seapad::project {
         let total_raised = coin::value<COIN>(&state.coin_raised);
         assert!(state.hard_cap >= total_raised, EOutOfHardCap);
 
-        if (total_raised == state.hard_cap) {
-            let token_hard_cap = swap_token(
-                state.hard_cap,
-                state.swap_ratio_coin,
-                state.swap_ratio_token,
-                coin_decimals,
-                token_decimals
-            );
-            if (coin::value(&state.token_fund) >= token_hard_cap) {
-                state.state = ROUND_STATE_CLAIMING;
-            };
-        };
-
         event::emit(BuyEvent {
             project: project_id,
             buyer: buyer_address,
@@ -584,21 +571,11 @@ module seapad::project {
         validate_end_fundraising(project, clock::timestamp_ms(sclock));
         let projectAddr = id_address(project);
 
-        let coin_decimals = project.coin_decimals;
-        let token_decimals = project.token_decimals;
         let launch_state = &mut project.launch_state;
         let total_coin_raised = coin::value<COIN>(&launch_state.coin_raised);
         if (total_coin_raised < launch_state.soft_cap) {
             launch_state.state = ROUND_STATE_REFUNDING;
         } else {
-            let token_soft_cap = swap_token(
-                launch_state.soft_cap,
-                launch_state.swap_ratio_coin,
-                launch_state.swap_ratio_token,
-                coin_decimals,
-                token_decimals
-            );
-            assert!(coin::value(&launch_state.token_fund) >= token_soft_cap, EInsufficientTokenFund);
             launch_state.state = ROUND_STATE_CLAIMING;
         };
 
@@ -638,7 +615,7 @@ module seapad::project {
         ctx: &mut TxContext
     ) {
         checkVersion(version, VERSION);
-        validate_refund_to_owner(project, ctx);
+        validate_refund_token_to_owner(project, ctx);
         let launch_state = &mut project.launch_state;
         let redundant = launch_state.total_token_deposited - launch_state.total_token_sold;
 
@@ -675,6 +652,17 @@ module seapad::project {
         checkVersion(version, VERSION);
         coin::join(&mut project.launch_state.token_fund, payment::take_from(tokens, value, ctx));
         project.launch_state.total_token_deposited = project.launch_state.total_token_deposited + value;
+
+        let token_expect = swap_token(project.launch_state.hard_cap,
+            project.launch_state.swap_ratio_coin,
+            project.launch_state.swap_ratio_token,
+            project.coin_decimals,
+            project.token_decimals);
+
+        if (project.launch_state.total_token_deposited >= token_expect) {
+            project.launch_state.deposited_enough = true;
+        };
+
         event::emit(ProjectDepositFundEvent {
             project: id_address(project),
             depositor: sender(ctx),
@@ -748,6 +736,14 @@ module seapad::project {
         assert!(vec_set::contains(&mut com.voters, &voter_address), EVoted);
         com.total_vote = com.total_vote + 1;
         vec_set::insert(&mut com.voters, voter_address);
+    }
+
+    public fun set_state_refund<COIN, TOKEN>(_admincap: &AdminCap,
+                                             version: &mut Version,
+                                             project: &mut Project<COIN, TOKEN>) {
+        checkVersion(version, VERSION);
+        assert!(project.launch_state.state == ROUND_STATE_REFUNDING, EInvalidRoundState);
+        project.launch_state.state = ROUND_STATE_REFUNDING;
     }
 
 
@@ -887,8 +883,18 @@ module seapad::project {
         assert!(!project.use_whitelist || table::contains(&project.whitelist, buyer_addr), ENotWhitelist);
     }
 
-    fun validate_claim<COIN, TOKEN>(project: &mut Project<COIN, TOKEN>) {
+    fun validate_claim<COIN, TOKEN>(project: &Project<COIN, TOKEN>) {
         assert!(project.launch_state.state == ROUND_STATE_CLAIMING, EInvalidRoundState);
+        assert!(project.launch_state.deposited_enough, EInsufficientTokenFund);
+        if (project.vesting.type == VESTING_TYPE_MILESTONE_UNLOCK_FIRST
+            || project.vesting.type == VESTING_TYPE_MILESTONE_CLIFF_FIRST) {
+            assert!(
+                project.vesting.unlock_percent + sum_milestones_percent(
+                    &project.vesting.milestones
+                ) == ONE_HUNDRED_PERCENT_SCALED,
+                EInvalidVestingParam
+            );
+        };
     }
 
     fun validate_refund<COIN, TOKEN>(project: &mut Project<COIN, TOKEN>) {
@@ -905,10 +911,11 @@ module seapad::project {
         assert!(sender(ctx) == project.owner, EInvalidPermission);
         let state = project.launch_state.state;
         assert!(state == ROUND_STATE_CLAIMING, EInvalidRoundState);
+        assert!(project.launch_state.deposited_enough, EInsufficientTokenFund);
         assert!(coin::value<COIN>(&project.launch_state.coin_raised) > 0, ENotEnoughCoinFund);
     }
 
-    fun validate_refund_to_owner<COIN, TOKEN>(project: &mut Project<COIN, TOKEN>, ctx: &mut TxContext) {
+    fun validate_refund_token_to_owner<COIN, TOKEN>(project: &mut Project<COIN, TOKEN>, ctx: &mut TxContext) {
         assert!(sender(ctx) == project.owner, EInvalidPermission);
         let state = project.launch_state.state;
         assert!(state == ROUND_STATE_REFUNDING || state == ROUND_STATE_CLAIMING, EInvalidRoundState);
