@@ -867,7 +867,6 @@ module seapad::project_test {
             let admin_cap = test_scenario::take_from_sender<AdminCap>(scenario);
             let kyc = test_scenario::take_shared<Kyc>(scenario);
 
-
             let clock = test_scenario::take_shared<Clock>(scenario);
 
             add_whitelist_kyc(&mut kyc, scenario);
@@ -878,23 +877,40 @@ module seapad::project_test {
             project::create_project<USDT, SPT>(
                 &admin_cap,
                 OWNER_PROJECT,
-                vesting_type,
-                CLIFF_TIME,
-                TGE,
-                UNLOCK_PERCENT,
-                LINEAR_TIME,
                 COIN_DECIMAL,
                 TOKEN_DECIMAL,
                 true,
                 &mut version,
-                &clock,
                 ctx
             );
+            set_vesting_(&admin_cap, &clock, vesting_type, scenario);
+
             destroyForTest(version);
             return_shared(kyc);
             return_shared(clock);
             test_scenario::return_to_sender(scenario, admin_cap);
         };
+    }
+
+    fun set_vesting_(admin_cap: &AdminCap, clock: &Clock, vesting_type: u8, scenario: &mut Scenario){
+        test_scenario::next_tx(scenario, ADMIN);
+        let project = test_scenario::take_shared<Project<USDT, SPT>>(scenario);
+
+        let ctx = test_scenario::ctx(scenario);
+
+        project::set_vesting(
+            admin_cap,
+            vesting_type,
+            LINEAR_TIME,
+            CLIFF_TIME,
+            TGE,
+            UNLOCK_PERCENT,
+            &mut project,
+            clock,
+            ctx
+        );
+
+        return_shared(project);
     }
 
     fun setup_launch_state_(scenario: &mut Scenario, round: u8, usewhitelist: bool, clock: &Clock) {
