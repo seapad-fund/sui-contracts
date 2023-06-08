@@ -1,0 +1,7 @@
+MultiSig address: 0x31efef81b6121a1b02fd7c5dc8e862bc1809ef00424c7c19e478b25641c2a59b
+Participating parties:
+                Sui Address                 |                Public Key (Base64)                 | Weight
+----------------------------------------------------------------------------------------------------
+ 0x0dd0106a909560b8f2e0262e9946008e307ae7758fde5277853088d25b0b6c7f | ALDZ3oU0WiIuxJzxG6nRlB4XnyuqXwEFNYs6n+dDQ2HT  |   1   
+ 0x89e0d7a3e0ce46a8bab075dfe81b84790c8f3b0860a88b8ba09d27e87b50073e | AACYAp/vl9BOBX3AFPasDXRsvjOSycBYylKV2gaQ81NC  |   3   
+ 0x38a7ccc61dcbbe36c9b02d8781322041d9e727ce55b1161010d0946468984679 | AEthhjN8E58q8fp29mHNm1gwKg+rN3XEu1ecfk3I0jEU  |   2 
