@@ -1,5 +1,6 @@
 module seapad::nft_private {
     friend seapad::nftbox;
+    friend seapad::nft_campaign;
 
     use sui::url::{Self, Url};
     use std::string;
