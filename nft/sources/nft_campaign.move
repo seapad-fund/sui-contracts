@@ -92,7 +92,7 @@ module seapad::nft_campaign {
                                  creator: vector<u8>,
                                  attributes_names: vector<vector<u8>>,
                                  attributes_values: vector<vector<u8>>,
-                                 campaign: &mut Campaign){
+                                 campaign: &mut Campaign) {
         assert!(campaign.state != STATE_RUN, ErrBadState);
         assert!(vector::length(&name) > 0
             && vector::length(&link) > 0
@@ -100,7 +100,7 @@ module seapad::nft_campaign {
             && vector::length(&thumbnail_url) > 0
             && (vector::length(&attributes_names) == vector::length(&attributes_values)), ErrBadParams);
 
-        if(option::is_some(&campaign.template)){
+        if (option::is_some(&campaign.template)) {
             let template = option::borrow_mut(&mut campaign.template);
             template.name = name;
             template.link = link;
@@ -138,17 +138,26 @@ module seapad::nft_campaign {
     }
 
     ///Add white list
-    public entry fun addWhiteList(_adminCap: &NftAdminCap, users: vector<address>, campaign: &mut Campaign, _ctx: &mut TxContext) {
+    public entry fun addWhiteList(
+        _adminCap: &NftAdminCap,
+        users: vector<address>,
+        campaign: &mut Campaign,
+        _ctx: &mut TxContext
+    ) {
         assert!(campaign.state != STATE_END, ErrBadState);
         let aEvent = CampaignAddWhitelist {
             id: id_address(campaign),
             users
         };
 
-        while (!vector::is_empty(&users)){
+        while (!vector::is_empty(&users)) {
             let user = vector::pop_back(&mut users);
-            if(table::contains(&campaign.whitelist, user))
+            if (!table::contains(&campaign.whitelist, user)) {
                 table::add(&mut campaign.whitelist, user, campaign.version);
+            }else if (*table::borrow(&campaign.whitelist, user) < campaign.version) {
+                table::remove(&mut campaign.whitelist, user);
+                table::add(&mut campaign.whitelist, user, campaign.version);
+            }
         };
 
         emit(aEvent);
@@ -165,7 +174,12 @@ module seapad::nft_campaign {
     }
 
     ///Clear & set urls
-    public entry fun setNftUrls(_adminCap: &NftAdminCap, urls: vector<vector<u8>>, campaign: &mut Campaign, _ctx: &mut TxContext) {
+    public entry fun setNftUrls(
+        _adminCap: &NftAdminCap,
+        urls: vector<vector<u8>>,
+        campaign: &mut Campaign,
+        _ctx: &mut TxContext
+    ) {
         assert!(campaign.state != STATE_RUN, ErrBadState);
         campaign.urls = urls;
         emit(CampaignSetUrls {
@@ -178,13 +192,18 @@ module seapad::nft_campaign {
     public entry fun claimNft(campaign: &mut Campaign, ctx: &mut TxContext) {
         assert!(campaign.state == STATE_RUN, ErrBadState);
         let senderAddr = sender(ctx);
-        assert!(table::contains(&campaign.whitelist, senderAddr)
-            && *table::borrow(&campaign.whitelist, senderAddr) >= campaign.version, ErrPermDenied);
+        assert!(
+            table::contains(&campaign.whitelist, senderAddr) && *table::borrow(
+                &campaign.whitelist,
+                senderAddr
+            ) >= campaign.version,
+            ErrPermDenied
+        );
 
         //simply randomize
-        let weight = address::to_u256(senderAddr) +  (tx_context::epoch_timestamp_ms(ctx) as u256);
+        let weight = address::to_u256(senderAddr) + (tx_context::epoch_timestamp_ms(ctx) as u256);
         let size = (vector::length(&campaign.urls) as u256);
-        let mod = weight - size * (weight/size);
+        let mod = weight - size * (weight / size);
         let url = *vector::borrow(&campaign.urls, (mod as u64));
 
         //fetch template
@@ -213,7 +232,7 @@ module seapad::nft_campaign {
             attrs,
             ctx);
 
-        let mEvent  = CampaignMintNft {
+        let mEvent = CampaignMintNft {
             sender: senderAddr,
             nft: id_address(&nft)
         };

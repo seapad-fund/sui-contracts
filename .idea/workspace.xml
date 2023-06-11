@@ -4,11 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="10b876f6-5f11-44d6-9e4a-d6252006a611" name="Changes" comment="update biz check claiming">
+    <list default="true" id="10b876f6-5f11-44d6-9e4a-d6252006a611" name="Changes" comment="build testnet">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/seapad/sources/project.move" beforeDir="false" afterPath="$PROJECT_DIR$/seapad/sources/project.move" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/seapad/sources/project_entries.move" beforeDir="false" afterPath="$PROJECT_DIR$/seapad/sources/project_entries.move" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/seapad/tests/project_test.move" beforeDir="false" afterPath="$PROJECT_DIR$/seapad/tests/project_test.move" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/nft/sources/nft_campaign.move" beforeDir="false" afterPath="$PROJECT_DIR$/nft/sources/nft_campaign.move" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -181,27 +179,6 @@
       <workItem from="1680008715445" duration="9703000" />
       <workItem from="1680195522478" duration="17666000" />
       <workItem from="1680619443954" duration="90000" />
-    </task>
-    <task id="LOCAL-00072" summary="add linear time">
-      <created>1682037338071</created>
-      <option name="number" value="00072" />
-      <option name="presentableId" value="LOCAL-00072" />
-      <option name="project" value="LOCAL" />
-      <updated>1682037338071</updated>
-    </task>
-    <task id="LOCAL-00073" summary="update contract seapad">
-      <created>1682037871091</created>
-      <option name="number" value="00073" />
-      <option name="presentableId" value="LOCAL-00073" />
-      <option name="project" value="LOCAL" />
-      <updated>1682037871091</updated>
-    </task>
-    <task id="LOCAL-00074" summary="rollback take_from">
-      <created>1682065388262</created>
-      <option name="number" value="00074" />
-      <option name="presentableId" value="LOCAL-00074" />
-      <option name="project" value="LOCAL" />
-      <updated>1682065388262</updated>
     </task>
     <task id="LOCAL-00075" summary="update buy token">
       <created>1682094607041</created>
@@ -525,7 +502,28 @@
       <option name="project" value="LOCAL" />
       <updated>1685665198411</updated>
     </task>
-    <option name="localTasksCounter" value="121" />
+    <task id="LOCAL-00121" summary="update biz check claiming">
+      <created>1686063206882</created>
+      <option name="number" value="00121" />
+      <option name="presentableId" value="LOCAL-00121" />
+      <option name="project" value="LOCAL" />
+      <updated>1686063206882</updated>
+    </task>
+    <task id="LOCAL-00122" summary="build testnet">
+      <created>1686063371406</created>
+      <option name="number" value="00122" />
+      <option name="presentableId" value="LOCAL-00122" />
+      <option name="project" value="LOCAL" />
+      <updated>1686063371406</updated>
+    </task>
+    <task id="LOCAL-00123" summary="build testnet">
+      <created>1686238742515</created>
+      <option name="number" value="00123" />
+      <option name="presentableId" value="LOCAL-00123" />
+      <option name="project" value="LOCAL" />
+      <updated>1686238742515</updated>
+    </task>
+    <option name="localTasksCounter" value="124" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -606,10 +604,10 @@
     <MESSAGE value="change validate end raising" />
     <MESSAGE value="update refund to owner" />
     <MESSAGE value="build new contract" />
-    <MESSAGE value="build testnet" />
     <MESSAGE value="update biz uncheck token deposit when start raising" />
     <MESSAGE value="update biz check claiming" />
-    <option name="LAST_COMMIT_MESSAGE" value="update biz check claiming" />
+    <MESSAGE value="build testnet" />
+    <option name="LAST_COMMIT_MESSAGE" value="build testnet" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />
