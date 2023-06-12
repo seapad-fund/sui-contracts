@@ -28,6 +28,7 @@ module seapad::nft_campaign {
     const ErrBadState: u64 = 6100;
     const ErrPermDenied: u64 = 6101;
     const ErrBadParams: u64 = 6102;
+    const ErrSoldOut: u64 = 6102;
 
     struct Campaign has key, store {
         id: UID,
@@ -35,7 +36,9 @@ module seapad::nft_campaign {
         version: u64,
         urls: vector<vector<u8>>,
         whitelist: Table<address, u64>,
-        template: Option<Template>
+        template: Option<Template>,
+        total_supply: u64,
+        total_mint: u64,
     }
 
     struct CampaignAddWhitelist has copy, drop {
@@ -81,7 +84,9 @@ module seapad::nft_campaign {
             version: 0,
             whitelist: table::new(ctx),
             urls: vector::empty(),
-            template: option::none()
+            template: option::none(),
+            total_supply: 0,
+            total_mint: 0
         };
         share_object(campaign);
 
@@ -137,13 +142,15 @@ module seapad::nft_campaign {
                                  creator: vector<u8>,
                                  attributes_names: vector<vector<u8>>,
                                  attributes_values: vector<vector<u8>>,
+                                 total_supply: u64,
                                  campaign: &mut Campaign) {
         assert!(campaign.state != STATE_RUN, ErrBadState);
         assert!(vector::length(&name) > 0
             && vector::length(&link) > 0
             && vector::length(&description) > 0
             && vector::length(&thumbnail_url) > 0
-            && (vector::length(&attributes_names) == vector::length(&attributes_values)), ErrBadParams);
+            && (vector::length(&attributes_names) == vector::length(&attributes_values))
+            && total_supply > 0, ErrBadParams);
 
         if (option::is_some(&campaign.template)) {
             let template = option::borrow_mut(&mut campaign.template);
@@ -169,11 +176,16 @@ module seapad::nft_campaign {
                 attributes_names,
                 attributes_values,
             })
-        }
+        };
+
+        campaign.total_supply = total_supply;
+        campaign.total_mint = 0;
     }
 
     public entry fun start(_adminCap: &NftAdminCap, campaign: &mut Campaign, _ctx: &mut TxContext) {
-        assert!(campaign.state != STATE_RUN && option::is_some(&campaign.template), ErrBadState);
+        assert!(campaign.state != STATE_RUN
+            && option::is_some(&campaign.template)
+            && campaign.total_supply > 0, ErrBadState);
         campaign.state = STATE_RUN;
     }
 
@@ -213,6 +225,8 @@ module seapad::nft_campaign {
     public entry fun resetWhiteList(_adminCap: &NftAdminCap, campaign: &mut Campaign, _ctx: &mut TxContext) {
         assert!(campaign.state != STATE_RUN, ErrBadState);
         campaign.version = campaign.version + 1;
+        campaign.total_supply = 0;
+        campaign.total_mint = 0;
         emit(CampaignResetWhitelist {
             id: id_address(campaign)
         });
@@ -236,6 +250,7 @@ module seapad::nft_campaign {
     ///User in whitelist claim NFT
     public entry fun claimNft(campaign: &mut Campaign, ctx: &mut TxContext) {
         assert!(campaign.state == STATE_RUN, ErrBadState);
+        assert!(campaign.total_mint < campaign.total_supply, ErrSoldOut);
         let senderAddr = sender(ctx);
         assert!(
             table::contains(&campaign.whitelist, senderAddr) && *table::borrow(
@@ -286,6 +301,9 @@ module seapad::nft_campaign {
 
         //remove from whitelist
         table::remove(&mut campaign.whitelist, senderAddr);
+
+        //update campaign
+        campaign.total_mint = campaign.total_mint + 1;
 
         emit(mEvent);
     }
