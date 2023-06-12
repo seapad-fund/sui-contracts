@@ -15,6 +15,9 @@ module seapad::nft_campaign {
     use std::option;
     use std::option::Option;
     use seapad::nft_private::PriNFT;
+    use std::string::utf8;
+    use sui::package;
+    use sui::display;
 
     struct NFT_CAMPAIGN has drop {}
 
@@ -81,9 +84,51 @@ module seapad::nft_campaign {
             template: option::none()
         };
         share_object(campaign);
+
+        let keys = vector[
+            utf8(b"name"),
+            utf8(b"link"),
+            utf8(b"image_url"),
+            utf8(b"description"),
+            utf8(b"project_url"),
+            utf8(b"creator"),
+        ];
+
+        let values = vector[
+            utf8(b"{name}"),
+            utf8(b"{link}"),
+            utf8(b"{image_url}"),
+            utf8(b"{description}"),
+            utf8(b"{project_url}"),
+            utf8(b"{creator}")
+        ];
+
+        let publisher = package::claim(_witness, ctx);
+
+        let display = display::new_with_fields<PriNFT>(&publisher, keys, values, ctx);
+
+        display::update_version(&mut display);
+        public_transfer(publisher, sender(ctx));
+        public_transfer(display, sender(ctx));
+
+        //mint genesis nft
+        let nft = nft_private::mint(
+            b"Genesis NFT campaign",
+            b"https://seapad.fund/nftcampaign",
+            b"https://seapad.s3.ap-southeast-1.amazonaws.com/uploads/PROD/public/media/images/logo_1686475080033.png",
+            b"Genesis NFT campaign",
+            b"https://seapad.fund/",
+            1,
+            b"https://seapad.s3.ap-southeast-1.amazonaws.com/uploads/PROD/public/media/images/logo_1686475080033.png",
+            b"SeaPadFoundation",
+            table::new(ctx),
+            ctx);
+
+        public_transfer(nft, sender(ctx));
     }
 
-    public entry fun setTemplate(name: vector<u8>,
+    public entry fun setTemplate(_adminCap: &NftAdminCap,
+                                 name: vector<u8>,
                                  link: vector<u8>,
                                  description: vector<u8>,
                                  project_url: vector<u8>,

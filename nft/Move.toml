@@ -11,5 +11,5 @@ Common = { local = "../common" }
 [addresses]
 seapad="0x0"
 sui="0x2"
-nftbox_admin = "0x98a890e3a370a3e4005460bfcd31dd4adf0f36af6d760bfd2c7014ac6ee2b17e"
-nftbox_treasury_admin = "0x98a890e3a370a3e4005460bfcd31dd4adf0f36af6d760bfd2c7014ac6ee2b17e"
+nftbox_admin = "0x0dd0106a909560b8f2e0262e9946008e307ae7758fde5277853088d25b0b6c7f"
+nftbox_treasury_admin = "0x0dd0106a909560b8f2e0262e9946008e307ae7758fde5277853088d25b0b6c7f"
