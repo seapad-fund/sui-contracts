@@ -322,7 +322,6 @@ module seapad::nft_campaign {
             sender: sender(ctx),
             nft: id_address(&nft)
         };
-
         nft_private:: burn(nft);
         emit(bEvent);
     }
