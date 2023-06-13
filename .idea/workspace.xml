@@ -187,20 +187,6 @@
       <workItem from="1680195522478" duration="17666000" />
       <workItem from="1680619443954" duration="90000" />
     </task>
-    <task id="LOCAL-00076" summary="update swap token">
-      <created>1682139140387</created>
-      <option name="number" value="00076" />
-      <option name="presentableId" value="LOCAL-00076" />
-      <option name="project" value="LOCAL" />
-      <updated>1682139140387</updated>
-    </task>
-    <task id="LOCAL-00077" summary="update contract">
-      <created>1682139753201</created>
-      <option name="number" value="00077" />
-      <option name="presentableId" value="LOCAL-00077" />
-      <option name="project" value="LOCAL" />
-      <updated>1682139753201</updated>
-    </task>
     <task id="LOCAL-00078" summary="update stake, swap token">
       <created>1682260068564</created>
       <option name="number" value="00078" />
@@ -530,7 +516,21 @@
       <option name="project" value="LOCAL" />
       <updated>1686681157177</updated>
     </task>
-    <option name="localTasksCounter" value="125" />
+    <task id="LOCAL-00125" summary="Update ClaimInfor">
+      <created>1686681471935</created>
+      <option name="number" value="00125" />
+      <option name="presentableId" value="LOCAL-00125" />
+      <option name="project" value="LOCAL" />
+      <updated>1686681471936</updated>
+    </task>
+    <task id="LOCAL-00126" summary="Update ClaimInfor">
+      <created>1686681485986</created>
+      <option name="number" value="00126" />
+      <option name="presentableId" value="LOCAL-00126" />
+      <option name="project" value="LOCAL" />
+      <updated>1686681485986</updated>
+    </task>
+    <option name="localTasksCounter" value="127" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
