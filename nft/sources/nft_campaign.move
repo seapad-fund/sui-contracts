@@ -35,12 +35,16 @@ module seapad::nft_campaign {
         state: u8,
         version: u64,
         urls: vector<vector<u8>>,
-        whitelist: Table<address, u64>,
+        whitelist: Table<address, ClaimInfor>,
         template: Option<Template>,
         total_supply: u64,
         total_mint: u64,
     }
-
+    ///update ClaimInfor
+    struct ClaimInfor has store, drop , copy{
+        version: u64,
+        claimed: bool
+    }
     struct CampaignAddWhitelist has copy, drop {
         id: address,
         users: vector<address>
@@ -209,11 +213,19 @@ module seapad::nft_campaign {
 
         while (!vector::is_empty(&users)) {
             let user = vector::pop_back(&mut users);
+
             if (!table::contains(&campaign.whitelist, user)) {
-                table::add(&mut campaign.whitelist, user, campaign.version);
-            }else if (*table::borrow(&campaign.whitelist, user) < campaign.version) {
+                let myClaimInfor = ClaimInfor {
+                    version: campaign.version,
+                    claimed: false
+                };
+                table::add(&mut campaign.whitelist, user, myClaimInfor);
+            }else if (table::borrow(&campaign.whitelist, user).version < campaign.version) {
                 table::remove(&mut campaign.whitelist, user);
-                table::add(&mut campaign.whitelist, user, campaign.version);
+                table::add(&mut campaign.whitelist, user,ClaimInfor {
+                    version: campaign.version,
+                    claimed: false
+                });
             }
         };
 
@@ -252,12 +264,8 @@ module seapad::nft_campaign {
         assert!(campaign.state == STATE_RUN, ErrBadState);
         assert!(campaign.total_mint < campaign.total_supply, ErrSoldOut);
         let senderAddr = sender(ctx);
-        assert!(
-            table::contains(&campaign.whitelist, senderAddr) && *table::borrow(
-                &campaign.whitelist,
-                senderAddr
-            ) >= campaign.version,
-            ErrPermDenied
+        assert!(table::contains(&campaign.whitelist, senderAddr)
+            && table::borrow(&campaign.whitelist, senderAddr).version >= campaign.version,ErrPermDenied
         );
 
         //simply randomize
