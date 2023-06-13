@@ -4,13 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="10b876f6-5f11-44d6-9e4a-d6252006a611" name="Changes" comment="build testnet">
-      <change afterPath="$PROJECT_DIR$/nft/deploy.log.20230614" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/nft/Move.toml" beforeDir="false" afterPath="$PROJECT_DIR$/nft/Move.toml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/nft/cmd.sh" beforeDir="false" afterPath="$PROJECT_DIR$/nft/cmd.sh" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/nft/sources/nft_campaign.move" beforeDir="false" afterPath="$PROJECT_DIR$/nft/sources/nft_campaign.move" afterDir="false" />
-    </list>
+    <list default="true" id="10b876f6-5f11-44d6-9e4a-d6252006a611" name="Changes" comment="Update ClaimInfor" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -192,13 +186,6 @@
       <workItem from="1680008715445" duration="9703000" />
       <workItem from="1680195522478" duration="17666000" />
       <workItem from="1680619443954" duration="90000" />
-    </task>
-    <task id="LOCAL-00075" summary="update buy token">
-      <created>1682094607041</created>
-      <option name="number" value="00075" />
-      <option name="presentableId" value="LOCAL-00075" />
-      <option name="project" value="LOCAL" />
-      <updated>1682094607042</updated>
     </task>
     <task id="LOCAL-00076" summary="update swap token">
       <created>1682139140387</created>
@@ -536,7 +523,14 @@
       <option name="project" value="LOCAL" />
       <updated>1686238742515</updated>
     </task>
-    <option name="localTasksCounter" value="124" />
+    <task id="LOCAL-00124" summary="Update ClaimInfor">
+      <created>1686681157177</created>
+      <option name="number" value="00124" />
+      <option name="presentableId" value="LOCAL-00124" />
+      <option name="project" value="LOCAL" />
+      <updated>1686681157177</updated>
+    </task>
+    <option name="localTasksCounter" value="125" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -595,7 +589,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="rollback take_from" />
     <MESSAGE value="update buy token" />
     <MESSAGE value="update swap token" />
     <MESSAGE value="update stake, swap token" />
@@ -620,7 +613,8 @@
     <MESSAGE value="update biz uncheck token deposit when start raising" />
     <MESSAGE value="update biz check claiming" />
     <MESSAGE value="build testnet" />
-    <option name="LAST_COMMIT_MESSAGE" value="build testnet" />
+    <MESSAGE value="Update ClaimInfor" />
+    <option name="LAST_COMMIT_MESSAGE" value="Update ClaimInfor" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />

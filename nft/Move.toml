@@ -7,7 +7,6 @@ Sui = { git = "https://github.com/MystenLabs/sui", subdir = "crates/sui-framewor
 W3libs = { git = "https://github.com/seapad-fund/w3libs", rev = "testnet" }
 Common = { local = "../common" }
 
-
 [addresses]
 seapad="0x0"
 sui="0x2"
