@@ -263,8 +263,11 @@ module seapad::nft_campaign {
         assert!(campaign.state == STATE_RUN, ErrBadState);
         assert!(campaign.total_mint < campaign.total_supply, ErrSoldOut);
         let senderAddr = sender(ctx);
+        //fix check user claimed.
         assert!(table::contains(&campaign.whitelist, senderAddr)
-            && table::borrow(&campaign.whitelist, senderAddr).version >= campaign.version,ErrPermDenied
+            && table::borrow(&campaign.whitelist, senderAddr).version >= campaign.version
+            && !table::borrow(&campaign.whitelist, senderAddr).claimed ,
+            ErrPermDenied
         );
 
         //simply randomize
