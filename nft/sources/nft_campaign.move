@@ -306,11 +306,8 @@ module seapad::nft_campaign {
 
         public_transfer(nft, senderAddr);
 
-        // update value ClaimInfor
+        //update value ClaimInfor
         table::borrow_mut(&mut campaign.whitelist, senderAddr).claimed = true;
-
-        //remove from whitelist
-        table::remove(&mut campaign.whitelist, senderAddr);
 
         //update campaign
         campaign.total_mint = campaign.total_mint + 1;
