@@ -316,6 +316,7 @@ module seapad::nft_campaign {
         campaign.total_mint = campaign.total_mint + 1;
 
         emit(mEvent);
+
     }
 
     ///User burn nft
