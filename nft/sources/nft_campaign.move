@@ -213,7 +213,6 @@ module seapad::nft_campaign {
 
         while (!vector::is_empty(&users)) {
             let user = vector::pop_back(&mut users);
-
             if (!table::contains(&campaign.whitelist, user)) {
                 let myClaimInfor = ClaimInfor {
                     version: campaign.version,
@@ -306,6 +305,9 @@ module seapad::nft_campaign {
         };
 
         public_transfer(nft, senderAddr);
+
+        // update value ClaimInfor
+        table::borrow_mut(&mut campaign.whitelist, senderAddr).claimed = true;
 
         //remove from whitelist
         table::remove(&mut campaign.whitelist, senderAddr);
