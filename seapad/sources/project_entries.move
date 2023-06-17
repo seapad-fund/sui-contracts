@@ -1,6 +1,3 @@
-// Copyright (c) Web3 Labs, Inc.
-// SPDX-License-Identifier: GPL-3.0
-
 module seapad::project_entries {
     use seapad::project::{AdminCap, Project};
     use sui::tx_context::TxContext;
@@ -19,38 +16,48 @@ module seapad::project_entries {
 
     public entry fun create_project<COIN, TOKEN>(adminCap: &AdminCap,
                                                  owner: address,
-                                                 vesting_type: u8,
-                                                 cliff_time: u64,
-                                                 tge_ms: u64,
-                                                 unlock_percent: u64,
-                                                 linear_time_ms: u64,
                                                  coin_decimals: u8,
                                                  token_decimals: u8,
                                                  require_kyc: bool,
                                                  version: &mut Version,
-                                                 clock: &Clock,
                                                  ctx: &mut TxContext) {
         project::create_project<COIN, TOKEN>(
             adminCap,
             owner,
-            vesting_type,
-            cliff_time,
-            tge_ms,
-            unlock_percent,
-            linear_time_ms,
             coin_decimals,
             token_decimals,
             require_kyc,
             version,
-            clock,
             ctx
         );
     }
 
-    public entry fun change_owner<COIN, TOKEN>(new_owner: address,
-                                               project: &mut Project<COIN, TOKEN>,
-                                               version: &mut Version,
-                                               ctx: &mut TxContext) {
+    public entry fun set_vesting<COIN, TOKEN>(adminCap: &AdminCap,
+                                              vesting_type: u8,
+                                              linear_time: u64,
+                                              cliff_time: u64,
+                                              tge: u64,
+                                              unlock_percent: u64,
+                                              project: &mut Project<COIN, TOKEN>,
+                                              clock: &Clock,
+                                              ctx: &mut TxContext) {
+        project::set_vesting(adminCap,
+            vesting_type,
+            linear_time,
+            cliff_time,
+            tge,
+            unlock_percent,
+            project,
+            clock,
+            ctx);
+    }
+
+    public entry fun change_owner<COIN, TOKEN>(
+        new_owner: address,
+        project: &mut Project<COIN, TOKEN>,
+        version: &mut Version,
+        ctx: &mut TxContext
+    ) {
         project::change_owner<COIN, TOKEN>(new_owner, project, version, ctx);
     }
 
@@ -69,7 +76,7 @@ module seapad::project_entries {
         project::reset_milestone<COIN, TOKEN>(_adminCap, project, version);
     }
 
-    public entry fun setup_project<COIN, TOKEN>(adminCap: &AdminCap,
+    public entry fun setup_project<COIN, TOKEN>(_adminCap: &AdminCap,
                                                 project: &mut Project<COIN, TOKEN>,
                                                 round: u8,
                                                 usewhitelist: bool,
@@ -83,7 +90,7 @@ module seapad::project_entries {
                                                 clock: &Clock,
                                                 version: &mut Version) {
         project::setup_project<COIN, TOKEN>(
-            adminCap,
+            _adminCap,
             project,
             round,
             usewhitelist,
@@ -124,59 +131,71 @@ module seapad::project_entries {
         project::add_whitelist<COIN, TOKEN>(_adminCap, project, user_list, version, ctx);
     }
 
-    public entry fun remove_whitelist<COIN, TOKEN>(adminCap: &AdminCap,
+    public entry fun remove_whitelist<COIN, TOKEN>(_adminCap: &AdminCap,
                                                    project: &mut Project<COIN, TOKEN>,
                                                    user_list: vector<address>,
                                                    version: &mut Version,
                                                    ctx: &mut TxContext) {
-        project::remove_whitelist<COIN, TOKEN>(adminCap, project, user_list, version, ctx);
+        project::remove_whitelist<COIN, TOKEN>(_adminCap, project, user_list, version, ctx);
     }
 
-    public entry fun start_fund_raising<COIN, TOKEN>(adminCap: &AdminCap,
-                                                     project: &mut Project<COIN, TOKEN>,
-                                                     clock: &Clock,
-                                                     version: &mut Version,
-                                                     ctx: &mut TxContext) {
-        project::start_fund_raising<COIN, TOKEN>(adminCap, project, clock, version, ctx);
+    public entry fun start_fund_raising<COIN, TOKEN>(
+        _adminCap: &AdminCap,
+        project: &mut Project<COIN, TOKEN>,
+        clock: &Clock,
+        version: &mut Version,
+        ctx: &mut TxContext
+    ) {
+        project::start_fund_raising<COIN, TOKEN>(_adminCap, project, clock, version, ctx);
     }
 
-    public entry fun buy<COIN, TOKEN>(coin: Coin<COIN>,
-                                      amount: u64,
-                                      project: &mut Project<COIN, TOKEN>,
-                                      clock: &Clock,
-                                      kyc: &Kyc,
-                                      version: &mut Version,
-                                      ctx: &mut TxContext) {
+    public entry fun buy<COIN, TOKEN>(
+        coin: Coin<COIN>,
+        amount: u64,
+        project: &mut Project<COIN, TOKEN>,
+        clock: &Clock,
+        kyc: &Kyc,
+        version: &mut Version,
+        ctx: &mut TxContext
+    ) {
         let coins = vector::empty<Coin<COIN>>();
         vector::push_back(&mut coins, coin);
         project::buy<COIN, TOKEN>(coins, amount, project, clock, kyc, version, ctx);
     }
 
-    public entry fun end_fund_raising<COIN, TOKEN>(adminCap: &AdminCap,
-                                                   project: &mut Project<COIN, TOKEN>,
-                                                   clock: &Clock,
-                                                   version: &mut Version,
-                                                   ctx: &mut TxContext) {
-        project::end_fund_raising<COIN, TOKEN>(adminCap, project, clock, version, ctx);
+    public entry fun end_fund_raising<COIN, TOKEN>(
+        _adminCap: &AdminCap,
+        project: &mut Project<COIN, TOKEN>,
+        clock: &Clock,
+        version: &mut Version,
+        ctx: &mut TxContext
+    ) {
+        project::end_fund_raising<COIN, TOKEN>(_adminCap, project, clock, version, ctx);
     }
 
-    public entry fun distribute_raised_fund<COIN, TOKEN>(project: &mut Project<COIN, TOKEN>,
-                                                         version: &mut Version,
-                                                         ctx: &mut TxContext) {
+    public entry fun distribute_raised_fund<COIN, TOKEN>(
+        project: &mut Project<COIN, TOKEN>,
+        version: &mut Version,
+        ctx: &mut TxContext
+    ) {
         project::distribute_raised_fund<COIN, TOKEN>(project, version, ctx);
     }
 
-    public entry fun refund_token_to_owner<COIN, TOKEN>(project: &mut Project<COIN, TOKEN>,
-                                                        version: &mut Version,
-                                                        ctx: &mut TxContext) {
+    public entry fun refund_token_to_owner<COIN, TOKEN>(
+        project: &mut Project<COIN, TOKEN>,
+        version: &mut Version,
+        ctx: &mut TxContext
+    ) {
         project::refund_token_to_owner<COIN, TOKEN>(project, version, ctx);
     }
 
-    public entry fun deposit_token<COIN, TOKEN>(token: Coin<TOKEN>,
-                                                value: u64,
-                                                project: &mut Project<COIN, TOKEN>,
-                                                version: &mut Version,
-                                                ctx: &mut TxContext) {
+    public entry fun deposit_token<COIN, TOKEN>(
+        token: Coin<TOKEN>,
+        value: u64,
+        project: &mut Project<COIN, TOKEN>,
+        version: &mut Version,
+        ctx: &mut TxContext
+    ) {
         let tokens = vector::empty<Coin<TOKEN>>();
         vector::push_back(&mut tokens, token);
         project::deposit_token<COIN, TOKEN>(tokens, value, project, version, ctx);
@@ -199,5 +218,13 @@ module seapad::project_entries {
                                        version: &mut Version,
                                        ctx: &mut TxContext) {
         project::vote<COIN, TOKEN>(project, version, ctx);
+    }
+
+    public entry fun set_state_refund<COIN, TOKEN>(
+        admin_cap: &AdminCap,
+        version: &mut Version,
+        project: &mut Project<COIN, TOKEN>
+    ) {
+        project::set_state_refund<COIN, TOKEN>(admin_cap, version, project);
     }
 }
