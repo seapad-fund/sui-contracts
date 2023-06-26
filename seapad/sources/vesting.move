@@ -195,22 +195,25 @@ module seapad::vesting {
         assert!(tge_ms >= now_ms, ERR_BAD_TGE);
         assert!(total_supply > 0 , ERR_BAD_SUPPLY);
 
+        // milestone_times: vector<u64>, //list of milestone timestamp
+        // milestone_percents: vector<u64>, //list of milestone percents
+
+
         let project = Project {
             id: object::new(ctx),
+            name,
+            project_url,
             tge_ms,
             total_supply,
             total_shares: 0,
             total_shares_percent: 0,
             shares: table::new<address, Fund<COIN>>(ctx),
             vesting_type,
-            tge_ms,
             cliff_ms,
             unlock_percent,
             linear_vesting_duration_ms,
             milestone_times,
-            milestone_percents,
-            name,
-            project_url
+            milestone_percents
         };
         //@todo review: add project registry
         table::add(&mut project_registry.projects, id_address(&project), 0);
@@ -262,7 +265,7 @@ module seapad::vesting {
            vector::push_back(table::borrow_mut(&mut project_registry.user_projects, owner), id_address(project));
         }
         else{
-           let projects = vector::empty<>();
+           let projects = vector::empty<address>();
            vector::push_back(&mut projects, id_address(project));
            table::add(&mut project_registry.user_projects, owner, projects);
         };
