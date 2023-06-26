@@ -4,10 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="10b876f6-5f11-44d6-9e4a-d6252006a611" name="Changes" comment="Update value ClaimInfo">
-      <change afterPath="$PROJECT_DIR$/seapad/sources/project_custome.move" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/seapad/sources/project_custome_entries.move" afterDir="false" />
+    <list default="true" id="10b876f6-5f11-44d6-9e4a-d6252006a611" name="Changes" comment="Custom project for listing">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/seapad/sources/project_custome.move" beforeDir="false" afterPath="$PROJECT_DIR$/seapad/sources/project_custom.move" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/seapad/sources/project_custome_entries.move" beforeDir="false" afterPath="$PROJECT_DIR$/seapad/sources/project_custom_entries.move" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -190,13 +190,6 @@
       <workItem from="1680008715445" duration="9703000" />
       <workItem from="1680195522478" duration="17666000" />
       <workItem from="1680619443954" duration="90000" />
-    </task>
-    <task id="LOCAL-00083" summary="change name">
-      <created>1682410830168</created>
-      <option name="number" value="00083" />
-      <option name="presentableId" value="LOCAL-00083" />
-      <option name="project" value="LOCAL" />
-      <updated>1682410830168</updated>
     </task>
     <task id="LOCAL-00084" summary="fix refund">
       <created>1682486480268</created>
@@ -534,7 +527,14 @@
       <option name="project" value="LOCAL" />
       <updated>1686814955379</updated>
     </task>
-    <option name="localTasksCounter" value="132" />
+    <task id="LOCAL-00132" summary="Custom project for listing">
+      <created>1687738870120</created>
+      <option name="number" value="00132" />
+      <option name="presentableId" value="LOCAL-00132" />
+      <option name="project" value="LOCAL" />
+      <updated>1687738870121</updated>
+    </task>
+    <option name="localTasksCounter" value="133" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -593,7 +593,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="update swap token" />
     <MESSAGE value="update stake, swap token" />
     <MESSAGE value="add nft" />
     <MESSAGE value="add address in move file" />
@@ -618,7 +617,8 @@
     <MESSAGE value="build testnet" />
     <MESSAGE value="Update ClaimInfor" />
     <MESSAGE value="Update value ClaimInfo" />
-    <option name="LAST_COMMIT_MESSAGE" value="Update value ClaimInfo" />
+    <MESSAGE value="Custom project for listing" />
+    <option name="LAST_COMMIT_MESSAGE" value="Custom project for listing" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />

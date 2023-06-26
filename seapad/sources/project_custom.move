@@ -5,18 +5,16 @@
 /// - support whitelist, soft cap, hardcap, refund
 /// - support vesting token, claim token
 /// - many round
-module seapad::project_custome {
+module seapad::project_custom {
     use std::vector;
     use w3libs::payment;
     use sui::coin::{Self, Coin};
-    use sui::dynamic_field;
     use sui::event;
     use sui::math;
     use sui::object::{Self, UID, id_address};
     use sui::table::{Self, Table};
     use sui::transfer;
     use sui::tx_context::{Self, TxContext, sender};
-    use sui::vec_set::{Self, VecSet};
     use sui::clock::{Clock};
     use sui::clock;
     use common::kyc::{Kyc, hasKYC};
@@ -28,7 +26,7 @@ module seapad::project_custome {
 
     ///Define model first
 
-    struct PROJECT_CUSTOME has drop {}
+    struct PROJECT_CUSTOM has drop {}
 
     const VERSION: u64 = 1;
 
@@ -37,7 +35,6 @@ module seapad::project_custome {
     const EInvalidRoundState: u64 = 1002;
     const EMaxAllocate: u64 = 1003;
     const EOutOfHardCap: u64 = 1004;
-    const EVoted: u64 = 1005;
     const EClaimZero: u64 = 1006;
     const EProjectNotWhitelist: u64 = 1007;
     const EExistsInWhitelist: u64 = 1008;
@@ -79,11 +76,6 @@ module seapad::project_custome {
     const ROUND_STATE_CLAIMING: u8 = 6;
     //complete & ready to claim token
     const ONE_HUNDRED_PERCENT_SCALED: u64 = 10000;
-
-
-    ///lives in launchpad domain
-    ///use dynamic field to add likes, votes, and watch
-    const VOTES: vector<u8> = b"votes"; //votes: VecSet<address>
 
     const VESTING_TYPE_MILESTONE_UNLOCK_FIRST: u8 = 1;
     const VESTING_TYPE_MILESTONE_CLIFF_FIRST: u8 = 2;
@@ -127,12 +119,6 @@ module seapad::project_custome {
         deposited_enough: bool
     }
 
-    struct Community has key, store {
-        id: UID,
-        total_vote: u64,
-        voters: VecSet<address>
-    }
-
     struct VestingMileStone has copy, drop, store {
         time: u64,
         percent: u64,
@@ -154,7 +140,6 @@ module seapad::project_custome {
     struct Project<phantom COIN, phantom TOKEN> has key, store {
         id: UID,
         launch_state: LaunchState<COIN, TOKEN>,
-        community: Community,
         use_whitelist: bool,
         owner: address,
         coin_decimals: u8,
@@ -169,7 +154,7 @@ module seapad::project_custome {
     }
 
     ///init with admin cap
-    fun init(_witness: PROJECT_CUSTOME, ctx: &mut TxContext) {
+    fun init(_witness: PROJECT_CUSTOM, ctx: &mut TxContext) {
         let adminCap = AdminCap { id: object::new(ctx) };
         transfer::public_transfer(adminCap, sender(ctx));
     }
@@ -251,19 +236,11 @@ module seapad::project_custome {
             deposited_enough: false
         };
 
-        let community = Community {
-            id: object::new(ctx),
-            total_vote: 0,
-            voters: vec_set::empty()
-        };
-
-        dynamic_field::add(&mut community.id, VOTES, vec_set::empty<address>());
 
         let project = Project {
             id: object::new(ctx),
             owner,
             launch_state: state,
-            community,
             use_whitelist: false,
             coin_decimals,
             token_decimals,
@@ -742,18 +719,6 @@ module seapad::project_custome {
     //     event::emit(ClaimRefundEvent { project: object::id_address(project), user: sender, coin_fund: refund_amt })
     // }
 
-    public fun vote<COIN, TOKEN>(project: &mut Project<COIN, TOKEN>,
-                                 version: &mut Version,
-                                 ctx: &mut TxContext) {
-        checkVersion(version, VERSION);
-
-        let com = &mut project.community;
-        let voter_address = sender(ctx);
-        assert!(vec_set::contains(&mut com.voters, &voter_address), EVoted);
-        com.total_vote = com.total_vote + 1;
-        vec_set::insert(&mut com.voters, voter_address);
-    }
-
     public fun set_state_refund<COIN, TOKEN>(_admincap: &AdminCap,
                                              version: &mut Version,
                                              project: &mut Project<COIN, TOKEN>) {
@@ -1075,7 +1040,7 @@ module seapad::project_custome {
 
     #[test_only]
     public fun init_for_testing(ctx: &mut TxContext) {
-        init(PROJECT_CUSTOME {}, ctx);
+        init(PROJECT_CUSTOM {}, ctx);
     }
 
     #[test_only]
