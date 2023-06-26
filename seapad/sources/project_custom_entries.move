@@ -1,12 +1,12 @@
-module seapad::project_custome_entries {
+module seapad::project_custom_entries {
     use sui::tx_context::TxContext;
     use sui::coin::{Coin};
-    use seapad::project_custome as project;
+    use seapad::project_custom as project;
     use std::vector;
     use sui::clock::Clock;
     use common::kyc::Kyc;
     use seapad::version::Version;
-    use seapad::project_custome::{AdminCap, Project};
+    use seapad::project_custom::{AdminCap, Project};
 
     public entry fun change_admin(adminCap: AdminCap,
                                   to: address,
@@ -204,17 +204,11 @@ module seapad::project_custome_entries {
         project::claim_token<COIN, TOKEN>(project, clock, version, ctx);
     }
 
-    public entry fun claim_refund<COIN, TOKEN>(project: &mut Project<COIN, TOKEN>,
-                                               version: &mut Version,
-                                               ctx: &mut TxContext) {
-        project::claim_refund<COIN, TOKEN>(project, version, ctx);
-    }
-
-    public entry fun vote<COIN, TOKEN>(project: &mut Project<COIN, TOKEN>,
-                                       version: &mut Version,
-                                       ctx: &mut TxContext) {
-        project::vote<COIN, TOKEN>(project, version, ctx);
-    }
+    // public entry fun claim_refund<COIN, TOKEN>(project: &mut Project<COIN, TOKEN>,
+    //                                            version: &mut Version,
+    //                                            ctx: &mut TxContext) {
+    //     project::claim_refund<COIN, TOKEN>(project, version, ctx);
+    // }
 
     public entry fun set_state_refund<COIN, TOKEN>(
         admin_cap: &AdminCap,
