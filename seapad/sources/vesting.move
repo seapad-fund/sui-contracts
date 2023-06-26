@@ -15,8 +15,6 @@ module seapad::vesting {
     use w3libs::u256;
     use seapad::version::{Version, checkVersion};
     use sui::event::emit;
-    use sui::table;
-    use sui::kiosk::take;
     use sui::event;
 
     const VERSION: u64 = 1;
@@ -81,7 +79,6 @@ module seapad::vesting {
     struct ProjectCreatedEvent has drop, copy {
        //@todo layout
     }
-
 
     struct Fund<phantom COIN> has store {
         owner: address, //owner of fund
@@ -218,20 +215,21 @@ module seapad::vesting {
         //@todo review: add project registry
         table::add(&mut project_registry.projects, id_address(&project), 0);
 
-        //@todo add new project event
-        //event::emit()
+        event::emit(ProjectCreatedEvent{
+            //@todo add new project event
+        });
 
         share_object(project);
     }
 
 
     public entry fun addFund<COIN>(_admin: &VAdminCap,
-                             owner: address,
-                             fund: Coin<COIN>,
-                             project: &mut Project<COIN>,
-                             project_registry: &mut ProjectRegistry,
-                             version: &mut Version,
-                             _ctx: &mut TxContext)
+                                     owner: address,
+                                     fund: Coin<COIN>,
+                                     project: &mut Project<COIN>,
+                                     project_registry: &mut ProjectRegistry,
+                                     version: &mut Version,
+                                     _ctx: &mut TxContext)
     {
         checkVersion(version, VERSION);
 
@@ -284,9 +282,9 @@ module seapad::vesting {
     }
 
     public entry fun claim<COIN>(project: &mut Project<COIN>,
-                           sclock: &Clock,
-                           version: &Version,
-                           ctx: &mut TxContext){
+                               sclock: &Clock,
+                               version: &Version,
+                               ctx: &mut TxContext){
         checkVersion(version, VERSION);
 
         let now_ms = clock::timestamp_ms(sclock);
