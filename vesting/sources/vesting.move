@@ -338,4 +338,39 @@ module seapad::vesting {
     public fun init_for_testing(ctx: &mut TxContext) {
         init(VESTING {}, ctx);
     }
+
+    public fun getPieTotalSupply<COIN>(project: &Project<COIN>): u64{
+        project.supply
+    }
+
+    public fun getPieTotalShare<COIN>(project: &Project<COIN>): u64{
+        project.deposited
+    }
+
+    public fun getPieTotalSharePercent<COIN>(project: &Project<COIN>): u64{
+        project.deposited_percent
+    }
+
+    public fun getPieTgeTimeMs<COIN>(project: &Project<COIN>): u64{
+        project.tge_ms
+    }
+
+    public fun getFundUnlockPercent<COIN>(project: &Project<COIN>, _addr: address): u64{
+       project.unlock_percent
+    }
+
+    public fun getFundVestingAvailable<COIN>(project: &Project<COIN>, addr: address): u64{
+        let share = table::borrow(&project.funds, addr);
+        coin::value(&share.locked)
+    }
+
+    public fun getFundReleased<COIN>(project: &Project<COIN>, addr: address): u64{
+        let share = table::borrow(&project.funds, addr);
+        share.released
+    }
+
+    public fun getFundTotal<COIN>(project: &Project<COIN>, addr: address): u64{
+        let share = table::borrow(&project.funds, addr);
+        share.total
+    }
 }
