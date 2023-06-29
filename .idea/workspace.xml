@@ -6,6 +6,8 @@
   <component name="ChangeListManager">
     <list default="true" id="10b876f6-5f11-44d6-9e4a-d6252006a611" name="Changes" comment="Create new project vesting">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/seapad/sources/vesting.move" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/vesting/sources/vesting.move" beforeDir="false" afterPath="$PROJECT_DIR$/vesting/sources/vesting.move" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
