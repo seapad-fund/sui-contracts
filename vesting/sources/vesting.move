@@ -50,6 +50,12 @@ module seapad::vesting {
         percent: u64 //percent occuppied by this fund on project
     }
 
+    struct FundRemoveEvent has drop, copy {
+        owner: address,
+        project: address,
+        fund: u64
+    }
+
     struct FundClaimEvent has drop, copy {
         owner: address,
         project: address,
@@ -227,8 +233,10 @@ module seapad::vesting {
             addFund(admin, owner, fund, project, registry, version);
 
             i = i + 1;
-        }
+        };
+        transfer::public_transfer(totalFund, sender(ctx));
     }
+
 
     public entry fun addFund<COIN>(_admin: &VAdminCap,
                                    owner: address,
@@ -272,6 +280,32 @@ module seapad::vesting {
             project: id_address(project),
             fund: fund_amt,
             percent
+        })
+    }
+
+    public entry fun removeFund<COIN>(_admin: &VAdminCap,
+                                      owner: address,
+                                      project: &mut Project<COIN>,
+                                      version: &mut Version) {
+        checkVersion(version, VERSION);
+        let Fund<COIN> {
+            owner,
+            total,
+            locked,
+            released: _,
+            percent: _,
+            last_claim_ms: _
+        } = table::remove(&mut project.funds, owner);
+
+
+        project.deposited = u256::sub_u64(project.deposited, total);
+        project.deposited_percent = project.deposited * ONE_HUNDRED_PERCENT_SCALED / project.supply;
+        transfer::public_transfer(locked, owner);
+
+        emit(FundRemoveEvent {
+            project: id_address(project),
+            owner,
+            fund: total,
         })
     }
 
