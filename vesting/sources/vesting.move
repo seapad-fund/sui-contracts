@@ -222,7 +222,7 @@ module seapad::vesting {
                                     totalFund: Coin<COIN>,
                                     project: &mut Project<COIN>,
                                     registry: &mut ProjectRegistry,
-                                    version: &mut Version,
+                                    version: &Version,
                                     ctx: &mut TxContext) {
         let (i, n) = (0, vector::length(&owners));
         while (i < n) {
@@ -243,7 +243,7 @@ module seapad::vesting {
                                    fund: Coin<COIN>,
                                    project: &mut Project<COIN>,
                                    registry: &mut ProjectRegistry,
-                                   version: &mut Version)
+                                   version: &Version)
     {
         checkVersion(version, VERSION);
 
@@ -286,7 +286,7 @@ module seapad::vesting {
     public entry fun removeFund<COIN>(_admin: &VAdminCap,
                                       owner: address,
                                       project: &mut Project<COIN>,
-                                      version: &mut Version) {
+                                      version: &Version) {
         checkVersion(version, VERSION);
         let Fund<COIN> {
             owner,

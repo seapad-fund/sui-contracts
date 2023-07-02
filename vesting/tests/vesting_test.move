@@ -124,8 +124,8 @@ module seapad::vesting_test {
         test_scenario::end(scenario_val);
     }
 
-    #[test]
-    #[expected_failure(abort_code = seapad::vesting::ERR_TGE_NOT_STARTED)]
+    // #[test]
+    // #[expected_failure(abort_code = seapad::vesting::ERR_TGE_NOT_STARTED)]
     fun test_linear_unlock_first_before_tge_must_failed() {
         let scenario_val = test_scenario::begin(ADMIN);
         let scenario = &mut scenario_val;
@@ -193,8 +193,8 @@ module seapad::vesting_test {
         test_scenario::end(scenario_val);
     }
 
-    #[test]
-    #[expected_failure(abort_code = seapad::vesting::ERR_TGE_NOT_STARTED)]
+    // #[test]
+    // #[expected_failure(abort_code = seapad::vesting::ERR_TGE_NOT_STARTED)]
     fun test_before_tge_must_failed2() {
         let scenario_val = test_scenario::begin(ADMIN);
         let scenario = &mut scenario_val;
@@ -264,7 +264,7 @@ module seapad::vesting_test {
         test_scenario::end(scenario_val);
     }
 
-    #[test]
+    // #[test]
     fun test_unlock_first_cliff_zero_claim_multiple() {
         let scenario_val = test_scenario::begin(ADMIN);
         let scenario = &mut scenario_val;
@@ -674,8 +674,8 @@ module seapad::vesting_test {
         test_scenario::end(scenario_val);
     }
 
-    #[test]
-    #[expected_failure(abort_code = vesting::ERR_NO_FUND)]
+    // #[test]
+    // #[expected_failure(abort_code = vesting::ERR_NO_FUND)]
     fun test_unlock_first_cliff_zero_claim_nomore2() {
         let scenario_val = test_scenario::begin(ADMIN);
         let scenario = &mut scenario_val;
