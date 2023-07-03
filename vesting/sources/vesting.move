@@ -279,6 +279,7 @@ module seapad::vesting {
     public entry fun removeFund<COIN>(_admin: &VAdminCap,
                                       owner: address,
                                       project: &mut Project<COIN>,
+                                      registry: &mut ProjectRegistry,
                                       version: &Version) {
         checkVersion(version, VERSION);
 
@@ -293,10 +294,13 @@ module seapad::vesting {
             last_claim_ms: _
         } = table::remove(&mut project.funds, owner);
 
-
         project.deposited = project.deposited - total;
         project.deposited_percent = project.deposited * ONE_HUNDRED_PERCENT_SCALED / project.supply;
         transfer::public_transfer(locked, owner);
+
+        if (table::contains(&registry.user_projects, owner)){
+            table::remove(&mut registry.user_projects, owner);
+        };
 
         emit(FundRemoveEvent {
             project: id_address(project),

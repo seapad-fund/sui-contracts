@@ -331,6 +331,65 @@ module seapad::vesting_test {
     }
 
     #[test]
+    fun test_multiple_add_fund() {
+        let scenario_val = scenario();
+        let scenario = &mut scenario_val;
+        init_env(scenario);
+
+        //setup
+        next_tx(scenario, ADMIN);
+        let sclock = take_shared<Clock>(scenario);
+        let oneYear = 12 * MONTH_IN_MS;
+
+        let unlockHalf = UNLOCK_PERCENT * 5;
+        let project = create_project_(
+            TGE_ONE_MONTH_MS,
+            VESTING_TYPE_LINEAR_CLIFF_FIRST,
+            MONTH_IN_MS,
+            unlockHalf,
+            oneYear,
+            vector::empty(),
+            vector::empty(),
+            &sclock,
+            scenario
+        );
+
+        let fundValue = 1000000u64;
+        addFund(fundValue, SEED_FUND, &mut project, scenario);
+        addFund(fundValue, SEED_FUND, &mut project, scenario);
+
+        //Test claim tge + cliff
+        {
+            clock::increment_for_testing(&mut sclock, TGE_ONE_MONTH_MS + MONTH_IN_MS);
+            claim(SEED_FUND, &mut project, &sclock, scenario);
+
+            test_scenario::next_tx(scenario, SEED_FUND);
+            let fundClaim = take_from_sender<Coin<XCOIN>>(scenario);
+            assert!(coin::value(&fundClaim) == (fundValue * 2 / PERCENT_SCALE) * unlockHalf, 0);
+
+            return_to_sender(scenario, fundClaim);
+        };
+
+        //Test claim after 3month
+        {
+            clock::increment_for_testing(&mut sclock, 3 * MONTH_IN_MS);
+            claim(SEED_FUND, &mut project, &sclock, scenario);
+
+            test_scenario::next_tx(scenario, SEED_FUND);
+            let fundClaim = take_from_sender<Coin<XCOIN>>(scenario);
+
+            let percentExpect = (PERCENT_SCALE - unlockHalf) * 3 / 12;
+            assert!(coin::value(&fundClaim) == (fundValue * 2 / PERCENT_SCALE) * percentExpect, 0);
+
+            return_to_sender(scenario, fundClaim);
+        };
+
+        return_shared(project);
+        return_shared(sclock);
+        test_scenario::end(scenario_val);
+    }
+
+    #[test]
     #[expected_failure(abort_code = vesting::ERR_NO_FUND)]
     fun test_remove_fund(){
         let scenario_val = scenario();
@@ -406,11 +465,14 @@ module seapad::vesting_test {
 
         let admin = take_from_sender<VAdminCap>(scenario);
         let version = take_shared<Version>(scenario);
+        let resgistry = take_shared<ProjectRegistry>(scenario);
 
-        vesting::removeFund(&admin, owner, project, &version);
+
+        vesting::removeFund(&admin, owner, project, &mut resgistry,&version);
 
         return_to_sender(scenario, admin);
         return_shared(version);
+        return_shared(resgistry);
     }
 
     fun create_project_(

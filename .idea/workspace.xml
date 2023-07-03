@@ -4,9 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="10b876f6-5f11-44d6-9e4a-d6252006a611" name="Changes" comment="add testing">
+    <list default="true" id="10b876f6-5f11-44d6-9e4a-d6252006a611" name="Changes" comment="update fund">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/vesting/sources/vesting.move" beforeDir="false" afterPath="$PROJECT_DIR$/vesting/sources/vesting.move" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/vesting/tests/vesting_test.move" beforeDir="false" afterPath="$PROJECT_DIR$/vesting/tests/vesting_test.move" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -189,13 +190,6 @@
       <workItem from="1680008715445" duration="9703000" />
       <workItem from="1680195522478" duration="17666000" />
       <workItem from="1680619443954" duration="90000" />
-    </task>
-    <task id="LOCAL-00086" summary="build contract">
-      <created>1682486773688</created>
-      <option name="number" value="00086" />
-      <option name="presentableId" value="LOCAL-00086" />
-      <option name="project" value="LOCAL" />
-      <updated>1682486773688</updated>
     </task>
     <task id="LOCAL-00087" summary="build contract">
       <created>1682491505561</created>
@@ -533,7 +527,14 @@
       <option name="project" value="LOCAL" />
       <updated>1688283632269</updated>
     </task>
-    <option name="localTasksCounter" value="137" />
+    <task id="LOCAL-00137" summary="update fund">
+      <created>1688396131790</created>
+      <option name="number" value="00137" />
+      <option name="presentableId" value="LOCAL-00137" />
+      <option name="project" value="LOCAL" />
+      <updated>1688396131791</updated>
+    </task>
+    <option name="localTasksCounter" value="138" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -592,7 +593,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="change name" />
     <MESSAGE value="fix refund" />
     <MESSAGE value="update contract" />
     <MESSAGE value="add unit test" />
@@ -617,7 +617,8 @@
     <MESSAGE value="add list fund" />
     <MESSAGE value="add remove fund" />
     <MESSAGE value="add testing" />
-    <option name="LAST_COMMIT_MESSAGE" value="add testing" />
+    <MESSAGE value="update fund" />
+    <option name="LAST_COMMIT_MESSAGE" value="update fund" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />
