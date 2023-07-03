@@ -12,7 +12,6 @@ module seapad::vesting {
     use sui::table;
     use std::vector;
     use sui::math;
-    use w3libs::u256;
     use seapad::version::{Version, checkVersion};
     use sui::event::emit;
     use sui::event;
@@ -237,7 +236,7 @@ module seapad::vesting {
         let fund_amt = coin::value(&fund);
         assert!(fund_amt > 0, ERR_BAD_FUND_PARAMS);
 
-        project.deposited = u256::add_u64(project.deposited, fund_amt);
+        project.deposited = project.deposited + fund_amt;
         assert!(project.deposited <= project.supply, ERR_FULL_SUPPLY);
 
         project.deposited_percent = project.deposited * ONE_HUNDRED_PERCENT_SCALED / project.supply;
@@ -285,7 +284,7 @@ module seapad::vesting {
         } = table::remove(&mut project.funds, owner);
 
 
-        project.deposited = u256::sub_u64(project.deposited, total);
+        project.deposited = project.deposited - total;
         project.deposited_percent = project.deposited * ONE_HUNDRED_PERCENT_SCALED / project.supply;
         transfer::public_transfer(locked, owner);
 
