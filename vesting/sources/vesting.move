@@ -255,21 +255,28 @@ module seapad::vesting {
 
         project.deposited_percent = project.deposited * ONE_HUNDRED_PERCENT_SCALED / project.supply;
         let percent = fund_amt * ONE_HUNDRED_PERCENT_SCALED / project.supply;
-        let token_fund = Fund<COIN> {
-            owner,
-            last_claim_ms: 0u64,
-            total: fund_amt,
-            released: 0,
-            locked: fund,
-            percent
+
+        if (table::contains(&mut project.funds, owner)) {
+            let token_fund = table::borrow_mut(&mut project.funds, owner);
+            token_fund.total = token_fund.total + fund_amt;
+            token_fund.percent = token_fund.percent + percent;
+            coin::join(&mut token_fund.locked, fund);
+        }else {
+            let token_fund = Fund<COIN> {
+                owner,
+                last_claim_ms: 0u64,
+                total: fund_amt,
+                released: 0,
+                locked: fund,
+                percent
+            };
+            table::add(&mut project.funds, owner, token_fund);
         };
 
-        table::add(&mut project.funds, owner, token_fund);
 
         if (table::contains(&registry.user_projects, owner)) {
             vector::push_back(table::borrow_mut(&mut registry.user_projects, owner), id_address(project));
-        }
-        else {
+        }else {
             let userProjects = vector::empty<address>();
             vector::push_back(&mut userProjects, id_address(project));
             table::add(&mut registry.user_projects, owner, userProjects);
@@ -288,6 +295,9 @@ module seapad::vesting {
                                       project: &mut Project<COIN>,
                                       version: &Version) {
         checkVersion(version, VERSION);
+
+        assert!(table::contains(&mut project.funds, owner), ERR_NO_FUND);
+
         let Fund<COIN> {
             owner,
             total,
@@ -296,7 +306,6 @@ module seapad::vesting {
             percent: _,
             last_claim_ms: _
         } = table::remove(&mut project.funds, owner);
-
 
         project.deposited = u256::sub_u64(project.deposited, total);
         project.deposited_percent = project.deposited * ONE_HUNDRED_PERCENT_SCALED / project.supply;
