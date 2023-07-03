@@ -1,19 +1,19 @@
 #[test_only]
 module seapad::vesting_test {
-    use sui::test_scenario::{Scenario, take_shared};
+    use sui::test_scenario::{Scenario, take_shared, take_from_sender, return_to_sender, return_shared, next_tx};
     use sui::test_scenario;
     use sui::clock;
     use sui::clock::Clock;
-    use seapad::vesting::{VAdminCap, Project, addFund, ProjectRegistry};
-    use sui::coin;
-    use sui::tx_context::TxContext;
-    use seapad::version::{Version};
+    use seapad::vesting::{VAdminCap, Project, ProjectRegistry};
+
+    use seapad::version::{Version, initForTest};
     use std::vector;
-    use seapad::version;
     use seapad::vesting;
+    use sui::coin;
+    use sui::coin::Coin;
 
     const ADMIN: address = @0xC0FFEE;
-    const SEED_FUND2: address = @0xC0FFFF;
+    const SEED_FUND: address = @0xC0FFFF;
     const TOTAL_SUPPLY: u64 = 100000000;
     const TWO_HOURS_IN_MS: u64 = 2 * 3600000;
     const ONE_HOURS_IN_MS: u64 = 3600000;
@@ -23,6 +23,9 @@ module seapad::vesting_test {
 
     const TGE_ONE_MONTH_MS: u64 = 2592000000;
 
+    const UNLOCK_PERCENT: u64 = 1000;
+    const PERCENT_SCALE: u64 = 10000;
+
     struct XCOIN has drop {}
 
     const VESTING_TYPE_MILESTONE_UNLOCK_FIRST: u8 = 1;
@@ -30,1021 +33,437 @@ module seapad::vesting_test {
     const VESTING_TYPE_LINEAR_UNLOCK_FIRST: u8 = 3;
     const VESTING_TYPE_LINEAR_CLIFF_FIRST: u8 = 4;
 
-    fun init_fund_for_test<COIN>(_admin: &VAdminCap,
-                                 pie: &mut Project<COIN>,
-                                 registry: &mut ProjectRegistry,
-                                 _tge_ms: u64,
-                                 _sclock: &Clock,
-                                 version: &mut Version,
-                                 ctx: &mut TxContext) {
-
-        addFund(_admin,
-            @seedFund,
-            coin::mint_for_testing<COIN>(TOTAL_SUPPLY / 10, ctx),
-            pie,
-            registry,
-            version,
-        );
-    }
-
-    fun scenario(): Scenario { test_scenario::begin(@0xC0FFEE) }
-
-    fun create_clock_time(addr: address, scenario: &mut Scenario) {
-        test_scenario::next_tx(scenario, addr);
-        let ctx = test_scenario::ctx(scenario);
-        clock::share_for_testing(clock::create_for_testing(ctx));
-    }
-
-    fun init_env(scenario: &mut Scenario) {
-        test_scenario::next_tx(scenario, ADMIN);
-        clock::share_for_testing(clock::create_for_testing(test_scenario::ctx(scenario)));
-        vesting::init_for_testing(test_scenario::ctx(scenario));
-        version::initForTest(test_scenario::ctx(scenario));
-
-        test_scenario::next_tx(scenario, ADMIN);
-        let registry = test_scenario::take_shared<ProjectRegistry>(scenario);
-        let clock = test_scenario::take_shared<Clock>(scenario);
-        let ecoAdmin = test_scenario::take_from_sender<VAdminCap>(scenario);
-        let version = test_scenario::take_shared<Version>(scenario);
-        let ctx = test_scenario::ctx(scenario);
-
-        vesting::create_project<XCOIN>(&ecoAdmin,
-            b"project1",
-            b"http://url",
-            TOTAL_SUPPLY,
-            0,
-            VESTING_TYPE_LINEAR_UNLOCK_FIRST,
-            0,
-            500,
-            18 * MONTH_IN_MS,
-            vector::empty<u64>(),
-            vector::empty<u64>(),
-            &clock,
-             &mut version,
-            &mut registry,
-            ctx);
-
-        test_scenario::next_tx(scenario, ADMIN);
-        let pie = test_scenario::take_shared<Project<XCOIN>>(scenario);
-        init_fund_for_test(&ecoAdmin,
-            &mut pie,
-            &mut registry,
-            clock::timestamp_ms(&clock) + TGE_ONE_MONTH_MS,
-            &clock,
-            &mut version,
-            test_scenario::ctx(scenario));
-
-        test_scenario::return_shared(clock);
-        test_scenario::return_to_sender(scenario, ecoAdmin);
-        test_scenario::return_shared(version);
-        test_scenario::return_shared(pie);
-        test_scenario::return_shared(registry);
-    }
-
 
     // #[test]
     // #[expected_failure(abort_code = vesting::ERR_NO_FUND)]
     fun test_claim_no_fund() {
-        let scenario_val = test_scenario::begin(ADMIN);
+        let scenario_val = scenario();
         let scenario = &mut scenario_val;
         init_env(scenario);
-        test_scenario::next_tx(scenario, ADMIN);
 
-        let clock = take_shared<Clock>(scenario);
+        next_tx(scenario, ADMIN);
+        let sclock = take_shared<Clock>(scenario);
+
+        let project = create_project_(
+            TGE_ONE_MONTH_MS,
+            VESTING_TYPE_LINEAR_CLIFF_FIRST,
+            0,
+            UNLOCK_PERCENT,
+            18 * MONTH_IN_MS,
+            vector::empty(),
+            vector::empty(),
+            &sclock,
+            scenario
+        );
         let version = take_shared<Version>(scenario);
-        let pie = take_shared<Project<XCOIN>>(scenario);
 
         test_scenario::next_tx(scenario, ADMIN);
-        clock::increment_for_testing(&mut clock, 9 * MONTH_IN_MS);
-        vesting::claim(&mut pie, &clock, &mut version, test_scenario::ctx(scenario));
+        clock::increment_for_testing(&mut sclock, 9 * MONTH_IN_MS);
+        vesting::claim(&mut project, &sclock, &mut version, test_scenario::ctx(scenario));
 
-        test_scenario::return_shared(clock);
-        test_scenario::return_shared(pie);
+        test_scenario::return_shared(sclock);
         test_scenario::return_shared(version);
+        test_scenario::return_shared(project);
         test_scenario::end(scenario_val);
     }
 
-    // #[test]
-    // #[expected_failure(abort_code = seapad::vesting::ERR_TGE_NOT_STARTED)]
-    fun test_linear_unlock_first_before_tge_must_failed() {
-        let scenario_val = test_scenario::begin(ADMIN);
+    #[test]
+    #[expected_failure(abort_code = vesting::ERR_NO_FUND)]
+    fun test_milestone_unlock_first() {
+        let scenario_val = scenario();
         let scenario = &mut scenario_val;
         init_env(scenario);
-        test_scenario::next_tx(scenario, ADMIN);
 
-        let clock = take_shared<Clock>(scenario);
-        let version = take_shared<Version>(scenario);
-        let pie = take_shared<Project<XCOIN>>(scenario);
+        //setup
+        next_tx(scenario, ADMIN);
+        let sclock = take_shared<Clock>(scenario);
+        let halfAYear = 6 * MONTH_IN_MS;
+        let oneYear = 12 * MONTH_IN_MS;
 
-        test_scenario::next_tx(scenario, @seedFund);
-        vesting::claim(&mut pie, &clock, &mut version, test_scenario::ctx(scenario));
-        assert!(vesting::getFundReleased(&pie, @seedFund) == TOTAL_SUPPLY * 5 / (10 * 100), 1);
-        assert!(
-            vesting::getFundVestingAvailable(&pie, @seedFund) == TOTAL_SUPPLY / 10 - TOTAL_SUPPLY * 5 / (10 * 100),
-            1
+        let miletoneTimes = vector::empty<u64>();
+        vector::push_back(&mut miletoneTimes, halfAYear);
+        vector::push_back(&mut miletoneTimes, oneYear);
+
+        let percent45 = 4500u64;
+        let milestonePercents = vector::empty<u64>();
+        vector::push_back(&mut milestonePercents, percent45);
+        vector::push_back(&mut milestonePercents, percent45);
+
+        let project = create_project_(
+            TGE_ONE_MONTH_MS,
+            VESTING_TYPE_MILESTONE_UNLOCK_FIRST,
+            0,
+            UNLOCK_PERCENT,
+            0,
+            miletoneTimes,
+            milestonePercents,
+            &sclock,
+            scenario
         );
 
-        test_scenario::return_shared(clock);
-        test_scenario::return_shared(pie);
-        test_scenario::return_shared(version);
+        let fundValue = 1000000u64;
+        addFund(fundValue, SEED_FUND, &mut project, scenario);
+
+        //Test claim tge
+        {
+            clock::increment_for_testing(&mut sclock, TGE_ONE_MONTH_MS);
+            claim(SEED_FUND, &mut project, &sclock, scenario);
+
+            test_scenario::next_tx(scenario, SEED_FUND);
+            let fundClaim = take_from_sender<Coin<XCOIN>>(scenario);
+            assert!(coin::value(&fundClaim) == (fundValue / PERCENT_SCALE) * UNLOCK_PERCENT, 0);
+
+            return_to_sender(scenario, fundClaim);
+        };
+
+        //Test claim after 6month
+        {
+            clock::increment_for_testing(&mut sclock, 6 * MONTH_IN_MS);
+            claim(SEED_FUND, &mut project, &sclock, scenario);
+
+            test_scenario::next_tx(scenario, SEED_FUND);
+            let fundClaim = take_from_sender<Coin<XCOIN>>(scenario);
+            assert!(coin::value(&fundClaim) == (fundValue / PERCENT_SCALE) * percent45, 0);
+
+            return_to_sender(scenario, fundClaim);
+        };
+
+        //Test claim after...failed
+        claim(SEED_FUND, &mut project, &sclock, scenario);
+
+        return_shared(project);
+        return_shared(sclock);
         test_scenario::end(scenario_val);
     }
 
-    // #[test]
-    // #[expected_failure(abort_code = seapad::vesting::ERR_TGE_NOT_STARTED)]
-    fun test_milestone_unlock_first_before_tge_must_failed() {
-        let scenario_val = test_scenario::begin(ADMIN);
+    #[test]
+    #[expected_failure(abort_code = vesting::ERR_NO_FUND)]
+    fun test_milestone_cliff_first() {
+        let scenario_val = scenario();
         let scenario = &mut scenario_val;
         init_env(scenario);
-        test_scenario::next_tx(scenario, ADMIN);
 
-        let clock = take_shared<Clock>(scenario);
-        let version = take_shared<Version>(scenario);
-        let pie = take_shared<Project<XCOIN>>(scenario);
+        //setup
+        next_tx(scenario, ADMIN);
+        let sclock = take_shared<Clock>(scenario);
+        let halfAYear = 6 * MONTH_IN_MS;
+        let oneYear = 12 * MONTH_IN_MS;
 
-        test_scenario::next_tx(scenario, @publicFund);
-        vesting::claim(&mut pie, &clock, &mut version, test_scenario::ctx(scenario));
+        let miletoneTimes = vector::empty<u64>();
+        vector::push_back(&mut miletoneTimes, halfAYear);
+        vector::push_back(&mut miletoneTimes, oneYear);
 
-        test_scenario::return_shared(clock);
-        test_scenario::return_shared(pie);
-        test_scenario::return_shared(version);
-        test_scenario::end(scenario_val);
-    }
+        let percent45 = 4500u64;
+        let milestonePercents = vector::empty<u64>();
+        vector::push_back(&mut milestonePercents, percent45);
+        vector::push_back(&mut milestonePercents, percent45);
 
-
-    // #[test]
-    // #[expected_failure(abort_code = seapad::vesting::ERR_TGE_NOT_STARTED)]
-    fun test_milestone_unlock_first_cliff_onemonth_before_tge_must_failed() {
-        let scenario_val = test_scenario::begin(ADMIN);
-        let scenario = &mut scenario_val;
-        init_env(scenario);
-        test_scenario::next_tx(scenario, ADMIN);
-
-        let clock = take_shared<Clock>(scenario);
-        let version = take_shared<Version>(scenario);
-        let pie = take_shared<Project<XCOIN>>(scenario);
-
-        test_scenario::next_tx(scenario, @foundationFund);
-        vesting::claim(&mut pie, &clock, &mut version, test_scenario::ctx(scenario));
-
-        test_scenario::return_shared(clock);
-        test_scenario::return_shared(pie);
-        test_scenario::return_shared(version);
-        test_scenario::end(scenario_val);
-    }
-
-    // #[test]
-    // #[expected_failure(abort_code = seapad::vesting::ERR_TGE_NOT_STARTED)]
-    fun test_before_tge_must_failed2() {
-        let scenario_val = test_scenario::begin(ADMIN);
-        let scenario = &mut scenario_val;
-        init_env(scenario);
-        test_scenario::next_tx(scenario, ADMIN);
-
-        let clock = take_shared<Clock>(scenario);
-        let version = take_shared<Version>(scenario);
-        let pie = take_shared<Project<XCOIN>>(scenario);
-
-        test_scenario::next_tx(scenario, @seedFund);
-        clock::increment_for_testing(&mut clock, TGE_ONE_MONTH_MS - 1);
-        vesting::claim(&mut pie, &clock, &mut version, test_scenario::ctx(scenario));
-        assert!(vesting::getFundReleased(&pie, @seedFund) == TOTAL_SUPPLY * 5 / (10 * 100), 1);
-        assert!(
-            vesting::getFundVestingAvailable(&pie, @seedFund) == TOTAL_SUPPLY / 10 - TOTAL_SUPPLY * 5 / (10 * 100),
-            1
+        let project = create_project_(
+            TGE_ONE_MONTH_MS,
+            VESTING_TYPE_MILESTONE_CLIFF_FIRST,
+            MONTH_IN_MS,
+            UNLOCK_PERCENT,
+            0,
+            miletoneTimes,
+            milestonePercents,
+            &sclock,
+            scenario
         );
 
-        test_scenario::return_shared(clock);
-        test_scenario::return_shared(pie);
-        test_scenario::return_shared(version);
+        let fundValue = 1000000u64;
+        addFund(fundValue, SEED_FUND, &mut project, scenario);
+
+        //Test claim tge + cliff
+        {
+            clock::increment_for_testing(&mut sclock, TGE_ONE_MONTH_MS + MONTH_IN_MS);
+            claim(SEED_FUND, &mut project, &sclock, scenario);
+
+            test_scenario::next_tx(scenario, SEED_FUND);
+            let fundClaim = take_from_sender<Coin<XCOIN>>(scenario);
+            assert!(coin::value(&fundClaim) == (fundValue / PERCENT_SCALE) * UNLOCK_PERCENT, 0);
+
+            return_to_sender(scenario, fundClaim);
+        };
+
+        //Test claim after 6month
+        {
+            clock::increment_for_testing(&mut sclock, 6 * MONTH_IN_MS);
+            claim(SEED_FUND, &mut project, &sclock, scenario);
+
+            test_scenario::next_tx(scenario, SEED_FUND);
+            let fundClaim = take_from_sender<Coin<XCOIN>>(scenario);
+            assert!(coin::value(&fundClaim) == (fundValue / PERCENT_SCALE) * percent45, 0);
+
+            return_to_sender(scenario, fundClaim);
+        };
+
+        //Test claim after...failed
+        claim(SEED_FUND, &mut project, &sclock, scenario);
+
+        return_shared(project);
+        return_shared(sclock);
         test_scenario::end(scenario_val);
     }
 
-    // #[test]
-    // #[expected_failure(abort_code = seapad::vesting::ERR_TGE_NOT_STARTED)]
-    fun test_milestone_cliff_onemonth_before_tge_must_failed2() {
-        let scenario_val = test_scenario::begin(ADMIN);
+    #[test]
+    #[expected_failure(abort_code = vesting::ERR_NO_FUND)]
+    fun test_linenear_unlock_first() {
+        let scenario_val = scenario();
         let scenario = &mut scenario_val;
         init_env(scenario);
-        test_scenario::next_tx(scenario, ADMIN);
 
-        let clock = take_shared<Clock>(scenario);
-        let version = take_shared<Version>(scenario);
-        let pie = take_shared<Project<XCOIN>>(scenario);
+        //setup
+        next_tx(scenario, ADMIN);
+        let sclock = take_shared<Clock>(scenario);
+        let oneYear = 12 * MONTH_IN_MS;
 
-        test_scenario::next_tx(scenario, @foundationFund);
-        clock::increment_for_testing(&mut clock, TGE_ONE_MONTH_MS - 1);
-        vesting::claim(&mut pie, &clock, &mut version, test_scenario::ctx(scenario));
-
-        test_scenario::return_shared(clock);
-        test_scenario::return_shared(pie);
-        test_scenario::return_shared(version);
-        test_scenario::end(scenario_val);
-    }
-
-    // #[test]
-    // #[expected_failure(abort_code = seapad::vesting::ERR_TGE_NOT_STARTED)]
-    fun test_milestone_before_tge_must_failed2() {
-        let scenario_val = test_scenario::begin(ADMIN);
-        let scenario = &mut scenario_val;
-        init_env(scenario);
-        test_scenario::next_tx(scenario, ADMIN);
-
-        let clock = take_shared<Clock>(scenario);
-        let version = take_shared<Version>(scenario);
-        let pie = take_shared<Project<XCOIN>>(scenario);
-
-        test_scenario::next_tx(scenario, @publicFund);
-        clock::increment_for_testing(&mut clock, TGE_ONE_MONTH_MS - 1);
-        vesting::claim(&mut pie, &clock, &mut version, test_scenario::ctx(scenario));
-
-        test_scenario::return_shared(clock);
-        test_scenario::return_shared(pie);
-        test_scenario::return_shared(version);
-        test_scenario::end(scenario_val);
-    }
-
-    // #[test]
-    fun test_unlock_first_cliff_zero_claim_multiple() {
-        let scenario_val = test_scenario::begin(ADMIN);
-        let scenario = &mut scenario_val;
-        init_env(scenario);
-        test_scenario::next_tx(scenario, ADMIN);
-
-        let clock = take_shared<Clock>(scenario);
-        let version = take_shared<Version>(scenario);
-        let pie = take_shared<Project<XCOIN>>(scenario);
-        assert!(clock::timestamp_ms(&clock) == 0, 10000);
-
-        assert!(vesting::getPieTotalSupply(&pie) == TOTAL_SUPPLY, 1);
-        assert!(vesting::getPieTotalSharePercent(&pie) <= 10000, 1);
-
-        assert!(vesting::getFundUnlockPercent(&pie, @seedFund) == 500, 1);
-        assert!(vesting::getFundTotal(&pie, @seedFund) == (TOTAL_SUPPLY / 10), 1);
-        assert!(vesting::getFundReleased(&pie, @seedFund) == 0, 1);
-        assert!(vesting::getFundVestingAvailable(&pie, @seedFund) == TOTAL_SUPPLY / 10, 1);
-
-        assert!(vesting::getPieTgeTimeMs(&pie) == TGE_ONE_MONTH_MS, 10000);
-
-        test_scenario::next_tx(scenario, @seedFund);
-        clock::increment_for_testing(&mut clock, TGE_ONE_MONTH_MS);
-        vesting::claim(&mut pie, &clock, &mut version, test_scenario::ctx(scenario));
-        assert!(vesting::getFundReleased(&pie, @seedFund) == TOTAL_SUPPLY * 5 / (10 * 100), 1);
-        assert!(
-            vesting::getFundVestingAvailable(&pie, @seedFund) == TOTAL_SUPPLY / 10 - TOTAL_SUPPLY * 5 / (10 * 100),
-            1
+        let unlockHalf = UNLOCK_PERCENT * 5;
+        let project = create_project_(
+            TGE_ONE_MONTH_MS,
+            VESTING_TYPE_LINEAR_UNLOCK_FIRST,
+            0,
+            unlockHalf,
+            oneYear,
+            vector::empty(),
+            vector::empty(),
+            &sclock,
+            scenario
         );
 
-        clock::increment_for_testing(&mut clock, 9 * MONTH_IN_MS);
-        vesting::claim(&mut pie, &clock, &mut version, test_scenario::ctx(scenario));
-        assert!(vesting::getFundReleased(&pie, @seedFund) == 105 * TOTAL_SUPPLY / 2000, 1);
-        assert!(
-            vesting::getFundVestingAvailable(&pie, @seedFund) == TOTAL_SUPPLY / 10 - 105 * TOTAL_SUPPLY / 2000,
-            1
+        let fundValue = 1000000u64;
+        addFund(fundValue, SEED_FUND, &mut project, scenario);
+
+        //Test claim tge
+        {
+            clock::increment_for_testing(&mut sclock, TGE_ONE_MONTH_MS);
+            claim(SEED_FUND, &mut project, &sclock, scenario);
+
+            test_scenario::next_tx(scenario, SEED_FUND);
+            let fundClaim = take_from_sender<Coin<XCOIN>>(scenario);
+            assert!(coin::value(&fundClaim) == (fundValue / PERCENT_SCALE) * unlockHalf, 0);
+
+            return_to_sender(scenario, fundClaim);
+        };
+
+        //Test claim after 3month
+        {
+            clock::increment_for_testing(&mut sclock, 3 * MONTH_IN_MS);
+            claim(SEED_FUND, &mut project, &sclock, scenario);
+
+            test_scenario::next_tx(scenario, SEED_FUND);
+            let fundClaim = take_from_sender<Coin<XCOIN>>(scenario);
+
+            let percentExpect = (PERCENT_SCALE - unlockHalf) * 3 / 12;
+            assert!(coin::value(&fundClaim) == (fundValue / PERCENT_SCALE) * percentExpect, 0);
+
+            return_to_sender(scenario, fundClaim);
+        };
+
+        //Test claim after...failed
+        claim(SEED_FUND, &mut project, &sclock, scenario);
+
+        return_shared(project);
+        return_shared(sclock);
+        test_scenario::end(scenario_val);
+    }
+
+
+    #[test]
+    #[expected_failure(abort_code = vesting::ERR_NO_FUND)]
+    fun test_linenear_cliff_first() {
+        let scenario_val = scenario();
+        let scenario = &mut scenario_val;
+        init_env(scenario);
+
+        //setup
+        next_tx(scenario, ADMIN);
+        let sclock = take_shared<Clock>(scenario);
+        let oneYear = 12 * MONTH_IN_MS;
+
+        let unlockHalf = UNLOCK_PERCENT * 5;
+        let project = create_project_(
+            TGE_ONE_MONTH_MS,
+            VESTING_TYPE_LINEAR_CLIFF_FIRST,
+            MONTH_IN_MS,
+            unlockHalf,
+            oneYear,
+            vector::empty(),
+            vector::empty(),
+            &sclock,
+            scenario
         );
 
-        clock::increment_for_testing(&mut clock, 9 * MONTH_IN_MS);
-        vesting::claim(&mut pie, &clock, &mut version, test_scenario::ctx(scenario));
-        assert!(vesting::getFundReleased(&pie, @seedFund) == TOTAL_SUPPLY / 10, 1);
-        assert!(vesting::getFundVestingAvailable(&pie, @seedFund) == 0, 1);
+        let fundValue = 1000000u64;
+        addFund(fundValue, SEED_FUND, &mut project, scenario);
 
-        test_scenario::return_shared(clock);
-        test_scenario::return_shared(pie);
-        test_scenario::return_shared(version);
+        //Test claim tge + cliff
+        {
+            clock::increment_for_testing(&mut sclock, TGE_ONE_MONTH_MS + MONTH_IN_MS);
+            claim(SEED_FUND, &mut project, &sclock, scenario);
+
+            test_scenario::next_tx(scenario, SEED_FUND);
+            let fundClaim = take_from_sender<Coin<XCOIN>>(scenario);
+            assert!(coin::value(&fundClaim) == (fundValue / PERCENT_SCALE) * unlockHalf, 0);
+
+            return_to_sender(scenario, fundClaim);
+        };
+
+        //Test claim after 3month
+        {
+            clock::increment_for_testing(&mut sclock, 3 * MONTH_IN_MS);
+            claim(SEED_FUND, &mut project, &sclock, scenario);
+
+            test_scenario::next_tx(scenario, SEED_FUND);
+            let fundClaim = take_from_sender<Coin<XCOIN>>(scenario);
+
+            let percentExpect = (PERCENT_SCALE - unlockHalf) * 3 / 12;
+            assert!(coin::value(&fundClaim) == (fundValue / PERCENT_SCALE) * percentExpect, 0);
+
+            return_to_sender(scenario, fundClaim);
+        };
+
+        //claim after...failed
+        claim(SEED_FUND, &mut project, &sclock, scenario);
+
+        return_shared(project);
+        return_shared(sclock);
         test_scenario::end(scenario_val);
     }
 
-    // #[test]
-    fun test_milestone_unlock_first_cliff_zero_claim_multiple() {
-        let scenario_val = test_scenario::begin(ADMIN);
+    #[test]
+    #[expected_failure(abort_code = vesting::ERR_NO_FUND)]
+    fun test_remove_fund(){
+        let scenario_val = scenario();
         let scenario = &mut scenario_val;
         init_env(scenario);
-        test_scenario::next_tx(scenario, ADMIN);
 
-        let clock = take_shared<Clock>(scenario);
-        let version = take_shared<Version>(scenario);
-        let pie = take_shared<Project<XCOIN>>(scenario);
-
-        test_scenario::next_tx(scenario, @publicFund);
-        clock::increment_for_testing(&mut clock, TGE_ONE_MONTH_MS);
-        vesting::claim(&mut pie, &clock, &mut version, test_scenario::ctx(scenario));
-        assert!(vesting::getFundReleased(&pie, @publicFund) == TOTAL_SUPPLY * 5 / (10 * 100), 1);
-        assert!(vesting::getFundVestingAvailable(&pie, @publicFund) == TOTAL_SUPPLY / 10 - TOTAL_SUPPLY * 5 / (10 * 100), 1);
-
-        clock::increment_for_testing(&mut clock,  MONTH_IN_MS);
-        vesting::claim(&mut pie, &clock, &mut version, test_scenario::ctx(scenario));
-        assert!(vesting::getFundReleased(&pie, @publicFund) == 40 * TOTAL_SUPPLY / 1000 , 1);
-        assert!(vesting::getFundVestingAvailable(&pie, @publicFund) == TOTAL_SUPPLY / 10 - 40 * TOTAL_SUPPLY / 1000, 1);
-
-        clock::increment_for_testing(&mut clock,  MONTH_IN_MS);
-        vesting::claim(&mut pie, &clock, &mut version, test_scenario::ctx(scenario));
-        assert!(vesting::getFundReleased(&pie, @publicFund) == 70 * TOTAL_SUPPLY / 1000 , 1);
-        assert!(vesting::getFundVestingAvailable(&pie, @publicFund) == TOTAL_SUPPLY / 10 - 70 * TOTAL_SUPPLY / 1000, 1);
-
-        clock::increment_for_testing(&mut clock,  MONTH_IN_MS);
-        vesting::claim(&mut pie, &clock, &mut version, test_scenario::ctx(scenario));
-        assert!(vesting::getFundReleased(&pie, @publicFund) == 100 * TOTAL_SUPPLY / 1000 , 1);
-        assert!(vesting::getFundVestingAvailable(&pie, @publicFund) == 0, 1);
-
-        test_scenario::return_shared(clock);
-        test_scenario::return_shared(pie);
-        test_scenario::return_shared(version);
-        test_scenario::end(scenario_val);
-    }
-
-    // #[test]
-    fun test_milestone_unlock_first_cliff_onemonth_claim_multiple() {
-        let scenario_val = test_scenario::begin(ADMIN);
-        let scenario = &mut scenario_val;
-        init_env(scenario);
-        test_scenario::next_tx(scenario, ADMIN);
-
-        let clock = take_shared<Clock>(scenario);
-        let version = take_shared<Version>(scenario);
-        let pie = take_shared<Project<XCOIN>>(scenario);
-
-        test_scenario::next_tx(scenario, @foundationFund);
-        clock::increment_for_testing(&mut clock, TGE_ONE_MONTH_MS);
-        vesting::claim(&mut pie, &clock, &mut version, test_scenario::ctx(scenario));
-        assert!(vesting::getFundReleased(&pie, @foundationFund) == TOTAL_SUPPLY * 5 / (10 * 100), 1);
-        assert!(vesting::getFundVestingAvailable(&pie, @foundationFund) == TOTAL_SUPPLY / 10 - TOTAL_SUPPLY * 5 / (10 * 100), 1);
-
-        clock::increment_for_testing(&mut clock,  MONTH_IN_MS);
-        vesting::claim(&mut pie, &clock, &mut version, test_scenario::ctx(scenario));
-        assert!(vesting::getFundReleased(&pie, @foundationFund) == 40 * TOTAL_SUPPLY / 1000 , 1);
-        assert!(vesting::getFundVestingAvailable(&pie, @foundationFund) == TOTAL_SUPPLY / 10 - 40 * TOTAL_SUPPLY / 1000, 1);
-
-        clock::increment_for_testing(&mut clock,  MONTH_IN_MS);
-        vesting::claim(&mut pie, &clock, &mut version, test_scenario::ctx(scenario));
-        assert!(vesting::getFundReleased(&pie, @foundationFund) == 70 * TOTAL_SUPPLY / 1000 , 1);
-        assert!(vesting::getFundVestingAvailable(&pie, @foundationFund) == TOTAL_SUPPLY / 10 - 70 * TOTAL_SUPPLY / 1000, 1);
-
-        clock::increment_for_testing(&mut clock,  MONTH_IN_MS);
-        vesting::claim(&mut pie, &clock, &mut version, test_scenario::ctx(scenario));
-        assert!(vesting::getFundReleased(&pie, @foundationFund) == 100 * TOTAL_SUPPLY / 1000 , 1);
-        assert!(vesting::getFundVestingAvailable(&pie, @foundationFund) == 0, 1);
-
-        test_scenario::return_shared(clock);
-        test_scenario::return_shared(pie);
-        test_scenario::return_shared(version);
-        test_scenario::end(scenario_val);
-    }
-
-    // #[test]
-    // #[expected_failure(abort_code = seapad::vesting::ERR_NO_FUND)]
-    fun test_milestone_cliff_first_cliff_onemonth_claim_multiple_nocoin() {
-        let scenario_val = test_scenario::begin(ADMIN);
-        let scenario = &mut scenario_val;
-        init_env(scenario);
-        test_scenario::next_tx(scenario, ADMIN);
-
-        let clock = take_shared<Clock>(scenario);
-        let version = take_shared<Version>(scenario);
-        let pie = take_shared<Project<XCOIN>>(scenario);
-
-        test_scenario::next_tx(scenario, @marketingFund);
-        clock::increment_for_testing(&mut clock, TGE_ONE_MONTH_MS);
-        vesting::claim(&mut pie, &clock, &mut version, test_scenario::ctx(scenario));
-        assert!(vesting::getFundReleased(&pie, @foundationFund) == TOTAL_SUPPLY * 5 / (10 * 100), 1);
-        assert!(vesting::getFundVestingAvailable(&pie, @foundationFund) == TOTAL_SUPPLY / 10 - TOTAL_SUPPLY * 5 / (10 * 100), 1);
-
-        test_scenario::return_shared(clock);
-        test_scenario::return_shared(pie);
-        test_scenario::return_shared(version);
-        test_scenario::end(scenario_val);
-    }
-
-    // #[test]
-    fun test_milestone_cliff_first_cliff_onemonth_claim_multiple() {
-        let scenario_val = test_scenario::begin(ADMIN);
-        let scenario = &mut scenario_val;
-        init_env(scenario);
-        test_scenario::next_tx(scenario, ADMIN);
-
-        let clock = take_shared<Clock>(scenario);
-        let version = take_shared<Version>(scenario);
-        let pie = take_shared<Project<XCOIN>>(scenario);
-
-        test_scenario::next_tx(scenario, @marketingFund);
-        clock::increment_for_testing(&mut clock, 2*TGE_ONE_MONTH_MS);
-        vesting::claim(&mut pie, &clock, &mut version, test_scenario::ctx(scenario));
-        assert!(vesting::getFundReleased(&pie, @marketingFund) == 40 * TOTAL_SUPPLY / 1000 , 1);
-        assert!(vesting::getFundVestingAvailable(&pie, @marketingFund) == TOTAL_SUPPLY / 10 - 40 * TOTAL_SUPPLY / 1000, 1);
-
-        // clock::increment_for_testing(&mut clock,  MONTH_IN_MS);
-        // vesting::claim(&mut pie, &clock, &mut version, test_scenario::ctx(scenario));
-        // assert!(vesting::getFundReleased(&pie, @foundationFund) == 40 * TOTAL_SUPPLY / 1000 , 1);
-        // assert!(vesting::getFundVestingAvailable(&pie, @foundationFund) == TOTAL_SUPPLY / 10 - 40 * TOTAL_SUPPLY / 1000, 1);
-        //
-        // clock::increment_for_testing(&mut clock,  MONTH_IN_MS);
-        // vesting::claim(&mut pie, &clock, &mut version, test_scenario::ctx(scenario));
-        // assert!(vesting::getFundReleased(&pie, @foundationFund) == 70 * TOTAL_SUPPLY / 1000 , 1);
-        // assert!(vesting::getFundVestingAvailable(&pie, @foundationFund) == TOTAL_SUPPLY / 10 - 70 * TOTAL_SUPPLY / 1000, 1);
-        //
-        // clock::increment_for_testing(&mut clock,  MONTH_IN_MS);
-        // vesting::claim(&mut pie, &clock, &mut version, test_scenario::ctx(scenario));
-        // assert!(vesting::getFundReleased(&pie, @foundationFund) == 100 * TOTAL_SUPPLY / 1000 , 1);
-        // assert!(vesting::getFundVestingAvailable(&pie, @foundationFund) == 0, 1);
-
-        test_scenario::return_shared(clock);
-        test_scenario::return_shared(pie);
-        test_scenario::return_shared(version);
-        test_scenario::end(scenario_val);
-    }
-
-    // #[test]
-    fun test_milestone_cliff_first_cliff_onemonth_claim_multiple2() {
-        let scenario_val = test_scenario::begin(ADMIN);
-        let scenario = &mut scenario_val;
-        init_env(scenario);
-        test_scenario::next_tx(scenario, ADMIN);
-
-        let clock = take_shared<Clock>(scenario);
-        let version = take_shared<Version>(scenario);
-        let pie = take_shared<Project<XCOIN>>(scenario);
-
-        test_scenario::next_tx(scenario, @marketingFund);
-        clock::increment_for_testing(&mut clock, 2*TGE_ONE_MONTH_MS);
-        vesting::claim(&mut pie, &clock, &mut version, test_scenario::ctx(scenario));
-        assert!(vesting::getFundReleased(&pie, @marketingFund) == 40 * TOTAL_SUPPLY / 1000 , 1);
-        assert!(vesting::getFundVestingAvailable(&pie, @marketingFund) == TOTAL_SUPPLY / 10 - 40 * TOTAL_SUPPLY / 1000, 1);
-
-        clock::increment_for_testing(&mut clock,  MONTH_IN_MS);
-        vesting::claim(&mut pie, &clock, &mut version, test_scenario::ctx(scenario));
-        assert!(vesting::getFundReleased(&pie, @marketingFund) == 70 * TOTAL_SUPPLY / 1000 , 1);
-        assert!(vesting::getFundVestingAvailable(&pie, @marketingFund) == TOTAL_SUPPLY / 10 - 70 * TOTAL_SUPPLY / 1000, 1);
-
-
-        clock::increment_for_testing(&mut clock,  MONTH_IN_MS);
-        vesting::claim(&mut pie, &clock, &mut version, test_scenario::ctx(scenario));
-        assert!(vesting::getFundReleased(&pie, @marketingFund) == 100 * TOTAL_SUPPLY / 1000 , 1);
-        assert!(vesting::getFundVestingAvailable(&pie, @marketingFund) == 0, 1);
-
-        test_scenario::return_shared(clock);
-        test_scenario::return_shared(pie);
-        test_scenario::return_shared(version);
-        test_scenario::end(scenario_val);
-    }
-
-    // #[test]
-    fun test_milestone_cliff_first_cliff_zero_claim_overtime() {
-        let scenario_val = test_scenario::begin(ADMIN);
-        let scenario = &mut scenario_val;
-        init_env(scenario);
-        test_scenario::next_tx(scenario, ADMIN);
-
-        let clock = take_shared<Clock>(scenario);
-        let version = take_shared<Version>(scenario);
-        let pie = take_shared<Project<XCOIN>>(scenario);
-
-        test_scenario::next_tx(scenario, @marketingFund);
-        clock::increment_for_testing(&mut clock, 7*TGE_ONE_MONTH_MS);
-        vesting::claim(&mut pie, &clock, &mut version, test_scenario::ctx(scenario));
-        assert!(vesting::getFundReleased(&pie, @marketingFund) == TOTAL_SUPPLY / 10 , 1);
-        assert!(vesting::getFundVestingAvailable(&pie, @marketingFund) == 0, 1);
-
-        test_scenario::return_shared(clock);
-        test_scenario::return_shared(pie);
-        test_scenario::return_shared(version);
-        test_scenario::end(scenario_val);
-    }
-
-    // #[test]
-    fun test_milestone_unlock_first_cliff_zero_claim_overtime() {
-        let scenario_val = test_scenario::begin(ADMIN);
-        let scenario = &mut scenario_val;
-        init_env(scenario);
-        test_scenario::next_tx(scenario, ADMIN);
-
-        let clock = take_shared<Clock>(scenario);
-        let version = take_shared<Version>(scenario);
-        let pie = take_shared<Project<XCOIN>>(scenario);
-
-        test_scenario::next_tx(scenario, @publicFund);
-        clock::increment_for_testing(&mut clock, TGE_ONE_MONTH_MS);
-        vesting::claim(&mut pie, &clock, &mut version, test_scenario::ctx(scenario));
-        assert!(vesting::getFundReleased(&pie, @publicFund) == TOTAL_SUPPLY * 5 / (10 * 100), 1);
-        assert!(vesting::getFundVestingAvailable(&pie, @publicFund) == TOTAL_SUPPLY / 10 - TOTAL_SUPPLY * 5 / (10 * 100), 1);
-
-        clock::increment_for_testing(&mut clock,  3*MONTH_IN_MS);
-        vesting::claim(&mut pie, &clock, &mut version, test_scenario::ctx(scenario));
-        assert!(vesting::getFundReleased(&pie, @publicFund) == 100 * TOTAL_SUPPLY / 1000 , 1);
-        assert!(vesting::getFundVestingAvailable(&pie, @publicFund) == 0, 1);
-
-        test_scenario::return_shared(clock);
-        test_scenario::return_shared(pie);
-        test_scenario::return_shared(version);
-        test_scenario::end(scenario_val);
-    }
-
-    // #[test]
-    fun test_milestone_unlock_first_cliff_onemonth_claim_overtime() {
-        let scenario_val = test_scenario::begin(ADMIN);
-        let scenario = &mut scenario_val;
-        init_env(scenario);
-        test_scenario::next_tx(scenario, ADMIN);
-
-        let clock = take_shared<Clock>(scenario);
-        let version = take_shared<Version>(scenario);
-        let pie = take_shared<Project<XCOIN>>(scenario);
-
-        test_scenario::next_tx(scenario, @foundationFund);
-        clock::increment_for_testing(&mut clock, TGE_ONE_MONTH_MS);
-        vesting::claim(&mut pie, &clock, &mut version, test_scenario::ctx(scenario));
-        assert!(vesting::getFundReleased(&pie, @foundationFund) == TOTAL_SUPPLY * 5 / (10 * 100), 1);
-        assert!(vesting::getFundVestingAvailable(&pie, @foundationFund) == TOTAL_SUPPLY / 10 - TOTAL_SUPPLY * 5 / (10 * 100), 1);
-
-        clock::increment_for_testing(&mut clock,  3*MONTH_IN_MS);
-        vesting::claim(&mut pie, &clock, &mut version, test_scenario::ctx(scenario));
-        assert!(vesting::getFundReleased(&pie, @foundationFund) == 100 * TOTAL_SUPPLY / 1000 , 1);
-        assert!(vesting::getFundVestingAvailable(&pie, @foundationFund) == 0, 1);
-
-        test_scenario::return_shared(clock);
-        test_scenario::return_shared(pie);
-        test_scenario::return_shared(version);
-        test_scenario::end(scenario_val);
-    }
-
-    // #[test]
-    fun test_milestone_unlock_first_cliff_zero_claim_overtime2() {
-        let scenario_val = test_scenario::begin(ADMIN);
-        let scenario = &mut scenario_val;
-        init_env(scenario);
-        test_scenario::next_tx(scenario, ADMIN);
-
-        let clock = take_shared<Clock>(scenario);
-        let version = take_shared<Version>(scenario);
-        let pie = take_shared<Project<XCOIN>>(scenario);
-
-        test_scenario::next_tx(scenario, @publicFund);
-
-        clock::increment_for_testing(&mut clock,  5*MONTH_IN_MS);
-        vesting::claim(&mut pie, &clock, &mut version, test_scenario::ctx(scenario));
-        assert!(vesting::getFundReleased(&pie, @publicFund) == 100 * TOTAL_SUPPLY / 1000 , 1);
-        assert!(vesting::getFundVestingAvailable(&pie, @publicFund) == 0, 1);
-
-        test_scenario::return_shared(clock);
-        test_scenario::return_shared(pie);
-        test_scenario::return_shared(version);
-        test_scenario::end(scenario_val);
-    }
-
-    // #[test]
-    // #[expected_failure(abort_code = vesting::ERR_NO_FUND)]
-    fun test_milestone_unlock_first_cliff_zero_claim_nomore() {
-        let scenario_val = test_scenario::begin(ADMIN);
-        let scenario = &mut scenario_val;
-        init_env(scenario);
-        test_scenario::next_tx(scenario, ADMIN);
-
-        let clock = take_shared<Clock>(scenario);
-        let version = take_shared<Version>(scenario);
-        let pie = take_shared<Project<XCOIN>>(scenario);
-
-        test_scenario::next_tx(scenario, @publicFund);
-
-        clock::increment_for_testing(&mut clock,  4*MONTH_IN_MS);
-        vesting::claim(&mut pie, &clock, &mut version, test_scenario::ctx(scenario));
-        assert!(vesting::getFundReleased(&pie, @publicFund) == 100 * TOTAL_SUPPLY / 1000 , 1);
-        assert!(vesting::getFundVestingAvailable(&pie, @publicFund) == 0, 1);
-
-        clock::increment_for_testing(&mut clock, 4*MONTH_IN_MS);
-        vesting::claim(&mut pie, &clock, &mut version, test_scenario::ctx(scenario));
-
-        test_scenario::return_shared(clock);
-        test_scenario::return_shared(pie);
-        test_scenario::return_shared(version);
-        test_scenario::end(scenario_val);
-    }
-
-    // #[test]
-    // #[expected_failure(abort_code = vesting::ERR_NO_FUND)]
-    fun test_milestone_cliff_first_cliff_zero_claim_nomore() {
-        let scenario_val = test_scenario::begin(ADMIN);
-        let scenario = &mut scenario_val;
-        init_env(scenario);
-        test_scenario::next_tx(scenario, ADMIN);
-
-        let clock = take_shared<Clock>(scenario);
-        let version = take_shared<Version>(scenario);
-        let pie = take_shared<Project<XCOIN>>(scenario);
-
-        test_scenario::next_tx(scenario, @marketingFund);
-
-        clock::increment_for_testing(&mut clock,  7*MONTH_IN_MS);
-        vesting::claim(&mut pie, &clock, &mut version, test_scenario::ctx(scenario));
-        assert!(vesting::getFundReleased(&pie, @marketingFund) == TOTAL_SUPPLY / 10 , 1);
-        assert!(vesting::getFundVestingAvailable(&pie, @marketingFund) == 0, 1);
-
-        clock::increment_for_testing(&mut clock, 4*MONTH_IN_MS);
-        vesting::claim(&mut pie, &clock, &mut version, test_scenario::ctx(scenario));
-
-        test_scenario::return_shared(clock);
-        test_scenario::return_shared(pie);
-        test_scenario::return_shared(version);
-        test_scenario::end(scenario_val);
-    }
-
-    // #[test]
-    // #[expected_failure(abort_code = vesting::ERR_NO_FUND)]
-    fun test_milestone_cliff_first_cliff_zero_claim_nomore2() {
-        let scenario_val = test_scenario::begin(ADMIN);
-        let scenario = &mut scenario_val;
-        init_env(scenario);
-        test_scenario::next_tx(scenario, ADMIN);
-
-        let clock = take_shared<Clock>(scenario);
-        let version = take_shared<Version>(scenario);
-        let pie = take_shared<Project<XCOIN>>(scenario);
-
-        test_scenario::next_tx(scenario, @marketingFund);
-
-        test_scenario::next_tx(scenario, @marketingFund);
-        clock::increment_for_testing(&mut clock, 2*TGE_ONE_MONTH_MS);
-        vesting::claim(&mut pie, &clock, &mut version, test_scenario::ctx(scenario));
-        assert!(vesting::getFundReleased(&pie, @marketingFund) == 40 * TOTAL_SUPPLY / 1000 , 1);
-        assert!(vesting::getFundVestingAvailable(&pie, @marketingFund) == TOTAL_SUPPLY / 10 - 40 * TOTAL_SUPPLY / 1000, 1);
-
-        clock::increment_for_testing(&mut clock, MONTH_IN_MS/2);
-        vesting::claim(&mut pie, &clock, &mut version, test_scenario::ctx(scenario));
-
-        test_scenario::return_shared(clock);
-        test_scenario::return_shared(pie);
-        test_scenario::return_shared(version);
-        test_scenario::end(scenario_val);
-    }
-
-    // #[test]
-    // #[expected_failure(abort_code = vesting::ERR_NO_FUND)]
-    fun test_unlock_first_cliff_zero_claim_nomore2() {
-        let scenario_val = test_scenario::begin(ADMIN);
-        let scenario = &mut scenario_val;
-        init_env(scenario);
-        test_scenario::next_tx(scenario, ADMIN);
-
-        let clock = take_shared<Clock>(scenario);
-        let version = take_shared<Version>(scenario);
-        let pie = take_shared<Project<XCOIN>>(scenario);
-
-        test_scenario::next_tx(scenario, @seedFund);
-        clock::increment_for_testing(&mut clock, TGE_ONE_MONTH_MS);
-        clock::increment_for_testing(&mut clock, 9 * MONTH_IN_MS);
-        vesting::claim(&mut pie, &clock, &mut version, test_scenario::ctx(scenario));
-        assert!(vesting::getFundReleased(&pie, @seedFund) == (500 + 9500 / 2) * TOTAL_SUPPLY / 100000, 1);
-        assert!(
-            vesting::getFundVestingAvailable(
-                &pie,
-                @seedFund
-            ) == TOTAL_SUPPLY / 10 - (500 + 9500 / 2) * TOTAL_SUPPLY / 100000,
-            1
+        //setup
+        next_tx(scenario, ADMIN);
+        let sclock = take_shared<Clock>(scenario);
+        let oneYear = 12 * MONTH_IN_MS;
+
+        let unlockHalf = UNLOCK_PERCENT * 5;
+        let project = create_project_(
+            TGE_ONE_MONTH_MS,
+            VESTING_TYPE_LINEAR_UNLOCK_FIRST,
+            0,
+            unlockHalf,
+            oneYear,
+            vector::empty(),
+            vector::empty(),
+            &sclock,
+            scenario
         );
 
-        test_scenario::next_tx(scenario, @seedFund);
-        clock::increment_for_testing(&mut clock, 9 * MONTH_IN_MS);
-        vesting::claim(&mut pie, &clock, &mut version, test_scenario::ctx(scenario));
-        assert!(vesting::getFundReleased(&pie, @seedFund) == TOTAL_SUPPLY / 10, 1);
-        assert!(vesting::getFundVestingAvailable(&pie, @seedFund) == 0, 1);
+        let fundValue = 1000000u64;
+        addFund(fundValue, SEED_FUND, &mut project, scenario);
+        removeFund(SEED_FUND, &mut project, scenario);
 
-        test_scenario::next_tx(scenario, @seedFund);
-        clock::increment_for_testing(&mut clock, 9 * MONTH_IN_MS);
-        vesting::claim(&mut pie, &clock, &mut version, test_scenario::ctx(scenario));
+        //Owner receive fund
+        test_scenario::next_tx(scenario, SEED_FUND);
+        {
+            let receiveFund = take_from_sender<Coin<XCOIN>>(scenario);
+            assert!(coin::value(&receiveFund) == fundValue, 0);
+            return_to_sender(scenario, receiveFund);
+        };
+        //claim after...failed
+        clock::increment_for_testing(&mut sclock, TGE_ONE_MONTH_MS);
+        claim(SEED_FUND, &mut project, &sclock, scenario);
 
-        test_scenario::return_shared(clock);
-        test_scenario::return_shared(pie);
-        test_scenario::return_shared(version);
+        return_shared(project);
+        return_shared(sclock);
         test_scenario::end(scenario_val);
     }
 
-    // #[test]
-    fun test_unlock_first_cliff_onemonth_claim_at_tge() {
-        let scenario_val = test_scenario::begin(ADMIN);
-        let scenario = &mut scenario_val;
-        init_env(scenario);
+
+    fun claim(claimer: address, project: &mut Project<XCOIN>, sclock: &Clock, scenario: &mut Scenario) {
+        test_scenario::next_tx(scenario, claimer);
+        let version = take_shared<Version>(scenario);
+        let ctx = test_scenario::ctx(scenario);
+        vesting::claim(project, sclock, &version, ctx);
+        return_shared(version);
+    }
+
+
+    fun addFund(amount: u64, owner: address, project: &mut Project<XCOIN>, scenario: &mut Scenario) {
         test_scenario::next_tx(scenario, ADMIN);
 
-        let clock = take_shared<Clock>(scenario);
+        let admin = take_from_sender<VAdminCap>(scenario);
         let version = take_shared<Version>(scenario);
-        let pie = take_shared<Project<XCOIN>>(scenario);
+        let resgistry = take_shared<ProjectRegistry>(scenario);
+        let ctx = test_scenario::ctx(scenario);
 
-        assert!(vesting::getFundUnlockPercent(&pie, @privateFund) == 1000, 1);
-        assert!(vesting::getFundTotal(&pie, @privateFund) == (TOTAL_SUPPLY * 12 / 100), 1);
-        assert!(vesting::getFundReleased(&pie, @privateFund) == 0, 1);
-        assert!(vesting::getFundVestingAvailable(&pie, @privateFund) == (TOTAL_SUPPLY * 12 / 100), 1);
+        let fund = coin::mint_for_testing<XCOIN>(amount, ctx);
+        vesting::addFund(&admin, owner, fund, project, &mut resgistry, &version);
 
-        test_scenario::next_tx(scenario, @privateFund);
-        clock::increment_for_testing(&mut clock, TGE_ONE_MONTH_MS);
-        vesting::claim(&mut pie, &clock, &mut version, test_scenario::ctx(scenario));
-        assert!(vesting::getFundReleased(&pie, @privateFund) == TOTAL_SUPPLY * 12 / 100 * 10 / 100, 1);
-        assert!(vesting::getFundVestingAvailable(&pie, @privateFund) == TOTAL_SUPPLY * 12 / 100 - TOTAL_SUPPLY * 12 / (10 * 100), 1);
-
-        test_scenario::return_shared(clock);
-        test_scenario::return_shared(pie);
-        test_scenario::return_shared(version);
-        test_scenario::end(scenario_val);
+        return_to_sender(scenario, admin);
+        return_shared(version);
+        return_shared(resgistry);
     }
 
-    // #[test]
-    // #[expected_failure(abort_code = seapad::vesting::ERR_NO_FUND)]
-    fun test_unlock_first_cliff_onemonth_claim_in_cliff_nomore_coin() {
-        let scenario_val = test_scenario::begin(ADMIN);
-        let scenario = &mut scenario_val;
-        init_env(scenario);
+    fun removeFund(owner: address, project: &mut Project<XCOIN>, scenario: &mut Scenario) {
         test_scenario::next_tx(scenario, ADMIN);
 
-        let clock = take_shared<Clock>(scenario);
+        let admin = take_from_sender<VAdminCap>(scenario);
         let version = take_shared<Version>(scenario);
-        let pie = take_shared<Project<XCOIN>>(scenario);
 
-        assert!(vesting::getFundUnlockPercent(&pie, @privateFund) == 1000, 1);
-        assert!(vesting::getFundTotal(&pie, @privateFund) == (TOTAL_SUPPLY * 12 / 100), 1);
-        assert!(vesting::getFundReleased(&pie, @privateFund) == 0, 1);
-        assert!(vesting::getFundVestingAvailable(&pie, @privateFund) == (TOTAL_SUPPLY * 12 / 100), 1);
+        vesting::removeFund(&admin, owner, project, &version);
 
-        test_scenario::next_tx(scenario, @privateFund);
-        clock::increment_for_testing(&mut clock, TGE_ONE_MONTH_MS);
-        vesting::claim(&mut pie, &clock, &mut version, test_scenario::ctx(scenario));
-        assert!(vesting::getFundReleased(&pie, @privateFund) == TOTAL_SUPPLY * 12 / 100 * 10 / 100, 1);
-        assert!(
-            vesting::getFundVestingAvailable(
-                &pie,
-                @privateFund
-            ) == TOTAL_SUPPLY * 12 / 100 - TOTAL_SUPPLY * 12 / (10 * 100),
-            1
-        );
-
-        test_scenario::next_tx(scenario, @privateFund);
-        clock::increment_for_testing(&mut clock, MONTH_IN_MS / 2);
-        vesting::claim(&mut pie, &clock, &mut version, test_scenario::ctx(scenario));
-        assert!(vesting::getFundReleased(&pie, @privateFund) == TOTAL_SUPPLY * 12 / 100 * 10 / 100, 1);
-        assert!(
-            vesting::getFundVestingAvailable(
-                &pie,
-                @privateFund
-            ) == TOTAL_SUPPLY * 12 / 100 - TOTAL_SUPPLY * 12 / (10 * 100),
-            1
-        );
-
-        test_scenario::return_shared(clock);
-        test_scenario::return_shared(pie);
-        test_scenario::return_shared(version);
-        test_scenario::end(scenario_val);
+        return_to_sender(scenario, admin);
+        return_shared(version);
     }
 
-    // #[test]
-    // #[expected_failure(abort_code = seapad::vesting::ERR_NO_FUND)]
-    fun test_unlock_first_cliff_onemonth_claim_at_tail_cliff() {
-        let scenario_val = test_scenario::begin(ADMIN);
-        let scenario = &mut scenario_val;
-        init_env(scenario);
+    fun create_project_(
+        tge_ms: u64,
+        vesting_type: u8,
+        cliff_ms: u64,
+        unlock_percent: u64,
+        linear_vesting_duration_ms: u64,
+        milestone_times: vector<u64>,
+        milestone_percents: vector<u64>,
+        sclock: &Clock,
+        scenario: &mut Scenario
+    ): Project<XCOIN> {
         test_scenario::next_tx(scenario, ADMIN);
+        {
+            let admin = test_scenario::take_from_sender<VAdminCap>(scenario);
+            let projectRegistry = test_scenario::take_shared<ProjectRegistry>(scenario);
+            let version = test_scenario::take_shared<Version>(scenario);
+            let ctx = test_scenario::ctx(scenario);
 
-        let clock = take_shared<Clock>(scenario);
-        let version = take_shared<Version>(scenario);
-        let pie = take_shared<Project<XCOIN>>(scenario);
+            vesting::createProject<XCOIN>(
+                &admin,
+                b"project1",
+                b"http://url",
+                TOTAL_SUPPLY,
+                tge_ms,
+                vesting_type,
+                cliff_ms,
+                unlock_percent,
+                linear_vesting_duration_ms,
+                milestone_times,
+                milestone_percents,
+                sclock,
+                &mut version,
+                &mut projectRegistry,
+                ctx
+            );
 
-        assert!(vesting::getFundUnlockPercent(&pie, @privateFund) == 1000, 1);
-        assert!(vesting::getFundTotal(&pie, @privateFund) == (TOTAL_SUPPLY * 12 / 100), 1);
-        assert!(vesting::getFundReleased(&pie, @privateFund) == 0, 1);
-        assert!(vesting::getFundVestingAvailable(&pie, @privateFund) == (TOTAL_SUPPLY * 12 / 100), 1);
+            test_scenario::return_shared(projectRegistry);
+            test_scenario::return_to_sender(scenario, admin);
+            test_scenario::return_shared(version);
+        };
 
-        test_scenario::next_tx(scenario, @privateFund);
-        clock::increment_for_testing(&mut clock, TGE_ONE_MONTH_MS);
-        vesting::claim(&mut pie, &clock, &mut version, test_scenario::ctx(scenario));
-        assert!(vesting::getFundReleased(&pie, @privateFund) == TOTAL_SUPPLY * 12 / 100 * 10 / 100, 1);
-        assert!(
-            vesting::getFundVestingAvailable(
-                &pie,
-                @privateFund
-            ) == TOTAL_SUPPLY * 12 / 100 - TOTAL_SUPPLY * 12 / (10 * 100),
-            1
-        );
-
-        test_scenario::next_tx(scenario, @privateFund);
-        clock::increment_for_testing(&mut clock, MONTH_IN_MS);
-        vesting::claim(&mut pie, &clock, &mut version, test_scenario::ctx(scenario));
-        assert!(vesting::getFundReleased(&pie, @privateFund) == TOTAL_SUPPLY * 12 / 100 * 10 / 100, 1);
-        assert!(
-            vesting::getFundVestingAvailable(
-                &pie,
-                @privateFund
-            ) == TOTAL_SUPPLY * 12 / 100 - TOTAL_SUPPLY * 12 / (10 * 100),
-            1
-        );
-
-        test_scenario::return_shared(clock);
-        test_scenario::return_shared(pie);
-        test_scenario::return_shared(version);
-        test_scenario::end(scenario_val);
-    }
-
-
-    // #[test]
-    fun test_unlock_first_cliff_onemonth_claim_linear() {
-        let scenario_val = test_scenario::begin(ADMIN);
-        let scenario = &mut scenario_val;
-        init_env(scenario);
         test_scenario::next_tx(scenario, ADMIN);
-
-        let clock = take_shared<Clock>(scenario);
-        let version = take_shared<Version>(scenario);
-        let pie = take_shared<Project<XCOIN>>(scenario);
-
-        test_scenario::next_tx(scenario, @privateFund);
-        clock::increment_for_testing(&mut clock, TGE_ONE_MONTH_MS);
-        vesting::claim(&mut pie, &clock, &mut version, test_scenario::ctx(scenario));
-        assert!(vesting::getFundReleased(&pie, @privateFund) == TOTAL_SUPPLY * 12 / 100 * 10 / 100, 1);
-        assert!(
-            vesting::getFundVestingAvailable(
-                &pie,
-                @privateFund
-            ) == TOTAL_SUPPLY * 12 / 100 - TOTAL_SUPPLY * 12 / (10 * 100),
-            1
-        );
-
-        test_scenario::next_tx(scenario, @privateFund);
-        clock::increment_for_testing(&mut clock, MONTH_IN_MS + 6 * MONTH_IN_MS);
-        vesting::claim(&mut pie, &clock, &mut version, test_scenario::ctx(scenario));
-        assert!(vesting::getFundReleased(&pie, @privateFund) == TOTAL_SUPPLY * 12 * 110 / 20000, 1);
-        assert!(
-            vesting::getFundVestingAvailable(
-                &pie,
-                @privateFund
-            ) == TOTAL_SUPPLY * 12 / 100 - TOTAL_SUPPLY * 12 * 110 / 20000,
-            1
-        );
-
-        test_scenario::next_tx(scenario, @privateFund);
-        clock::increment_for_testing(&mut clock, 6 * MONTH_IN_MS);
-        vesting::claim(&mut pie, &clock, &mut version, test_scenario::ctx(scenario));
-        assert!(vesting::getFundReleased(&pie, @privateFund) == TOTAL_SUPPLY * 12 / 100, 1);
-        assert!(vesting::getFundVestingAvailable(&pie, @privateFund) == 0, 1);
-
-        test_scenario::return_shared(clock);
-        test_scenario::return_shared(pie);
-        test_scenario::return_shared(version);
-        test_scenario::end(scenario_val);
+        test_scenario::take_shared<Project<XCOIN>>(scenario)
     }
 
-    // #[test]
-    // #[expected_failure(abort_code = seapad::vesting::ERR_NO_FUND)]
-    fun test_unlock_first_cliff_onemonth_claim_linear2() {
-        let scenario_val = test_scenario::begin(ADMIN);
-        let scenario = &mut scenario_val;
-        init_env(scenario);
-        test_scenario::next_tx(scenario, ADMIN);
-
-        let clock = take_shared<Clock>(scenario);
-        let version = take_shared<Version>(scenario);
-        let pie = take_shared<Project<XCOIN>>(scenario);
-
-        test_scenario::next_tx(scenario, @privateFund);
-        clock::increment_for_testing(&mut clock, TGE_ONE_MONTH_MS);
-        vesting::claim(&mut pie, &clock, &mut version, test_scenario::ctx(scenario));
-        assert!(vesting::getFundReleased(&pie, @privateFund) == TOTAL_SUPPLY * 12 / 100 * 10 / 100, 1);
-        assert!(
-            vesting::getFundVestingAvailable(
-                &pie,
-                @privateFund
-            ) == TOTAL_SUPPLY * 12 / 100 - TOTAL_SUPPLY * 12 / (10 * 100),
-            1
-        );
-
-        test_scenario::next_tx(scenario, @privateFund);
-        clock::increment_for_testing(&mut clock, MONTH_IN_MS + 6 * MONTH_IN_MS);
-        vesting::claim(&mut pie, &clock, &mut version, test_scenario::ctx(scenario));
-        assert!(vesting::getFundReleased(&pie, @privateFund) == TOTAL_SUPPLY * 12 * 110 / 20000, 1);
-        assert!(
-            vesting::getFundVestingAvailable(
-                &pie,
-                @privateFund
-            ) == TOTAL_SUPPLY * 12 / 100 - TOTAL_SUPPLY * 12 * 110 / 20000,
-            1
-        );
-
-        test_scenario::next_tx(scenario, @privateFund);
-        clock::increment_for_testing(&mut clock, 6 * MONTH_IN_MS);
-        vesting::claim(&mut pie, &clock, &mut version, test_scenario::ctx(scenario));
-        assert!(vesting::getFundReleased(&pie, @privateFund) == TOTAL_SUPPLY * 12 / 100, 1);
-        assert!(vesting::getFundVestingAvailable(&pie, @privateFund) == 0, 1);
-
-        test_scenario::next_tx(scenario, @privateFund);
-        clock::increment_for_testing(&mut clock, 6 * MONTH_IN_MS);
-        vesting::claim(&mut pie, &clock, &mut version, test_scenario::ctx(scenario));
-
-        test_scenario::return_shared(clock);
-        test_scenario::return_shared(pie);
-        test_scenario::return_shared(version);
-        test_scenario::end(scenario_val);
+    fun init_env(scenario: &mut Scenario) {
+        let ctx = test_scenario::ctx(scenario);
+        clock::share_for_testing(clock::create_for_testing(ctx));
+        initForTest(ctx);
+        vesting::initForTesting(ctx);
     }
 
-    // #[test]
-    fun test_unlock_first_cliff_onemonth_claim_linear3() {
-        let scenario_val = test_scenario::begin(ADMIN);
-        let scenario = &mut scenario_val;
-        init_env(scenario);
-        test_scenario::next_tx(scenario, ADMIN);
-
-        let clock = take_shared<Clock>(scenario);
-        let version = take_shared<Version>(scenario);
-        let pie = take_shared<Project<XCOIN>>(scenario);
-
-        test_scenario::next_tx(scenario, @privateFund);
-        clock::increment_for_testing(&mut clock, TGE_ONE_MONTH_MS);
-        vesting::claim(&mut pie, &clock, &mut version, test_scenario::ctx(scenario));
-        assert!(vesting::getFundReleased(&pie, @privateFund) == TOTAL_SUPPLY * 12 / 100 * 10 / 100, 1);
-        assert!(
-            vesting::getFundVestingAvailable(
-                &pie,
-                @privateFund
-            ) == TOTAL_SUPPLY * 12 / 100 - TOTAL_SUPPLY * 12 / (10 * 100),
-            1
-        );
-
-        test_scenario::next_tx(scenario, @privateFund);
-        clock::increment_for_testing(&mut clock, MONTH_IN_MS + 12 * MONTH_IN_MS);
-        vesting::claim(&mut pie, &clock, &mut version, test_scenario::ctx(scenario));
-        assert!(vesting::getFundReleased(&pie, @privateFund) == TOTAL_SUPPLY * 12 / 100, 1);
-        assert!(vesting::getFundVestingAvailable(&pie, @privateFund) == 0, 1);
-
-        test_scenario::return_shared(clock);
-        test_scenario::return_shared(pie);
-        test_scenario::return_shared(version);
-        test_scenario::end(scenario_val);
-    }
-
-
-    // #[test]
-    fun test_unlock_first_cliff_onemonth_claim_linear4() {
-        let scenario_val = test_scenario::begin(ADMIN);
-        let scenario = &mut scenario_val;
-        init_env(scenario);
-        test_scenario::next_tx(scenario, ADMIN);
-
-        let clock = take_shared<Clock>(scenario);
-        let version = take_shared<Version>(scenario);
-        let pie = take_shared<Project<XCOIN>>(scenario);
-
-        test_scenario::next_tx(scenario, @privateFund);
-        clock::increment_for_testing(&mut clock, TGE_ONE_MONTH_MS);
-        vesting::claim(&mut pie, &clock, &mut version, test_scenario::ctx(scenario));
-        assert!(vesting::getFundReleased(&pie, @privateFund) == TOTAL_SUPPLY * 12 / 100 * 10 / 100, 1);
-        assert!(
-            vesting::getFundVestingAvailable(
-                &pie,
-                @privateFund
-            ) == TOTAL_SUPPLY * 12 / 100 - TOTAL_SUPPLY * 12 / (10 * 100),
-            1
-        );
-
-        test_scenario::next_tx(scenario, @privateFund);
-        clock::increment_for_testing(&mut clock, MONTH_IN_MS + 20 * MONTH_IN_MS);
-        vesting::claim(&mut pie, &clock, &mut version, test_scenario::ctx(scenario));
-        assert!(vesting::getFundReleased(&pie, @privateFund) == TOTAL_SUPPLY * 12 / 100, 1);
-        assert!(vesting::getFundVestingAvailable(&pie, @privateFund) == 0, 1);
-
-        test_scenario::return_shared(clock);
-        test_scenario::return_shared(pie);
-        test_scenario::return_shared(version);
-        test_scenario::end(scenario_val);
-    }
-
-    // #[test]
-    // #[expected_failure(abort_code = seapad::vesting::ERR_NO_FUND)]
-    fun test_unlock_first_cliff_onemonth_claim_linear5() {
-        let scenario_val = test_scenario::begin(ADMIN);
-        let scenario = &mut scenario_val;
-        init_env(scenario);
-        test_scenario::next_tx(scenario, ADMIN);
-
-        let clock = take_shared<Clock>(scenario);
-        let version = take_shared<Version>(scenario);
-        let pie = take_shared<Project<XCOIN>>(scenario);
-
-        test_scenario::next_tx(scenario, @privateFund);
-        clock::increment_for_testing(&mut clock, TGE_ONE_MONTH_MS);
-        vesting::claim(&mut pie, &clock, &mut version, test_scenario::ctx(scenario));
-        assert!(vesting::getFundReleased(&pie, @privateFund) == TOTAL_SUPPLY * 12 / 100 * 10 / 100, 1);
-        assert!(
-            vesting::getFundVestingAvailable(
-                &pie,
-                @privateFund
-            ) == TOTAL_SUPPLY * 12 / 100 - TOTAL_SUPPLY * 12 / (10 * 100),
-            1
-        );
-
-        test_scenario::next_tx(scenario, @privateFund);
-        clock::increment_for_testing(&mut clock, MONTH_IN_MS + 20 * MONTH_IN_MS);
-        vesting::claim(&mut pie, &clock, &mut version, test_scenario::ctx(scenario));
-        assert!(vesting::getFundReleased(&pie, @privateFund) == TOTAL_SUPPLY * 12 / 100, 1);
-        assert!(vesting::getFundVestingAvailable(&pie, @privateFund) == 0, 1);
-
-        test_scenario::next_tx(scenario, @privateFund);
-        clock::increment_for_testing(&mut clock, 6 * MONTH_IN_MS);
-        vesting::claim(&mut pie, &clock, &mut version, test_scenario::ctx(scenario));
-
-        test_scenario::return_shared(clock);
-        test_scenario::return_shared(pie);
-        test_scenario::return_shared(version);
-        test_scenario::end(scenario_val);
-    }
+    fun scenario(): Scenario { test_scenario::begin(@0xC0FFEE) }
 }

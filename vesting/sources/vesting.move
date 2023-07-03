@@ -46,8 +46,7 @@ module seapad::vesting {
         owner: address,
         project: address,
         fund: u64,
-        //total amount of fund
-        percent: u64 //percent occuppied by this fund on project
+        percent: u64
     }
 
     struct FundRemoveEvent has drop, copy {
@@ -71,47 +70,30 @@ module seapad::vesting {
     }
 
     struct Fund<phantom COIN> has store {
-        owner: address,
-        //owner of fund
-        total: u64,
-        //total of vesting fund, set when fund deposited, nerver change!
-        locked: Coin<COIN>,
-        //all currently locked fund
-        released: u64,
-        //total released
-        percent: u64,
-        //percent on project
+        owner: address, //owner of fund
+        total: u64, //total of vesting fund, set when fund deposited, nerver change!
+        locked: Coin<COIN>, //all currently locked fund
+        released: u64, //total released
+        percent: u64, //percent on project
         last_claim_ms: u64,
-        //last claim time
     }
 
     struct Project<phantom COIN> has key, store {
         id: UID,
         name: vector<u8>,
-        //project name
         url: vector<u8>,
-        //should redirect to ido link
+        deprecated: bool,
         tge_ms: u64,
-        //TGE timestamp
-        supply: u64,
-        //total supply of vesting, pre-set and nerver change!
-        deposited: u64,
-        //total shared coin amount by funds
-        deposited_percent: u64,
-        //total shared coin amount by funds
-        funds: Table<address, Fund<COIN>>,
-        //funds details
+        supply: u64, //total supply of vesting, fixed when create new project
+        deposited: u64, //total deposited amount
+        deposited_percent: u64, //total deposited percent
+        funds: Table<address, Fund<COIN>>, //locked funds
         vesting_type: u8,
         cliff_ms: u64,
-        //lock duration before start vesting
-        unlock_percent: u64,
-        //in %
+        unlock_percent: u64, //in %
         linear_vesting_duration_ms: u64,
-        //linear time vesting duration
         milestone_times: vector<u64>,
-        //list of milestone timestamp
         milestone_percents: vector<u64>,
-        //list of milestone percents
     }
 
     struct ProjectRegistry has key, store {
@@ -129,26 +111,26 @@ module seapad::vesting {
         })
     }
 
-    public entry fun change_admin(admin: VAdminCap, to: address, version: &mut Version) {
+    public entry fun changeAdmin(admin: VAdminCap, to: address, version: &mut Version) {
         checkVersion(version, VERSION);
         transfer(admin, to);
     }
 
-    public entry fun create_project<COIN>(_admin: &VAdminCap,
-                                          name: vector<u8>,
-                                          url: vector<u8>,
-                                          supply: u64,
-                                          tge_ms: u64,
-                                          vesting_type: u8,
-                                          cliff_ms: u64,
-                                          unlock_percent: u64,
-                                          linear_vesting_duration_ms: u64,
-                                          milestone_times: vector<u64>,
-                                          milestone_percents: vector<u64>,
-                                          sclock: &Clock,
-                                          version: &mut Version,
-                                          project_registry: &mut ProjectRegistry,
-                                          ctx: &mut TxContext) {
+    public entry fun createProject<COIN>(_admin: &VAdminCap,
+                                         name: vector<u8>,
+                                         url: vector<u8>,
+                                         supply: u64,
+                                         tge_ms: u64,
+                                         vesting_type: u8,
+                                         cliff_ms: u64,
+                                         unlock_percent: u64,
+                                         linear_vesting_duration_ms: u64,
+                                         milestone_times: vector<u64>,
+                                         milestone_percents: vector<u64>,
+                                         sclock: &Clock,
+                                         version: &mut Version,
+                                         project_registry: &mut ProjectRegistry,
+                                         ctx: &mut TxContext) {
         checkVersion(version, VERSION);
         assert!(
             vesting_type >= VESTING_TYPE_MILESTONE_UNLOCK_FIRST && vesting_type <= VESTING_TYPE_LINEAR_CLIFF_FIRST,
@@ -170,7 +152,7 @@ module seapad::vesting {
             let total = unlock_percent;
             let (index, len) = (0, vector::length(&milestone_times));
 
-            //timestamp ordered!
+            //timestamp must be ordered!
             let curTime = 0u64;
             while (index < len) {
                 total = total + *vector::borrow(&milestone_percents, index);
@@ -192,6 +174,7 @@ module seapad::vesting {
             id: object::new(ctx),
             name,
             url,
+            deprecated: false,
             tge_ms,
             supply,
             deposited: 0,
@@ -216,6 +199,10 @@ module seapad::vesting {
         share_object(project);
     }
 
+    public entry fun setDeprecated<COIN>(_admin: &VAdminCap, project: &mut Project<COIN>, deprecated: bool){
+        project.deprecated = deprecated;
+    }
+
     public entry fun addFunds<COIN>(admin: &VAdminCap,
                                     owners: vector<address>,
                                     values: vector<u64>,
@@ -225,13 +212,13 @@ module seapad::vesting {
                                     version: &Version,
                                     ctx: &mut TxContext) {
         let (i, n) = (0, vector::length(&owners));
+        assert!(vector::length(&values) == n, ERR_BAD_FUND_PARAMS);
         while (i < n) {
             let owner = *vector::borrow(&owners, i);
             let value_fund = *vector::borrow(&values, i);
+            assert!(value_fund > 0, ERR_BAD_FUND_PARAMS);
             let fund = coin::split(&mut totalFund, value_fund, ctx);
-
             addFund(admin, owner, fund, project, registry, version);
-
             i = i + 1;
         };
         transfer::public_transfer(totalFund, sender(ctx));
@@ -326,7 +313,7 @@ module seapad::vesting {
         let fund0 = table::borrow(&mut project.funds, sender_addr);
         assert!(sender_addr == fund0.owner, ERR_NO_PERMISSION);
 
-        let claim_percent = compute_claim_percent<COIN>(project, now_ms);
+        let claim_percent = computeClaimPercent<COIN>(project, now_ms);
         assert!(claim_percent > 0, ERR_NO_FUND);
 
         let fund = table::borrow_mut(&mut project.funds, sender_addr);
@@ -348,7 +335,7 @@ module seapad::vesting {
         })
     }
 
-    fun compute_claim_percent<COIN>(project: &Project<COIN>, now: u64): u64 {
+    fun computeClaimPercent<COIN>(project: &Project<COIN>, now: u64): u64 {
         let milestone_times = &project.milestone_times;
         let milestone_percents = &project.milestone_percents;
         let tge_ms = project.tge_ms;
@@ -411,42 +398,7 @@ module seapad::vesting {
     }
 
     #[test_only]
-    public fun init_for_testing(ctx: &mut TxContext) {
+    public fun initForTesting(ctx: &mut TxContext) {
         init(VESTING {}, ctx);
-    }
-
-    public fun getPieTotalSupply<COIN>(project: &Project<COIN>): u64 {
-        project.supply
-    }
-
-    public fun getPieTotalShare<COIN>(project: &Project<COIN>): u64 {
-        project.deposited
-    }
-
-    public fun getPieTotalSharePercent<COIN>(project: &Project<COIN>): u64 {
-        project.deposited_percent
-    }
-
-    public fun getPieTgeTimeMs<COIN>(project: &Project<COIN>): u64 {
-        project.tge_ms
-    }
-
-    public fun getFundUnlockPercent<COIN>(project: &Project<COIN>, _addr: address): u64 {
-        project.unlock_percent
-    }
-
-    public fun getFundVestingAvailable<COIN>(project: &Project<COIN>, addr: address): u64 {
-        let share = table::borrow(&project.funds, addr);
-        coin::value(&share.locked)
-    }
-
-    public fun getFundReleased<COIN>(project: &Project<COIN>, addr: address): u64 {
-        let share = table::borrow(&project.funds, addr);
-        share.released
-    }
-
-    public fun getFundTotal<COIN>(project: &Project<COIN>, addr: address): u64 {
-        let share = table::borrow(&project.funds, addr);
-        share.total
     }
 }
