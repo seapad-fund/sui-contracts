@@ -6,7 +6,7 @@ module seapad::vesting {
     use sui::coin::{Coin};
     use sui::clock::Clock;
     use sui::coin;
-    use sui::transfer::{share_object, transfer};
+    use sui::transfer::{share_object, transfer, public_transfer};
     use sui::clock;
     use sui::table::Table;
     use sui::table;
@@ -15,6 +15,7 @@ module seapad::vesting {
     use seapad::version::{Version, checkVersion};
     use sui::event::emit;
     use sui::event;
+    use sui::sui::SUI;
 
     const VERSION: u64 = 1;
 
@@ -29,6 +30,7 @@ module seapad::vesting {
     const ERR_BAD_VESTING_TYPE: u64 = 8005;
     const ERR_BAD_VESTING_PARAMS: u64 = 8006;
     const ERR_FULL_SUPPLY: u64 = 8007;
+    const ERR_FEE_NOT_ENOUGH: u64 = 8008;
 
     const VESTING_TYPE_MILESTONE_UNLOCK_FIRST: u8 = 1;
     const VESTING_TYPE_MILESTONE_CLIFF_FIRST: u8 = 2;
@@ -93,6 +95,8 @@ module seapad::vesting {
         linear_vesting_duration_ms: u64,
         milestone_times: vector<u64>,
         milestone_percents: vector<u64>,
+        fee: u64, //how many sui will be charged when user claim fund!
+        feeTreasury: Coin<SUI>
     }
 
     struct ProjectRegistry has key, store {
@@ -128,6 +132,7 @@ module seapad::vesting {
                                          milestone_percents: vector<u64>,
                                          sclock: &Clock,
                                          version: &mut Version,
+                                         fee: u64,
                                          project_registry: &mut ProjectRegistry,
                                          ctx: &mut TxContext) {
         checkVersion(version, VERSION);
@@ -171,6 +176,8 @@ module seapad::vesting {
 
         let project = Project {
             id: object::new(ctx),
+            fee,
+            feeTreasury: coin::zero(ctx),
             name,
             url,
             deprecated: false,
@@ -200,6 +207,15 @@ module seapad::vesting {
 
     public entry fun setDeprecated<COIN>(_admin: &VAdminCap, project: &mut Project<COIN>, deprecated: bool){
         project.deprecated = deprecated;
+    }
+
+    public entry fun setProjectFee<COIN>(_admin: &VAdminCap, project: &mut Project<COIN>, fee: u64){
+        project.fee = fee;
+    }
+
+    public entry fun withdrawFee<COIN>(_admin: &VAdminCap, receiver: address, project: &mut Project<COIN>, ctx: &mut TxContext){
+        let all = coin::value(&project.feeTreasury);
+        public_transfer(coin::split(&mut project.feeTreasury, all, ctx), receiver);
     }
 
     public entry fun addFunds<COIN>(admin: &VAdminCap,
@@ -309,12 +325,13 @@ module seapad::vesting {
         })
     }
 
-    public entry fun claim<COIN>(project: &mut Project<COIN>,
+    public entry fun claim<COIN>(fee: &mut Coin<SUI>,
+                                 project: &mut Project<COIN>,
                                  sclock: &Clock,
                                  version: &Version,
                                  ctx: &mut TxContext) {
         checkVersion(version, VERSION);
-
+        assert!(coin::value(fee) >= project.fee, ERR_FEE_NOT_ENOUGH);
         let now_ms = clock::timestamp_ms(sclock);
         assert!(now_ms >= project.tge_ms, ERR_TGE_NOT_STARTED);
 
@@ -338,7 +355,7 @@ module seapad::vesting {
         transfer::public_transfer(coin::split<COIN>(&mut fund.locked, claim, ctx), sender_addr);
         fund.released = fund.released + claim;
         fund.last_claim_ms = now_ms;
-
+        coin::join(&mut project.feeTreasury, coin::split(fee, project.fee, ctx));
         emit(FundClaimEvent {
             owner: fund.owner,
             total: fund.total,

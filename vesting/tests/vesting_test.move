@@ -59,8 +59,9 @@ module seapad::vesting_test {
 
         test_scenario::next_tx(scenario, ADMIN);
         clock::increment_for_testing(&mut sclock, 9 * MONTH_IN_MS);
-        vesting::claim(&mut project, &sclock, &mut version, test_scenario::ctx(scenario));
-
+        let fee = coin::mint_for_testing(0, test_scenario::ctx(scenario));
+        vesting::claim(&mut fee, &mut project, &sclock, &mut version, test_scenario::ctx(scenario));
+        coin::burn_for_testing(fee);
         test_scenario::return_shared(sclock);
         test_scenario::return_shared(version);
         test_scenario::return_shared(project);
@@ -439,7 +440,9 @@ module seapad::vesting_test {
         test_scenario::next_tx(scenario, claimer);
         let version = take_shared<Version>(scenario);
         let ctx = test_scenario::ctx(scenario);
-        vesting::claim(project, sclock, &version, ctx);
+        let fee = coin::mint_for_testing(0, ctx);
+        vesting::claim(&mut fee, project, sclock, &version, ctx);
+        coin::burn_for_testing(fee);
         return_shared(version);
     }
 
@@ -507,6 +510,7 @@ module seapad::vesting_test {
                 milestone_percents,
                 sclock,
                 &mut version,
+                0,
                 &mut projectRegistry,
                 ctx
             );
