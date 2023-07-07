@@ -4,7 +4,8 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="10b876f6-5f11-44d6-9e4a-d6252006a611" name="Changes" comment="multiple add fund">
+    <list default="true" id="10b876f6-5f11-44d6-9e4a-d6252006a611" name="Changes" comment="build new contract">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/contract/testnet.toml" beforeDir="false" afterPath="$PROJECT_DIR$/contract/testnet.toml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -188,13 +189,6 @@
       <workItem from="1680008715445" duration="9703000" />
       <workItem from="1680195522478" duration="17666000" />
       <workItem from="1680619443954" duration="90000" />
-    </task>
-    <task id="LOCAL-00088" summary="build contract">
-      <created>1682491620648</created>
-      <option name="number" value="00088" />
-      <option name="presentableId" value="LOCAL-00088" />
-      <option name="project" value="LOCAL" />
-      <updated>1682491620648</updated>
     </task>
     <task id="LOCAL-00089" summary="update contract">
       <created>1682493097753</created>
@@ -532,7 +526,14 @@
       <option name="project" value="LOCAL" />
       <updated>1688396794509</updated>
     </task>
-    <option name="localTasksCounter" value="139" />
+    <task id="LOCAL-00139" summary="build new contract">
+      <created>1688397279485</created>
+      <option name="number" value="00139" />
+      <option name="presentableId" value="LOCAL-00139" />
+      <option name="project" value="LOCAL" />
+      <updated>1688397279485</updated>
+    </task>
+    <option name="localTasksCounter" value="140" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -604,7 +605,6 @@
     <MESSAGE value="remove refund2" />
     <MESSAGE value="change validate end raising" />
     <MESSAGE value="update refund to owner" />
-    <MESSAGE value="build new contract" />
     <MESSAGE value="update biz uncheck token deposit when start raising" />
     <MESSAGE value="update biz check claiming" />
     <MESSAGE value="build testnet" />
@@ -616,7 +616,8 @@
     <MESSAGE value="add testing" />
     <MESSAGE value="update fund" />
     <MESSAGE value="multiple add fund" />
-    <option name="LAST_COMMIT_MESSAGE" value="multiple add fund" />
+    <MESSAGE value="build new contract" />
+    <option name="LAST_COMMIT_MESSAGE" value="build new contract" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />
