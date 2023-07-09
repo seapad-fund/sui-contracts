@@ -71,11 +71,16 @@ module seapad::vesting {
     }
 
     struct Fund<phantom COIN> has store {
-        owner: address, //owner of fund
-        total: u64, //total of vesting fund, set when fund deposited, nerver change!
-        locked: Coin<COIN>, //all currently locked fund
-        released: u64, //total released
-        percent: u64, //percent on project
+        owner: address,
+        //owner of fund
+        total: u64,
+        //total of vesting fund, set when fund deposited, nerver change!
+        locked: Coin<COIN>,
+        //all currently locked fund
+        released: u64,
+        //total released
+        percent: u64,
+        //percent on project
         last_claim_ms: u64,
     }
 
@@ -85,17 +90,23 @@ module seapad::vesting {
         url: vector<u8>,
         deprecated: bool,
         tge_ms: u64,
-        supply: u64, //total supply of vesting, fixed when create new project
-        deposited: u64, //total deposited amount
-        deposited_percent: u64, //total deposited percent
-        funds: Table<address, Fund<COIN>>, //locked funds
+        supply: u64,
+        //total supply of vesting, fixed when create new project
+        deposited: u64,
+        //total deposited amount
+        deposited_percent: u64,
+        //total deposited percent
+        funds: Table<address, Fund<COIN>>,
+        //locked funds
         vesting_type: u8,
         cliff_ms: u64,
-        unlock_percent: u64, //in %
+        unlock_percent: u64,
+        //in %
         linear_vesting_duration_ms: u64,
         milestone_times: vector<u64>,
         milestone_percents: vector<u64>,
-        fee: u64, //how many sui will be charged when user claim fund!
+        fee: u64,
+        //how many sui will be charged when user claim fund!
         feeTreasury: Coin<SUI>
     }
 
@@ -205,15 +216,20 @@ module seapad::vesting {
         share_object(project);
     }
 
-    public entry fun setDeprecated<COIN>(_admin: &VAdminCap, project: &mut Project<COIN>, deprecated: bool){
+    public entry fun setDeprecated<COIN>(_admin: &VAdminCap, project: &mut Project<COIN>, deprecated: bool) {
         project.deprecated = deprecated;
     }
 
-    public entry fun setProjectFee<COIN>(_admin: &VAdminCap, project: &mut Project<COIN>, fee: u64){
+    public entry fun setProjectFee<COIN>(_admin: &VAdminCap, project: &mut Project<COIN>, fee: u64) {
         project.fee = fee;
     }
 
-    public entry fun withdrawFee<COIN>(_admin: &VAdminCap, receiver: address, project: &mut Project<COIN>, ctx: &mut TxContext){
+    public entry fun withdrawFee<COIN>(
+        _admin: &VAdminCap,
+        receiver: address,
+        project: &mut Project<COIN>,
+        ctx: &mut TxContext
+    ) {
         let all = coin::value(&project.feeTreasury);
         public_transfer(coin::split(&mut project.feeTreasury, all, ctx), receiver);
     }
@@ -314,7 +330,7 @@ module seapad::vesting {
         project.deposited_percent = project.deposited * ONE_HUNDRED_PERCENT_SCALED / project.supply;
         transfer::public_transfer(locked, owner);
 
-        if (table::contains(&registry.user_projects, owner)){
+        if (table::contains(&registry.user_projects, owner)) {
             table::remove(&mut registry.user_projects, owner);
         };
 
@@ -325,13 +341,13 @@ module seapad::vesting {
         })
     }
 
-    public entry fun claim<COIN>(fee: &mut Coin<SUI>,
+    public entry fun claim<COIN>(fee: Coin<SUI>,
                                  project: &mut Project<COIN>,
                                  sclock: &Clock,
                                  version: &Version,
                                  ctx: &mut TxContext) {
         checkVersion(version, VERSION);
-        assert!(coin::value(fee) >= project.fee, ERR_FEE_NOT_ENOUGH);
+        assert!(coin::value(&fee) >= project.fee, ERR_FEE_NOT_ENOUGH);
         let now_ms = clock::timestamp_ms(sclock);
         assert!(now_ms >= project.tge_ms, ERR_TGE_NOT_STARTED);
 
@@ -355,7 +371,9 @@ module seapad::vesting {
         transfer::public_transfer(coin::split<COIN>(&mut fund.locked, claim, ctx), sender_addr);
         fund.released = fund.released + claim;
         fund.last_claim_ms = now_ms;
-        coin::join(&mut project.feeTreasury, coin::split(fee, project.fee, ctx));
+        let cFee = coin::split(&mut fee, project.fee,ctx);
+        coin::join(&mut project.feeTreasury, cFee);
+        public_transfer(fee,sender_addr);
         emit(FundClaimEvent {
             owner: fund.owner,
             total: fund.total,

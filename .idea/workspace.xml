@@ -4,9 +4,12 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="10b876f6-5f11-44d6-9e4a-d6252006a611" name="Changes" comment="build new contract">
+    <list default="true" id="10b876f6-5f11-44d6-9e4a-d6252006a611" name="Changes" comment="Create new project vesting">
+      <change afterPath="$PROJECT_DIR$/vesting/deploy.log.2023.07.09" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/contract/testnet.toml" beforeDir="false" afterPath="$PROJECT_DIR$/contract/testnet.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/vesting/cmd.sh" beforeDir="false" afterPath="$PROJECT_DIR$/vesting/cmd.sh" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/vesting/sources/vesting.move" beforeDir="false" afterPath="$PROJECT_DIR$/vesting/sources/vesting.move" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -129,7 +132,7 @@
     &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
     &quot;git-widget-placeholder&quot;: &quot;testnet&quot;,
     &quot;jdk.selected.JAVA_MODULE&quot;: &quot;1.8&quot;,
-    &quot;last_opened_file_path&quot;: &quot;/Users/anhtv/Documents/Sui/sui-contracts/vesting/tests&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/home/hanguyenthanh/Desktop/sui-contracts&quot;,
     &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
     &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
     &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
@@ -140,11 +143,11 @@
 }</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
-      <recent name="$PROJECT_DIR$/vesting/tests" />
       <recent name="$PROJECT_DIR$/common" />
       <recent name="$PROJECT_DIR$/tokens/sources" />
       <recent name="$PROJECT_DIR$/tokens" />
       <recent name="$PROJECT_DIR$/contract" />
+      <recent name="$PROJECT_DIR$/seapad/sources" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/common/sources" />
@@ -189,6 +192,48 @@
       <workItem from="1680008715445" duration="9703000" />
       <workItem from="1680195522478" duration="17666000" />
       <workItem from="1680619443954" duration="90000" />
+    </task>
+    <task id="LOCAL-00083" summary="change name">
+      <created>1682410830168</created>
+      <option name="number" value="00083" />
+      <option name="presentableId" value="LOCAL-00083" />
+      <option name="project" value="LOCAL" />
+      <updated>1682410830168</updated>
+    </task>
+    <task id="LOCAL-00084" summary="fix refund">
+      <created>1682486480268</created>
+      <option name="number" value="00084" />
+      <option name="presentableId" value="LOCAL-00084" />
+      <option name="project" value="LOCAL" />
+      <updated>1682486480268</updated>
+    </task>
+    <task id="LOCAL-00085" summary="build contract">
+      <created>1682486717219</created>
+      <option name="number" value="00085" />
+      <option name="presentableId" value="LOCAL-00085" />
+      <option name="project" value="LOCAL" />
+      <updated>1682486717219</updated>
+    </task>
+    <task id="LOCAL-00086" summary="build contract">
+      <created>1682486773688</created>
+      <option name="number" value="00086" />
+      <option name="presentableId" value="LOCAL-00086" />
+      <option name="project" value="LOCAL" />
+      <updated>1682486773688</updated>
+    </task>
+    <task id="LOCAL-00087" summary="build contract">
+      <created>1682491505561</created>
+      <option name="number" value="00087" />
+      <option name="presentableId" value="LOCAL-00087" />
+      <option name="project" value="LOCAL" />
+      <updated>1682491505561</updated>
+    </task>
+    <task id="LOCAL-00088" summary="build contract">
+      <created>1682491620648</created>
+      <option name="number" value="00088" />
+      <option name="presentableId" value="LOCAL-00088" />
+      <option name="project" value="LOCAL" />
+      <updated>1682491620648</updated>
     </task>
     <task id="LOCAL-00089" summary="update contract">
       <created>1682493097753</created>
@@ -491,49 +536,7 @@
       <option name="project" value="LOCAL" />
       <updated>1686814955379</updated>
     </task>
-    <task id="LOCAL-00134" summary="add list fund">
-      <created>1688055431558</created>
-      <option name="number" value="00134" />
-      <option name="presentableId" value="LOCAL-00134" />
-      <option name="project" value="LOCAL" />
-      <updated>1688055431558</updated>
-    </task>
-    <task id="LOCAL-00135" summary="add remove fund">
-      <created>1688219312081</created>
-      <option name="number" value="00135" />
-      <option name="presentableId" value="LOCAL-00135" />
-      <option name="project" value="LOCAL" />
-      <updated>1688219312081</updated>
-    </task>
-    <task id="LOCAL-00136" summary="add testing">
-      <created>1688283632269</created>
-      <option name="number" value="00136" />
-      <option name="presentableId" value="LOCAL-00136" />
-      <option name="project" value="LOCAL" />
-      <updated>1688283632269</updated>
-    </task>
-    <task id="LOCAL-00137" summary="update fund">
-      <created>1688396131790</created>
-      <option name="number" value="00137" />
-      <option name="presentableId" value="LOCAL-00137" />
-      <option name="project" value="LOCAL" />
-      <updated>1688396131791</updated>
-    </task>
-    <task id="LOCAL-00138" summary="multiple add fund">
-      <created>1688396794509</created>
-      <option name="number" value="00138" />
-      <option name="presentableId" value="LOCAL-00138" />
-      <option name="project" value="LOCAL" />
-      <updated>1688396794509</updated>
-    </task>
-    <task id="LOCAL-00139" summary="build new contract">
-      <created>1688397279485</created>
-      <option name="number" value="00139" />
-      <option name="presentableId" value="LOCAL-00139" />
-      <option name="project" value="LOCAL" />
-      <updated>1688397279485</updated>
-    </task>
-    <option name="localTasksCounter" value="140" />
+    <option name="localTasksCounter" value="134" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -592,6 +595,11 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
+    <MESSAGE value="update stake, swap token" />
+    <MESSAGE value="add nft" />
+    <MESSAGE value="add address in move file" />
+    <MESSAGE value="change name" />
+    <MESSAGE value="fix refund" />
     <MESSAGE value="update contract" />
     <MESSAGE value="add unit test" />
     <MESSAGE value="remove kyc" />
@@ -605,19 +613,14 @@
     <MESSAGE value="remove refund2" />
     <MESSAGE value="change validate end raising" />
     <MESSAGE value="update refund to owner" />
+    <MESSAGE value="build new contract" />
     <MESSAGE value="update biz uncheck token deposit when start raising" />
     <MESSAGE value="update biz check claiming" />
     <MESSAGE value="build testnet" />
     <MESSAGE value="Update ClaimInfor" />
     <MESSAGE value="Update value ClaimInfo" />
     <MESSAGE value="Create new project vesting" />
-    <MESSAGE value="add list fund" />
-    <MESSAGE value="add remove fund" />
-    <MESSAGE value="add testing" />
-    <MESSAGE value="update fund" />
-    <MESSAGE value="multiple add fund" />
-    <MESSAGE value="build new contract" />
-    <option name="LAST_COMMIT_MESSAGE" value="build new contract" />
+    <option name="LAST_COMMIT_MESSAGE" value="Create new project vesting" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />
