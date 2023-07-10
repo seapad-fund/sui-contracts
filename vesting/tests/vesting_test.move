@@ -60,8 +60,7 @@ module seapad::vesting_test {
         test_scenario::next_tx(scenario, ADMIN);
         clock::increment_for_testing(&mut sclock, 9 * MONTH_IN_MS);
         let fee = coin::mint_for_testing(0, test_scenario::ctx(scenario));
-        vesting::claim(&mut fee, &mut project, &sclock, &mut version, test_scenario::ctx(scenario));
-        coin::burn_for_testing(fee);
+        vesting::claim(fee, &mut project, &sclock, &mut version, test_scenario::ctx(scenario));
         test_scenario::return_shared(sclock);
         test_scenario::return_shared(version);
         test_scenario::return_shared(project);
@@ -441,8 +440,7 @@ module seapad::vesting_test {
         let version = take_shared<Version>(scenario);
         let ctx = test_scenario::ctx(scenario);
         let fee = coin::mint_for_testing(0, ctx);
-        vesting::claim(&mut fee, project, sclock, &version, ctx);
-        coin::burn_for_testing(fee);
+        vesting::claim(fee, project, sclock, &version, ctx);
         return_shared(version);
     }
 

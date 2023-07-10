@@ -1,0 +1,625 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="10b876f6-5f11-44d6-9e4a-d6252006a611" name="Changes" comment="Create new project vesting">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Move Test Module" />
+        <option value="Move Module" />
+        <option value="Move File" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Merge.Settings">
+    <option name="BRANCH" value="devnet" />
+  </component>
+  <component name="Git.Rebase.Settings">
+    <option name="NEW_BASE" value="origin/devnet" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_BRANCH_BY_REPOSITORY">
+      <map>
+        <entry key="$PROJECT_DIR$/../seapad-frontend" value="develop" />
+        <entry key="$PROJECT_DIR$" value="devnet" />
+        <entry key="$PROJECT_DIR$/../w3libs" value="mainnet" />
+      </map>
+    </option>
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+    <option name="ROOT_SYNC" value="DONT_SYNC" />
+  </component>
+  <component name="GitToolBoxStore">
+    <option name="projectConfigVersion" value="5" />
+    <option name="recentBranches">
+      <RecentBranches>
+        <option name="branchesForRepo">
+          <list>
+            <RecentBranchesForRepo>
+              <option name="branches">
+                <list>
+                  <RecentBranch>
+                    <option name="branchName" value="refactor_buy_token" />
+                    <option name="lastUsedInstant" value="1682091027" />
+                  </RecentBranch>
+                  <RecentBranch>
+                    <option name="branchName" value="develop" />
+                    <option name="lastUsedInstant" value="1682090977" />
+                  </RecentBranch>
+                  <RecentBranch>
+                    <option name="branchName" value="fix_buy_token" />
+                    <option name="lastUsedInstant" value="1682090976" />
+                  </RecentBranch>
+                </list>
+              </option>
+              <option name="repositoryRootUrl" value="file://$PROJECT_DIR$/../seapad-frontend" />
+            </RecentBranchesForRepo>
+            <RecentBranchesForRepo>
+              <option name="branches">
+                <list>
+                  <RecentBranch>
+                    <option name="branchName" value="testnet" />
+                    <option name="lastUsedInstant" value="1683015947" />
+                  </RecentBranch>
+                  <RecentBranch>
+                    <option name="branchName" value="devnet" />
+                    <option name="lastUsedInstant" value="1683006868" />
+                  </RecentBranch>
+                  <RecentBranch>
+                    <option name="branchName" value="master" />
+                    <option name="lastUsedInstant" value="1682956242" />
+                  </RecentBranch>
+                </list>
+              </option>
+              <option name="repositoryRootUrl" value="file://$PROJECT_DIR$" />
+            </RecentBranchesForRepo>
+            <RecentBranchesForRepo>
+              <option name="branches">
+                <list>
+                  <RecentBranch>
+                    <option name="branchName" value="testnet" />
+                    <option name="lastUsedInstant" value="1683822613" />
+                  </RecentBranch>
+                  <RecentBranch>
+                    <option name="branchName" value="main" />
+                    <option name="lastUsedInstant" value="1680009723" />
+                  </RecentBranch>
+                  <RecentBranch>
+                    <option name="branchName" value="devnet0x3575" />
+                    <option name="lastUsedInstant" value="1679414737" />
+                  </RecentBranch>
+                </list>
+              </option>
+              <option name="repositoryRootUrl" value="file://$PROJECT_DIR$/../w3libs" />
+            </RecentBranchesForRepo>
+          </list>
+        </option>
+      </RecentBranches>
+    </option>
+  </component>
+  <component name="MarkdownSettingsMigration">
+    <option name="stateVersion" value="1" />
+  </component>
+  <component name="MoveProjectSettingsService_1">
+    <option name="aptosPath" value="$USER_HOME$/.cargo/bin/sui" />
+    <option name="disableTelemetry" value="false" />
+    <option name="foldSpecs" value="true" />
+  </component>
+  <component name="ProjectId" id="2NKWfdgj2V8fTMP5XwiH3gtK3Al" />
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;SONARLINT_PRECOMMIT_ANALYSIS&quot;: &quot;true&quot;,
+    &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;testnet&quot;,
+    &quot;jdk.selected.JAVA_MODULE&quot;: &quot;1.8&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/home/hanguyenthanh/Desktop/sui-contracts&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;org.jetbrains.plugins.github.ui.GithubSettingsConfigurable&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  }
+}</component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/common" />
+      <recent name="$PROJECT_DIR$/tokens/sources" />
+      <recent name="$PROJECT_DIR$/tokens" />
+      <recent name="$PROJECT_DIR$/contract" />
+      <recent name="$PROJECT_DIR$/seapad/sources" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/common/sources" />
+      <recent name="$PROJECT_DIR$/nft" />
+      <recent name="$PROJECT_DIR$/seapad/sources" />
+      <recent name="$PROJECT_DIR$" />
+      <recent name="$PROJECT_DIR$/stake" />
+    </key>
+  </component>
+  <component name="RunManager">
+    <configuration default="true" type="AptosCommandConfiguration" factoryName="AnyCommand">
+      <option name="command" value="" />
+      <option name="workingDirectory" value="file://$PROJECT_DIR$/nft" />
+      <envs />
+      <method v="2" />
+    </configuration>
+    <configuration name="Build" type="MoveRunConfiguration">
+      <option name="command" value="move compile" />
+      <option name="workingDirectory" value="file://$PROJECT_DIR$" />
+      <envs />
+      <method v="2" />
+    </configuration>
+    <configuration default="true" type="MoveRunConfiguration">
+      <option name="command" value="move compile" />
+      <option name="workingDirectory" value="file://$PROJECT_DIR$/../w3libs" />
+      <envs />
+      <method v="2" />
+    </configuration>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="10b876f6-5f11-44d6-9e4a-d6252006a611" name="Changes" comment="" />
+      <created>1679413360149</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1679413360149</updated>
+      <workItem from="1679413361990" duration="28075000" />
+      <workItem from="1679675735098" duration="2690000" />
+      <workItem from="1679714162272" duration="4255000" />
+      <workItem from="1679765606153" duration="2371000" />
+      <workItem from="1680008715445" duration="9703000" />
+      <workItem from="1680195522478" duration="17666000" />
+      <workItem from="1680619443954" duration="90000" />
+    </task>
+    <task id="LOCAL-00083" summary="change name">
+      <created>1682410830168</created>
+      <option name="number" value="00083" />
+      <option name="presentableId" value="LOCAL-00083" />
+      <option name="project" value="LOCAL" />
+      <updated>1682410830168</updated>
+    </task>
+    <task id="LOCAL-00084" summary="fix refund">
+      <created>1682486480268</created>
+      <option name="number" value="00084" />
+      <option name="presentableId" value="LOCAL-00084" />
+      <option name="project" value="LOCAL" />
+      <updated>1682486480268</updated>
+    </task>
+    <task id="LOCAL-00085" summary="build contract">
+      <created>1682486717219</created>
+      <option name="number" value="00085" />
+      <option name="presentableId" value="LOCAL-00085" />
+      <option name="project" value="LOCAL" />
+      <updated>1682486717219</updated>
+    </task>
+    <task id="LOCAL-00086" summary="build contract">
+      <created>1682486773688</created>
+      <option name="number" value="00086" />
+      <option name="presentableId" value="LOCAL-00086" />
+      <option name="project" value="LOCAL" />
+      <updated>1682486773688</updated>
+    </task>
+    <task id="LOCAL-00087" summary="build contract">
+      <created>1682491505561</created>
+      <option name="number" value="00087" />
+      <option name="presentableId" value="LOCAL-00087" />
+      <option name="project" value="LOCAL" />
+      <updated>1682491505561</updated>
+    </task>
+    <task id="LOCAL-00088" summary="build contract">
+      <created>1682491620648</created>
+      <option name="number" value="00088" />
+      <option name="presentableId" value="LOCAL-00088" />
+      <option name="project" value="LOCAL" />
+      <updated>1682491620648</updated>
+    </task>
+    <task id="LOCAL-00089" summary="update contract">
+      <created>1682493097753</created>
+      <option name="number" value="00089" />
+      <option name="presentableId" value="LOCAL-00089" />
+      <option name="project" value="LOCAL" />
+      <updated>1682493097753</updated>
+    </task>
+    <task id="LOCAL-00090" summary="add unit test">
+      <created>1682669148659</created>
+      <option name="number" value="00090" />
+      <option name="presentableId" value="LOCAL-00090" />
+      <option name="project" value="LOCAL" />
+      <updated>1682669148659</updated>
+    </task>
+    <task id="LOCAL-00091" summary="add kyc">
+      <created>1682848819898</created>
+      <option name="number" value="00091" />
+      <option name="presentableId" value="LOCAL-00091" />
+      <option name="project" value="LOCAL" />
+      <updated>1682848819898</updated>
+    </task>
+    <task id="LOCAL-00092" summary="remove kyc">
+      <created>1682849635167</created>
+      <option name="number" value="00092" />
+      <option name="presentableId" value="LOCAL-00092" />
+      <option name="project" value="LOCAL" />
+      <updated>1682849635167</updated>
+    </task>
+    <task id="LOCAL-00093" summary="build contract">
+      <created>1682932873406</created>
+      <option name="number" value="00093" />
+      <option name="presentableId" value="LOCAL-00093" />
+      <option name="project" value="LOCAL" />
+      <updated>1682932873406</updated>
+    </task>
+    <task id="LOCAL-00094" summary="add kyc">
+      <created>1682933086752</created>
+      <option name="number" value="00094" />
+      <option name="presentableId" value="LOCAL-00094" />
+      <option name="project" value="LOCAL" />
+      <updated>1682933086752</updated>
+    </task>
+    <task id="LOCAL-00095" summary="build contract testnet">
+      <created>1682952917139</created>
+      <option name="number" value="00095" />
+      <option name="presentableId" value="LOCAL-00095" />
+      <option name="project" value="LOCAL" />
+      <updated>1682952917139</updated>
+    </task>
+    <task id="LOCAL-00096" summary="build contract testnet">
+      <created>1682955916277</created>
+      <option name="number" value="00096" />
+      <option name="presentableId" value="LOCAL-00096" />
+      <option name="project" value="LOCAL" />
+      <updated>1682955916277</updated>
+    </task>
+    <task id="LOCAL-00097" summary="build contract testnet">
+      <created>1682956403119</created>
+      <option name="number" value="00097" />
+      <option name="presentableId" value="LOCAL-00097" />
+      <option name="project" value="LOCAL" />
+      <updated>1682956403119</updated>
+    </task>
+    <task id="LOCAL-00098" summary="build contract testnet">
+      <created>1682956542784</created>
+      <option name="number" value="00098" />
+      <option name="presentableId" value="LOCAL-00098" />
+      <option name="project" value="LOCAL" />
+      <updated>1682956542784</updated>
+    </task>
+    <task id="LOCAL-00099" summary="change devnet config">
+      <created>1682999246179</created>
+      <option name="number" value="00099" />
+      <option name="presentableId" value="LOCAL-00099" />
+      <option name="project" value="LOCAL" />
+      <updated>1682999246179</updated>
+    </task>
+    <task id="LOCAL-00100" summary="build new contract">
+      <created>1683178154393</created>
+      <option name="number" value="00100" />
+      <option name="presentableId" value="LOCAL-00100" />
+      <option name="project" value="LOCAL" />
+      <updated>1683178154393</updated>
+    </task>
+    <task id="LOCAL-00101" summary="build new contract">
+      <created>1683178410913</created>
+      <option name="number" value="00101" />
+      <option name="presentableId" value="LOCAL-00101" />
+      <option name="project" value="LOCAL" />
+      <updated>1683178410913</updated>
+    </task>
+    <task id="LOCAL-00102" summary="refactor">
+      <created>1683275139197</created>
+      <option name="number" value="00102" />
+      <option name="presentableId" value="LOCAL-00102" />
+      <option name="project" value="LOCAL" />
+      <updated>1683275139197</updated>
+    </task>
+    <task id="LOCAL-00103" summary="merge project">
+      <created>1683278778634</created>
+      <option name="number" value="00103" />
+      <option name="presentableId" value="LOCAL-00103" />
+      <option name="project" value="LOCAL" />
+      <updated>1683278778634</updated>
+    </task>
+    <task id="LOCAL-00104" summary="build new contract">
+      <created>1683279989207</created>
+      <option name="number" value="00104" />
+      <option name="presentableId" value="LOCAL-00104" />
+      <option name="project" value="LOCAL" />
+      <updated>1683279989207</updated>
+    </task>
+    <task id="LOCAL-00105" summary="build new contract">
+      <created>1683299243525</created>
+      <option name="number" value="00105" />
+      <option name="presentableId" value="LOCAL-00105" />
+      <option name="project" value="LOCAL" />
+      <updated>1683299243526</updated>
+    </task>
+    <task id="LOCAL-00106" summary="build new contract">
+      <created>1683303478722</created>
+      <option name="number" value="00106" />
+      <option name="presentableId" value="LOCAL-00106" />
+      <option name="project" value="LOCAL" />
+      <updated>1683303478722</updated>
+    </task>
+    <task id="LOCAL-00107" summary="not use admin with owner">
+      <created>1683436670784</created>
+      <option name="number" value="00107" />
+      <option name="presentableId" value="LOCAL-00107" />
+      <option name="project" value="LOCAL" />
+      <updated>1683436670784</updated>
+    </task>
+    <task id="LOCAL-00108" summary="remove refund2">
+      <created>1683437957676</created>
+      <option name="number" value="00108" />
+      <option name="presentableId" value="LOCAL-00108" />
+      <option name="project" value="LOCAL" />
+      <updated>1683437957676</updated>
+    </task>
+    <task id="LOCAL-00109" summary="change validate end raising">
+      <created>1683441071470</created>
+      <option name="number" value="00109" />
+      <option name="presentableId" value="LOCAL-00109" />
+      <option name="project" value="LOCAL" />
+      <updated>1683441071470</updated>
+    </task>
+    <task id="LOCAL-00110" summary="build new contract">
+      <created>1683441420364</created>
+      <option name="number" value="00110" />
+      <option name="presentableId" value="LOCAL-00110" />
+      <option name="project" value="LOCAL" />
+      <updated>1683441420364</updated>
+    </task>
+    <task id="LOCAL-00111" summary="build new contract">
+      <created>1683446625675</created>
+      <option name="number" value="00111" />
+      <option name="presentableId" value="LOCAL-00111" />
+      <option name="project" value="LOCAL" />
+      <updated>1683446625675</updated>
+    </task>
+    <task id="LOCAL-00112" summary="build new contract">
+      <created>1683453015605</created>
+      <option name="number" value="00112" />
+      <option name="presentableId" value="LOCAL-00112" />
+      <option name="project" value="LOCAL" />
+      <updated>1683453015605</updated>
+    </task>
+    <task id="LOCAL-00113" summary="build new contract">
+      <created>1683463390111</created>
+      <option name="number" value="00113" />
+      <option name="presentableId" value="LOCAL-00113" />
+      <option name="project" value="LOCAL" />
+      <updated>1683463390111</updated>
+    </task>
+    <task id="LOCAL-00114" summary="update refund to owner">
+      <created>1683512602826</created>
+      <option name="number" value="00114" />
+      <option name="presentableId" value="LOCAL-00114" />
+      <option name="project" value="LOCAL" />
+      <updated>1683512602826</updated>
+    </task>
+    <task id="LOCAL-00115" summary="update refund to owner">
+      <created>1683512791642</created>
+      <option name="number" value="00115" />
+      <option name="presentableId" value="LOCAL-00115" />
+      <option name="project" value="LOCAL" />
+      <updated>1683512791642</updated>
+    </task>
+    <task id="LOCAL-00116" summary="build new contract">
+      <created>1683512954220</created>
+      <option name="number" value="00116" />
+      <option name="presentableId" value="LOCAL-00116" />
+      <option name="project" value="LOCAL" />
+      <updated>1683512954220</updated>
+    </task>
+    <task id="LOCAL-00117" summary="build testnet">
+      <created>1683822817288</created>
+      <option name="number" value="00117" />
+      <option name="presentableId" value="LOCAL-00117" />
+      <option name="project" value="LOCAL" />
+      <updated>1683822817288</updated>
+    </task>
+    <task id="LOCAL-00118" summary="build testnet">
+      <created>1683824045030</created>
+      <option name="number" value="00118" />
+      <option name="presentableId" value="LOCAL-00118" />
+      <option name="project" value="LOCAL" />
+      <updated>1683824045033</updated>
+    </task>
+    <task id="LOCAL-00119" summary="update biz uncheck token deposit when start raising">
+      <created>1685462917383</created>
+      <option name="number" value="00119" />
+      <option name="presentableId" value="LOCAL-00119" />
+      <option name="project" value="LOCAL" />
+      <updated>1685462917383</updated>
+    </task>
+    <task id="LOCAL-00120" summary="update biz check claiming">
+      <created>1685665198410</created>
+      <option name="number" value="00120" />
+      <option name="presentableId" value="LOCAL-00120" />
+      <option name="project" value="LOCAL" />
+      <updated>1685665198411</updated>
+    </task>
+    <task id="LOCAL-00121" summary="update biz check claiming">
+      <created>1686063206882</created>
+      <option name="number" value="00121" />
+      <option name="presentableId" value="LOCAL-00121" />
+      <option name="project" value="LOCAL" />
+      <updated>1686063206882</updated>
+    </task>
+    <task id="LOCAL-00122" summary="build testnet">
+      <created>1686063371406</created>
+      <option name="number" value="00122" />
+      <option name="presentableId" value="LOCAL-00122" />
+      <option name="project" value="LOCAL" />
+      <updated>1686063371406</updated>
+    </task>
+    <task id="LOCAL-00123" summary="build testnet">
+      <created>1686238742515</created>
+      <option name="number" value="00123" />
+      <option name="presentableId" value="LOCAL-00123" />
+      <option name="project" value="LOCAL" />
+      <updated>1686238742515</updated>
+    </task>
+    <task id="LOCAL-00124" summary="Update ClaimInfor">
+      <created>1686681157177</created>
+      <option name="number" value="00124" />
+      <option name="presentableId" value="LOCAL-00124" />
+      <option name="project" value="LOCAL" />
+      <updated>1686681157177</updated>
+    </task>
+    <task id="LOCAL-00125" summary="Update ClaimInfor">
+      <created>1686681471935</created>
+      <option name="number" value="00125" />
+      <option name="presentableId" value="LOCAL-00125" />
+      <option name="project" value="LOCAL" />
+      <updated>1686681471936</updated>
+    </task>
+    <task id="LOCAL-00126" summary="Update ClaimInfor">
+      <created>1686681485986</created>
+      <option name="number" value="00126" />
+      <option name="presentableId" value="LOCAL-00126" />
+      <option name="project" value="LOCAL" />
+      <updated>1686681485986</updated>
+    </task>
+    <task id="LOCAL-00127" summary="Update ClaimInfor">
+      <created>1686681688733</created>
+      <option name="number" value="00127" />
+      <option name="presentableId" value="LOCAL-00127" />
+      <option name="project" value="LOCAL" />
+      <updated>1686681688734</updated>
+    </task>
+    <task id="LOCAL-00128" summary="Update ClaimInfor">
+      <created>1686682404439</created>
+      <option name="number" value="00128" />
+      <option name="presentableId" value="LOCAL-00128" />
+      <option name="project" value="LOCAL" />
+      <updated>1686682404440</updated>
+    </task>
+    <task id="LOCAL-00129" summary="Update value ClaimInfo">
+      <created>1686814448070</created>
+      <option name="number" value="00129" />
+      <option name="presentableId" value="LOCAL-00129" />
+      <option name="project" value="LOCAL" />
+      <updated>1686814448070</updated>
+    </task>
+    <task id="LOCAL-00130" summary="Update value ClaimInfo">
+      <created>1686814591178</created>
+      <option name="number" value="00130" />
+      <option name="presentableId" value="LOCAL-00130" />
+      <option name="project" value="LOCAL" />
+      <updated>1686814591178</updated>
+    </task>
+    <task id="LOCAL-00131" summary="Update value ClaimInfo">
+      <created>1686814955379</created>
+      <option name="number" value="00131" />
+      <option name="presentableId" value="LOCAL-00131" />
+      <option name="project" value="LOCAL" />
+      <updated>1686814955379</updated>
+    </task>
+    <option name="localTasksCounter" value="134" />
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="Vcs.Log.History.Properties">
+    <option name="COLUMN_ID_ORDER">
+      <list>
+        <option value="Default.Root" />
+        <option value="Default.Author" />
+        <option value="Default.Date" />
+        <option value="Default.Subject" />
+        <option value="Space.CommitStatus" />
+      </list>
+    </option>
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="OPEN_GENERIC_TABS">
+      <map>
+        <entry key="84db5256-f5ea-41c6-90b5-2c920d59754c" value="TOOL_WINDOW" />
+      </map>
+    </option>
+    <option name="TAB_STATES">
+      <map>
+        <entry key="84db5256-f5ea-41c6-90b5-2c920d59754c">
+          <value>
+            <State>
+              <option name="FILTERS">
+                <map>
+                  <entry key="branch">
+                    <value>
+                      <list>
+                        <option value="HEAD" />
+                      </list>
+                    </value>
+                  </entry>
+                  <entry key="roots">
+                    <value>
+                      <list>
+                        <option value="$PROJECT_DIR$" />
+                      </list>
+                    </value>
+                  </entry>
+                </map>
+              </option>
+              <option name="SHOW_ONLY_AFFECTED_CHANGES" value="true" />
+            </State>
+          </value>
+        </entry>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="update stake, swap token" />
+    <MESSAGE value="add nft" />
+    <MESSAGE value="add address in move file" />
+    <MESSAGE value="change name" />
+    <MESSAGE value="fix refund" />
+    <MESSAGE value="update contract" />
+    <MESSAGE value="add unit test" />
+    <MESSAGE value="remove kyc" />
+    <MESSAGE value="build contract" />
+    <MESSAGE value="add kyc" />
+    <MESSAGE value="build contract testnet" />
+    <MESSAGE value="change devnet config" />
+    <MESSAGE value="refactor" />
+    <MESSAGE value="merge project" />
+    <MESSAGE value="not use admin with owner" />
+    <MESSAGE value="remove refund2" />
+    <MESSAGE value="change validate end raising" />
+    <MESSAGE value="update refund to owner" />
+    <MESSAGE value="build new contract" />
+    <MESSAGE value="update biz uncheck token deposit when start raising" />
+    <MESSAGE value="update biz check claiming" />
+    <MESSAGE value="build testnet" />
+    <MESSAGE value="Update ClaimInfor" />
+    <MESSAGE value="Update value ClaimInfo" />
+    <MESSAGE value="Create new project vesting" />
+    <option name="LAST_COMMIT_MESSAGE" value="Create new project vesting" />
+  </component>
+  <component name="XSLT-Support.FileAssociations.UIState">
+    <expand />
+    <select />
+  </component>
+</project>

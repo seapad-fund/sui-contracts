@@ -94,6 +94,7 @@ module seapad::nft_campaign {
         };
         share_object(campaign);
 
+
         let keys = vector[
             utf8(b"name"),
             utf8(b"link"),
@@ -132,7 +133,6 @@ module seapad::nft_campaign {
             b"SeaPadFoundation",
             table::new(ctx),
             ctx);
-
         public_transfer(nft, sender(ctx));
     }
 

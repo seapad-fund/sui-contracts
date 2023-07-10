@@ -325,13 +325,13 @@ module seapad::vesting {
         })
     }
 
-    public entry fun claim<COIN>(fee: &mut Coin<SUI>,
+    public entry fun claim<COIN>(fee: Coin<SUI>,
                                  project: &mut Project<COIN>,
                                  sclock: &Clock,
                                  version: &Version,
                                  ctx: &mut TxContext) {
         checkVersion(version, VERSION);
-        assert!(coin::value(fee) >= project.fee, ERR_FEE_NOT_ENOUGH);
+        assert!(coin::value(&fee) >= project.fee, ERR_FEE_NOT_ENOUGH);
         let now_ms = clock::timestamp_ms(sclock);
         assert!(now_ms >= project.tge_ms, ERR_TGE_NOT_STARTED);
 
@@ -355,7 +355,11 @@ module seapad::vesting {
         transfer::public_transfer(coin::split<COIN>(&mut fund.locked, claim, ctx), sender_addr);
         fund.released = fund.released + claim;
         fund.last_claim_ms = now_ms;
-        coin::join(&mut project.feeTreasury, coin::split(fee, project.fee, ctx));
+
+        let takeFee = coin::split(&mut fee, project.fee, ctx);
+        coin::join(&mut project.feeTreasury, takeFee);
+        transfer::public_transfer(fee, sender(ctx));
+
         emit(FundClaimEvent {
             owner: fund.owner,
             total: fund.total,
