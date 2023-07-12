@@ -8,7 +8,6 @@ Sui = { git = "https://github.com/MystenLabs/sui", subdir = "crates/sui-framewor
 [addresses]
 seapad = "0x00"
 sui = "0x02"
-ownerAdminCap= "0x7d0ad419e070245b777ec04461d02a6956afd2d19a3d8f96341dcf26f5053796"
 
 ##test only
 seedFund = "0x8880"
