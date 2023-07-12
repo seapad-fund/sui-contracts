@@ -6,7 +6,7 @@ module seapad::vesting {
     use sui::coin::{Coin};
     use sui::clock::Clock;
     use sui::coin;
-    use sui::transfer::{share_object, public_transfer};
+    use sui::transfer::{share_object, public_transfer, transfer};
     use sui::clock;
     use sui::table::Table;
     use sui::table;
@@ -16,6 +16,8 @@ module seapad::vesting {
     use sui::event::emit;
     use sui::event;
     use sui::sui::SUI;
+    use std::option::Option;
+    use std::option;
 
 
     const VERSION: u64 = 1;
@@ -46,10 +48,11 @@ module seapad::vesting {
         id: UID,
     }
 
-    struct OwnerAdminCap has key, store {
+    struct AdminCapVault has key, store {
         id: UID,
-        owner: address,
-        confirmed: bool
+        owner: Option<address>,
+        to:  Option<address>,
+        cap: Option<AdminCap>
     }
 
     struct FundAddedEvent has drop, copy {
@@ -80,16 +83,11 @@ module seapad::vesting {
     }
 
     struct Fund<phantom COIN> has store {
-        owner: address,
-        //owner of fund
-        total: u64,
-        //total of vesting fund, set when fund deposited, nerver change!
-        locked: Coin<COIN>,
-        //all currently locked fund
-        released: u64,
-        //total released
-        percent: u64,
-        //percent on project
+        owner: address, //owner of fund
+        total: u64, //total of vesting fund, set when fund deposited, nerver change!
+        locked: Coin<COIN>, //all currently locked fund
+        released: u64, //total released
+        percent: u64, //percent on project
         last_claim_ms: u64,
     }
 
@@ -126,36 +124,45 @@ module seapad::vesting {
     }
 
     fun init(_witness: VESTING, ctx: &mut TxContext) {
-        transfer::transfer(AdminCap { id: object::new(ctx) }, @ownerAdminCap);
-        share_object(OwnerAdminCap {
-            id: object::new(ctx),
-            owner: @ownerAdminCap,
-            confirmed: true
-        });
+        transfer::transfer(AdminCap { id: object::new(ctx) }, sender(ctx));
+
         share_object(ProjectRegistry {
             id: object::new(ctx),
             projects: table::new(ctx),
             user_projects: table::new(ctx),
+        });
+
+        share_object(AdminCapVault{
+            id: object::new(ctx),
+            owner: option::none(),
+            to:  option::none(),
+            cap: option::none(),
         })
     }
 
-    public entry fun transferAdminCap(ownerAdminCap: &OwnerAdminCap, admin: AdminCap, version: &mut Version) {
+    public entry fun transferAdmin(adminCap: AdminCap, to: address, vault: &mut AdminCapVault, version: &mut Version, ctx: &mut TxContext) {
         checkVersion(version, VERSION);
-        assert!(ownerAdminCap.confirmed, ERR_CONFIRMED_ADMINCAP);
-        public_transfer(admin, ownerAdminCap.owner);
+        option::fill(&mut vault.owner, sender(ctx));
+        option::fill(&mut vault.to, to);
+        option::fill(&mut vault.cap, adminCap);
     }
 
-    public entry fun changeOwnerAdminCap(ownerAdminCap: &mut OwnerAdminCap, to: address, version: &mut Version) {
+    public entry fun revokeAdmin(vault: &mut AdminCapVault, version: &mut Version, ctx: &mut TxContext) {
         checkVersion(version, VERSION);
-        ownerAdminCap.owner = to;
-        ownerAdminCap.confirmed = false;
+        execTransferAdmin(vault, *option::borrow(&vault.owner), version, ctx);
     }
 
-    public entry fun confirmedOwnerAdminCap(ownerAdminCap: &mut OwnerAdminCap, ctx: &mut TxContext, version: &mut Version) {
+    public entry fun acceptAdmin(vault: &mut AdminCapVault, version: &mut Version, ctx: &mut TxContext) {
         checkVersion(version, VERSION);
-        if (ownerAdminCap.owner == sender(ctx)) {
-            ownerAdminCap.confirmed = true;
-        }
+        execTransferAdmin(vault, *option::borrow(&vault.to), version, ctx);
+    }
+
+    fun execTransferAdmin(vault: &mut AdminCapVault, ownerOrReceiver: address, version: &mut Version, ctx: &mut TxContext) {
+        checkVersion(version, VERSION);
+        assert!(option::is_some(&vault.cap) && ownerOrReceiver == sender(ctx), ERR_NO_PERMISSION);
+        transfer(option::extract(&mut vault.cap), sender(ctx));
+        let _owner = option::extract(&mut vault.owner);
+        let _to = option::extract(&mut vault.to);
     }
 
     public entry fun createProject<COIN>(_admin: &AdminCap,
