@@ -149,12 +149,14 @@ module seapad::vesting {
 
     public entry fun revokeAdmin(vault: &mut AdminCapVault, version: &mut Version, ctx: &mut TxContext) {
         checkVersion(version, VERSION);
-        execTransferAdmin(vault, *option::borrow(&vault.owner), version, ctx);
+        let owner =  *option::borrow(&vault.owner);
+        execTransferAdmin(vault, owner, version, ctx);
     }
 
     public entry fun acceptAdmin(vault: &mut AdminCapVault, version: &mut Version, ctx: &mut TxContext) {
         checkVersion(version, VERSION);
-        execTransferAdmin(vault, *option::borrow(&vault.to), version, ctx);
+        let to =  *option::borrow(&vault.to);
+        execTransferAdmin(vault, to, version, ctx);
     }
 
     fun execTransferAdmin(vault: &mut AdminCapVault, ownerOrReceiver: address, version: &mut Version, ctx: &mut TxContext) {
