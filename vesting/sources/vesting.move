@@ -313,6 +313,7 @@ module seapad::vesting {
 
         project.deposited_percent = project.deposited * ONE_HUNDRED_PERCENT_SCALED / project.supply;
         let percent = fund_amt * ONE_HUNDRED_PERCENT_SCALED / project.supply;
+        assert!( percent > 0 , ERR_BAD_FUND_PARAMS);
 
         if (table::contains(&mut project.funds, owner)) {
             let token_fund = table::borrow_mut(&mut project.funds, owner);
@@ -385,6 +386,7 @@ module seapad::vesting {
                                  project: &mut Project<COIN>,
                                  sclock: &Clock,
                                  version: &Version,
+                                 registry: &mut ProjectRegistry,
                                  ctx: &mut TxContext) {
         checkVersion(version, VERSION);
         assert!(coin::value(&fee) >= project.fee, ERR_FEE_NOT_ENOUGH);
@@ -407,13 +409,31 @@ module seapad::vesting {
         let percent = claimed_amount * ONE_HUNDRED_PERCENT_SCALED / project.supply;
         token_fund.percent = token_fund.percent - percent;
 
+        project.deposited = project.deposited - claimed_amount;
+        project.deposited_percent = project.deposited * ONE_HUNDRED_PERCENT_SCALED / project.supply;
+
         transfer::public_transfer(coin::split<COIN>(&mut token_fund.locked, claimed_amount, ctx), sender_addr);
         token_fund.released = token_fund.released + claimed_amount;
         token_fund.last_claim_ms = now_ms;
 
+        //clear user from table if user claim all token!
+        if (token_fund.released == token_fund.total){
+            let projecIDs = table::borrow_mut(&mut registry.user_projects, sender_addr);
+            let projectId = object::id_address(project);
+            let(a ,index)  = vector::index_of(projecIDs,&projectId);
+
+            vector::remove( projecIDs, index);
+            if(vector::is_empty(projecIDs)){
+                table::remove(&mut registry.user_projects, sender_addr);
+            }
+        };
+
         let takeFee = coin::split(&mut fee, project.fee, ctx);
         coin::join(&mut project.feeTreasury, takeFee);
         transfer::public_transfer(fee, sender(ctx));
+
+
+
 
         emit(FundClaimEvent {
             owner: token_fund.owner,
