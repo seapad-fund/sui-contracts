@@ -424,8 +424,6 @@ module seapad::vesting {
         transfer::public_transfer(fee, sender(ctx));
 
 
-
-
         emit(FundClaimEvent {
             owner: token_fund.owner,
             total: token_fund.total,
