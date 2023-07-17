@@ -58,8 +58,7 @@ module seapad::vesting {
     struct FundAddedEvent has drop, copy {
         owner: address,
         project: address,
-        fund: u64,
-        percent: u64
+        fund: u64
     }
 
     struct FundRemoveEvent has drop, copy {
@@ -87,7 +86,6 @@ module seapad::vesting {
         total: u64, //total of vesting fund, set when fund deposited, nerver change!
         locked: Coin<COIN>, //all currently locked fund
         released: u64, //total released
-        percent: u64, //percent on project
         last_claim_ms: u64,
     }
 
@@ -312,13 +310,10 @@ module seapad::vesting {
         assert!(project.deposited <= project.supply, ERR_FULL_SUPPLY);
 
         project.deposited_percent = project.deposited * ONE_HUNDRED_PERCENT_SCALED / project.supply;
-        let percent = fund_amt * ONE_HUNDRED_PERCENT_SCALED / project.supply;
-        assert!( percent > 0 , ERR_BAD_FUND_PARAMS);
 
         if (table::contains(&mut project.funds, owner)) {
             let token_fund = table::borrow_mut(&mut project.funds, owner);
             token_fund.total = token_fund.total + fund_amt;
-            token_fund.percent = token_fund.percent + percent;
             coin::join(&mut token_fund.locked, fund);
         }else {
             let token_fund = Fund<COIN> {
@@ -326,8 +321,7 @@ module seapad::vesting {
                 last_claim_ms: 0u64,
                 total: fund_amt,
                 released: 0,
-                locked: fund,
-                percent
+                locked: fund
             };
             table::add(&mut project.funds, owner, token_fund);
         };
@@ -345,7 +339,6 @@ module seapad::vesting {
             owner,
             project: id_address(project),
             fund: fund_amt,
-            percent
         })
     }
 
@@ -363,7 +356,6 @@ module seapad::vesting {
             total,
             locked,
             released: _,
-            percent: _,
             last_claim_ms: _
         } = table::remove(&mut project.funds, owner);
 
@@ -406,8 +398,6 @@ module seapad::vesting {
         let claimed_amount = claim_total - token_fund.released;
         assert!(claimed_amount > 0, ERR_NO_FUND);
 
-        let percent = claimed_amount * ONE_HUNDRED_PERCENT_SCALED / project.supply;
-        token_fund.percent = token_fund.percent - percent;
 
         project.deposited = project.deposited - claimed_amount;
         project.deposited_percent = project.deposited * ONE_HUNDRED_PERCENT_SCALED / project.supply;
@@ -420,7 +410,8 @@ module seapad::vesting {
         if (token_fund.released == token_fund.total){
             let projecIDs = table::borrow_mut(&mut registry.user_projects, sender_addr);
             let projectId = object::id_address(project);
-            let(a ,index)  = vector::index_of(projecIDs,&projectId);
+
+            let (_a ,index)  = vector::index_of(projecIDs,&projectId);
 
             vector::remove( projecIDs, index);
             if(vector::is_empty(projecIDs)){
