@@ -391,13 +391,14 @@ module seapad::vesting {
         let claim_percent = computeClaimPercent<COIN>(project, now_ms);
         assert!(claim_percent > 0, ERR_NO_FUND);
 
+        let projectId = object::id_address(project);
+
         let token_fund = table::borrow_mut(&mut project.funds, sender_addr);
         assert!(sender_addr == token_fund.owner, ERR_NO_PERMISSION);
 
         let claim_total = (token_fund.total * claim_percent) / ONE_HUNDRED_PERCENT_SCALED;
         let claimed_amount = claim_total - token_fund.released;
         assert!(claimed_amount > 0, ERR_NO_FUND);
-
 
         project.deposited = project.deposited - claimed_amount;
         project.deposited_percent = project.deposited * ONE_HUNDRED_PERCENT_SCALED / project.supply;
@@ -409,10 +410,7 @@ module seapad::vesting {
         //clear user from table if user claim all token!
         if (token_fund.released == token_fund.total){
             let projecIDs = table::borrow_mut(&mut registry.user_projects, sender_addr);
-            let projectId = object::id_address(project);
-
             let (_a ,index)  = vector::index_of(projecIDs,&projectId);
-
             vector::remove( projecIDs, index);
             if(vector::is_empty(projecIDs)){
                 table::remove(&mut registry.user_projects, sender_addr);
