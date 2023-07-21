@@ -35,7 +35,6 @@ module seapad::vesting {
     const ERR_FULL_SUPPLY: u64 = 8007;
     const ERR_FEE_NOT_ENOUGH: u64 = 8008;
     const ERR_BDEPRECATED: u64 = 8009;
-    const ERR_CONFIRMED_ADMINCAP: u64 = 8010;
 
     const VESTING_TYPE_MILESTONE_UNLOCK_FIRST: u8 = 1;
     const VESTING_TYPE_MILESTONE_CLIFF_FIRST: u8 = 2;
@@ -283,7 +282,6 @@ module seapad::vesting {
         while (i < n) {
             let owner = *vector::borrow(&owners, i);
             let value_fund = *vector::borrow(&values, i);
-            assert!(value_fund > 0, ERR_BAD_FUND_PARAMS);
             let fund = coin::split(&mut totalFund, value_fund, ctx);
             addFund(admin, owner, fund, project, registry, version);
             i = i + 1;
