@@ -4,7 +4,7 @@ module seapad::vesting_test {
     use sui::test_scenario;
     use sui::clock;
     use sui::clock::Clock;
-    use seapad::vesting::{VAdminCap, Project, ProjectRegistry};
+    use seapad::vesting::{AdminCap, Project, ProjectRegistry};
 
     use seapad::version::{Version, initForTest};
     use std::vector;
@@ -448,7 +448,7 @@ module seapad::vesting_test {
     fun addFund(amount: u64, owner: address, project: &mut Project<XCOIN>, scenario: &mut Scenario) {
         test_scenario::next_tx(scenario, ADMIN);
 
-        let admin = take_from_sender<VAdminCap>(scenario);
+        let admin = take_from_sender<AdminCap>(scenario);
         let version = take_shared<Version>(scenario);
         let resgistry = take_shared<ProjectRegistry>(scenario);
         let ctx = test_scenario::ctx(scenario);
@@ -464,7 +464,7 @@ module seapad::vesting_test {
     fun removeFund(owner: address, project: &mut Project<XCOIN>, scenario: &mut Scenario) {
         test_scenario::next_tx(scenario, ADMIN);
 
-        let admin = take_from_sender<VAdminCap>(scenario);
+        let admin = take_from_sender<AdminCap>(scenario);
         let version = take_shared<Version>(scenario);
         let resgistry = take_shared<ProjectRegistry>(scenario);
 
@@ -489,7 +489,7 @@ module seapad::vesting_test {
     ): Project<XCOIN> {
         test_scenario::next_tx(scenario, ADMIN);
         {
-            let admin = test_scenario::take_from_sender<VAdminCap>(scenario);
+            let admin = test_scenario::take_from_sender<AdminCap>(scenario);
             let projectRegistry = test_scenario::take_shared<ProjectRegistry>(scenario);
             let version = test_scenario::take_shared<Version>(scenario);
             let ctx = test_scenario::ctx(scenario);
