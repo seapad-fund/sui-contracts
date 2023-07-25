@@ -365,7 +365,7 @@ module seapad::vesting {
 
         let Fund<COIN> {
             owner,
-            total,
+            total:_,
             locked,
             released: _,
             last_claim_ms: _
@@ -374,6 +374,7 @@ module seapad::vesting {
         let lockedValue = coin::value(&locked);
         project.deposited = project.deposited - lockedValue;
         project.deposited_percent = project.deposited * ONE_HUNDRED_PERCENT_SCALED / project.supply;
+        transfer::public_transfer(locked, owner);
 
 
         if (table::contains(&registry.user_projects, owner)) {
@@ -383,7 +384,7 @@ module seapad::vesting {
         emit(FundRemoveEvent {
             project: id_address(project),
             owner,
-            fund: total,
+            fund: lockedValue,
         })
     }
 
