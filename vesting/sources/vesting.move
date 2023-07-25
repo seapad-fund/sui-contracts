@@ -50,7 +50,7 @@ module seapad::vesting {
     struct AdminCapVault has key, store {
         id: UID,
         owner: Option<address>,
-        to:  Option<address>,
+        to: Option<address>,
         cap: Option<AdminCap>
     }
 
@@ -81,10 +81,14 @@ module seapad::vesting {
     }
 
     struct Fund<phantom COIN> has store {
-        owner: address, //owner of fund
-        total: u64, //total of vesting fund, set when fund deposited, nerver change!
-        locked: Coin<COIN>, //all currently locked fund
-        released: u64, //total released
+        owner: address,
+        //owner of fund
+        total: u64,
+        //total of vesting fund, set when fund deposited, nerver change!
+        locked: Coin<COIN>,
+        //all currently locked fund
+        released: u64,
+        //total released
         last_claim_ms: u64,
     }
 
@@ -129,15 +133,21 @@ module seapad::vesting {
             user_projects: table::new(ctx),
         });
 
-        share_object(AdminCapVault{
+        share_object(AdminCapVault {
             id: object::new(ctx),
             owner: option::none(),
-            to:  option::none(),
+            to: option::none(),
             cap: option::none(),
         })
     }
 
-    public entry fun transferAdmin(adminCap: AdminCap, to: address, vault: &mut AdminCapVault, version: &mut Version, ctx: &mut TxContext) {
+    public entry fun transferAdmin(
+        adminCap: AdminCap,
+        to: address,
+        vault: &mut AdminCapVault,
+        version: &mut Version,
+        ctx: &mut TxContext
+    ) {
         checkVersion(version, VERSION);
         option::fill(&mut vault.owner, sender(ctx));
         option::fill(&mut vault.to, to);
@@ -146,17 +156,22 @@ module seapad::vesting {
 
     public entry fun revokeAdmin(vault: &mut AdminCapVault, version: &mut Version, ctx: &mut TxContext) {
         checkVersion(version, VERSION);
-        let owner =  *option::borrow(&vault.owner);
+        let owner = *option::borrow(&vault.owner);
         execTransferAdmin(vault, owner, version, ctx);
     }
 
     public entry fun acceptAdmin(vault: &mut AdminCapVault, version: &mut Version, ctx: &mut TxContext) {
         checkVersion(version, VERSION);
-        let to =  *option::borrow(&vault.to);
+        let to = *option::borrow(&vault.to);
         execTransferAdmin(vault, to, version, ctx);
     }
 
-    fun execTransferAdmin(vault: &mut AdminCapVault, ownerOrReceiver: address, version: &mut Version, ctx: &mut TxContext) {
+    fun execTransferAdmin(
+        vault: &mut AdminCapVault,
+        ownerOrReceiver: address,
+        version: &mut Version,
+        ctx: &mut TxContext
+    ) {
         checkVersion(version, VERSION);
         assert!(option::is_some(&vault.cap) && ownerOrReceiver == sender(ctx), ERR_NO_PERMISSION);
         transfer(option::extract(&mut vault.cap), sender(ctx));
@@ -276,7 +291,6 @@ module seapad::vesting {
                                     registry: &mut ProjectRegistry,
                                     version: &Version,
                                     ctx: &mut TxContext) {
-
         let (i, n) = (0, vector::length(&owners));
         assert!(vector::length(&values) == n, ERR_BAD_FUND_PARAMS);
         while (i < n) {
@@ -372,6 +386,19 @@ module seapad::vesting {
         })
     }
 
+    public entry fun removeFunds<COIN>(_admin: &AdminCap,
+                                       owner: vector<address>,
+                                       project: &mut Project<COIN>,
+                                       registry: &mut ProjectRegistry,
+                                       version: &Version) {
+        let (i, n) = (0, vector::length(&owner));
+        while (i < n){
+            let owner = *vector::borrow(&owner,i);
+            removeFund(_admin,owner,project,registry,version);
+            i = i +1;
+        }
+    }
+
     public entry fun claim<COIN>(fee: Coin<SUI>,
                                  project: &mut Project<COIN>,
                                  sclock: &Clock,
@@ -406,11 +433,11 @@ module seapad::vesting {
         token_fund.last_claim_ms = now_ms;
 
         //clear user from table if user claim all token!
-        if (token_fund.released == token_fund.total){
+        if (token_fund.released == token_fund.total) {
             let projecIDs = table::borrow_mut(&mut registry.user_projects, sender_addr);
-            let (_a ,index)  = vector::index_of(projecIDs,&projectId);
-            vector::remove( projecIDs, index);
-            if(vector::is_empty(projecIDs)){
+            let (_a, index) = vector::index_of(projecIDs, &projectId);
+            vector::remove(projecIDs, index);
+            if (vector::is_empty(projecIDs)) {
                 table::remove(&mut registry.user_projects, sender_addr);
             }
         };
