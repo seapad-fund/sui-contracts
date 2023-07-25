@@ -4,12 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="10b876f6-5f11-44d6-9e4a-d6252006a611" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/vesting/deploy.log.2023.07.24" afterDir="false" />
+    <list default="true" id="10b876f6-5f11-44d6-9e4a-d6252006a611" name="Changes" comment="deploy testnet...">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/vesting/cmd.sh" beforeDir="false" afterPath="$PROJECT_DIR$/vesting/cmd.sh" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/vesting/sources/vesting.move" beforeDir="false" afterPath="$PROJECT_DIR$/vesting/sources/vesting.move" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/vesting/tests/vesting_test.move" beforeDir="false" afterPath="$PROJECT_DIR$/vesting/tests/vesting_test.move" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/vesting/deploy.log.2023.07.24" beforeDir="false" afterPath="$PROJECT_DIR$/vesting/deploy.log.2023.07.24" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -536,7 +534,7 @@
       <option name="project" value="LOCAL" />
       <updated>1686814955379</updated>
     </task>
-    <option name="localTasksCounter" value="134" />
+    <option name="localTasksCounter" value="135" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -595,7 +593,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="update stake, swap token" />
     <MESSAGE value="add nft" />
     <MESSAGE value="add address in move file" />
     <MESSAGE value="change name" />
@@ -620,7 +617,8 @@
     <MESSAGE value="Update ClaimInfor" />
     <MESSAGE value="Update value ClaimInfo" />
     <MESSAGE value="Create new project vesting" />
-    <option name="LAST_COMMIT_MESSAGE" value="Create new project vesting" />
+    <MESSAGE value="deploy testnet..." />
+    <option name="LAST_COMMIT_MESSAGE" value="deploy testnet..." />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />
