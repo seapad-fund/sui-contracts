@@ -371,8 +371,8 @@ module seapad::vesting {
             last_claim_ms: _
         } = table::remove(&mut project.funds, owner);
 
-        let locked = coin::value(&locked);
-        project.deposited = project.deposited - locked;
+        let lockedValue = coin::value(&locked);
+        project.deposited = project.deposited - lockedValue;
         project.deposited_percent = project.deposited * ONE_HUNDRED_PERCENT_SCALED / project.supply;
 
 
