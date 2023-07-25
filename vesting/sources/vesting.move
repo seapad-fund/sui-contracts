@@ -371,9 +371,10 @@ module seapad::vesting {
             last_claim_ms: _
         } = table::remove(&mut project.funds, owner);
 
-        project.deposited = project.deposited - total;
+        let locked = coin::value(&locked);
+        project.deposited = project.deposited - locked;
         project.deposited_percent = project.deposited * ONE_HUNDRED_PERCENT_SCALED / project.supply;
-        transfer::public_transfer(locked, owner);
+
 
         if (table::contains(&registry.user_projects, owner)) {
             table::remove(&mut registry.user_projects, owner);
@@ -393,8 +394,8 @@ module seapad::vesting {
                                        version: &Version) {
         let (i, n) = (0, vector::length(&owner));
         while (i < n){
-            let owner = *vector::borrow(&owner,i);
-            removeFund(_admin,owner,project,registry,version);
+            let owners = *vector::borrow(&owner,i);
+            removeFund(_admin,owners,project,registry,version);
             i = i +1;
         }
     }
