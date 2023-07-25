@@ -388,14 +388,14 @@ module seapad::vesting {
     }
 
     public entry fun removeFunds<COIN>(_admin: &AdminCap,
-                                       owner: vector<address>,
+                                       owners: vector<address>,
                                        project: &mut Project<COIN>,
                                        registry: &mut ProjectRegistry,
                                        version: &Version) {
-        let (i, n) = (0, vector::length(&owner));
+        let (i, n) = (0, vector::length(&owners));
         while (i < n){
-            let owners = *vector::borrow(&owner,i);
-            removeFund(_admin,owners,project,registry,version);
+            let owner = *vector::borrow(&owners,i);
+            removeFund(_admin,owner,project,registry,version);
             i = i +1;
         }
     }
