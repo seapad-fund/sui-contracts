@@ -1,17 +1,14 @@
 [package]
 name = "SeaPad"
 version = "0.0.1"
-published-at = "0x5108fd82e59aba9aa8469bd7dc0d697383a7a57bdfb9291d0048eeba47ef8f7f"
+published-at = "0xb779486cfd6c19e9218cc7dc17c453014d2d9ba12d2ee4dbb0ec4e1e02ae1cca"
 
 [dependencies]
 Sui = { git = "https://github.com/MystenLabs/sui", subdir = "crates/sui-framework/packages/sui-framework", rev = "mainnet" }
 
 [addresses]
-seapad =  "0x5108fd82e59aba9aa8469bd7dc0d697383a7a57bdfb9291d0048eeba47ef8f7f"
+seapad =  "0xb779486cfd6c19e9218cc7dc17c453014d2d9ba12d2ee4dbb0ec4e1e02ae1cca"
 sui =  "0x02"
 
-##multi-sign treasury wallet from:
-##  - wallet 1: 0x0dd0106a909560b8f2e0262e9946008e307ae7758fde5277853088d25b0b6c7f, weight 1
-##  - wallet 2: 0x89e0d7a3e0ce46a8bab075dfe81b84790c8f3b0860a88b8ba09d27e87b50073e, weight 3
-##  - wallet 3: 0x38a7ccc61dcbbe36c9b02d8781322041d9e727ce55b1161010d0946468984679, weight 2
-treasury="0x31efef81b6121a1b02fd7c5dc8e862bc1809ef00424c7c19e478b25641c2a59b"
+##should be  a multi-sign treasury wallet
+treasury="0x0dd0106a909560b8f2e0262e9946008e307ae7758fde5277853088d25b0b6c7f"
