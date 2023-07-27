@@ -1,14 +1,16 @@
 #!/bin/bash
-#sui move build
-#sui move test
-#sui client publish --force --with-unpublished-dependencies  --gas-budget 500000000 --skip-dependency-verification
+#sui client publish --force --with-unpublished-dependencies  --gas-budget 200000000
 
-##move  call
-export PACKAGE=0x95194a886ce8f058033857f4374b522a75578d38971addda7d9bbb96eecbca7b
-export ADMIN_CAP_VESTING=0xe37af4263b6de0f79d772e23c9b229399b7d4a3a0c543bd114e1ee6fc9e0787f
-export ADMIN_CAP_VERSION=0x46540f469578c57a2b01fdf97d50a219b39c466843e1bb6949f2c4d44baed3c5
-export PROJECT_REG=0x89f0ffd5bd748b53834564c5c277d0548d305137f83ea40c4921db515ed5773c
-export VERSION=0x137ab36aae2248b01faa95b98aea128cfb88602c7414b1a2fe3c1d72e2609f0c
-export NEW_ADMIN=0x0c5fa0762043c0ed91ddca940890c930947d062e1bea110fe4d7a59ad19297a1
-###
-sui client call --gas-budget 200000000 --package $PACKAGE --module "vesting" --function "changeAdmin" --args  $ADMIN_CAP_VESTING $NEW_ADMIN $VERSION
+##ENV_ADDR also the publisher
+export ENV_ADDR=0x0dd0106a909560b8f2e0262e9946008e307ae7758fde5277853088d25b0b6c7f
+export PACKAGE=0xdbc4af0ceb16d1fa7e444129e7a948292e3027bbc0a2e45dc28cb2fbb11a4dde
+export ADMIN_CAP=0x4763f2c873a6d7ee1464b51a9355d79266d0eef3b4fecf563a60d1757f79296a
+export ADMIN_CAP_VAULT=0x80ca9c141bf4af5071846d7ca53a524a5dfe5baeb22ca56fe25c0a8c5e21435e
+export VERSION=0x9b613c37921b1e23ef541a9a19bceb4a384884605156a8923a008e4c5684161c
+export VERSION_ADMIN_CAP=0x06ed8748155530d31568cc61187b4f2270a1545933289e3ead7ae51ab6d8317e
+export NEW_ADMIN=0x7d0ad419e070245b777ec04461d02a6956afd2d19a3d8f96341dcf26f5053796
+
+###move  calls to change admin
+#sui client call --gas-budget 20000000 --package $PACKAGE --module "vesting" --function "transferAdmin" --args  $ADMIN_CAP $NEW_ADMIN $ADMIN_CAP_VAULT $VERSION
+#sui client call --gas-budget 20000000 --package $PACKAGE --module "vesting" --function "acceptAdmin" --args $ADMIN_CAP_VAULT $VERSION
+#sui client call --gas-budget 20000000 --package $PACKAGE --module "vesting" --function "revokeAdmin" --args $ADMIN_CAP_VAULT $VERSION

@@ -1,12 +1,13 @@
 [package]
 name = "Vesting"
 version = "0.0.1"
+published-at = "0xdbc4af0ceb16d1fa7e444129e7a948292e3027bbc0a2e45dc28cb2fbb11a4dde"
 
 [dependencies]
-Sui = { git = "https://github.com/MystenLabs/sui", subdir = "crates/sui-framework/packages/sui-framework", rev = "testnet" }
+Sui = { git = "https://github.com/MystenLabs/sui", subdir = "crates/sui-framework/packages/sui-framework", rev = "mainnet" }
 
 [addresses]
-seapad = "0x00"
+seapad = "0xdbc4af0ceb16d1fa7e444129e7a948292e3027bbc0a2e45dc28cb2fbb11a4dde"
 sui = "0x02"
 
 ##test only

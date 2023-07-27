@@ -50,7 +50,7 @@ module seapad::vesting {
     struct AdminCapVault has key, store {
         id: UID,
         owner: Option<address>,
-        to:  Option<address>,
+        to: Option<address>,
         cap: Option<AdminCap>
     }
 
@@ -146,13 +146,13 @@ module seapad::vesting {
 
     public entry fun revokeAdmin(vault: &mut AdminCapVault, version: &mut Version, ctx: &mut TxContext) {
         checkVersion(version, VERSION);
-        let owner =  *option::borrow(&vault.owner);
+        let owner = *option::borrow(&vault.owner);
         execTransferAdmin(vault, owner, version, ctx);
     }
 
     public entry fun acceptAdmin(vault: &mut AdminCapVault, version: &mut Version, ctx: &mut TxContext) {
         checkVersion(version, VERSION);
-        let to =  *option::borrow(&vault.to);
+        let to = *option::borrow(&vault.to);
         execTransferAdmin(vault, to, version, ctx);
     }
 
@@ -276,7 +276,6 @@ module seapad::vesting {
                                     registry: &mut ProjectRegistry,
                                     version: &Version,
                                     ctx: &mut TxContext) {
-
         let (i, n) = (0, vector::length(&owners));
         assert!(vector::length(&values) == n, ERR_BAD_FUND_PARAMS);
         while (i < n) {
@@ -351,15 +350,17 @@ module seapad::vesting {
 
         let Fund<COIN> {
             owner,
-            total,
+            total:_,
             locked,
             released: _,
             last_claim_ms: _
         } = table::remove(&mut project.funds, owner);
 
-        project.deposited = project.deposited - total;
+        let lockedValue = coin::value(&locked);
+        project.deposited = project.deposited - lockedValue;
         project.deposited_percent = project.deposited * ONE_HUNDRED_PERCENT_SCALED / project.supply;
         transfer::public_transfer(locked, owner);
+
 
         if (table::contains(&registry.user_projects, owner)) {
             table::remove(&mut registry.user_projects, owner);
@@ -368,8 +369,21 @@ module seapad::vesting {
         emit(FundRemoveEvent {
             project: id_address(project),
             owner,
-            fund: total,
+            fund: lockedValue,
         })
+    }
+
+    public entry fun removeFunds<COIN>(_admin: &AdminCap,
+                                       owners: vector<address>,
+                                       project: &mut Project<COIN>,
+                                       registry: &mut ProjectRegistry,
+                                       version: &Version) {
+        let (i, n) = (0, vector::length(&owners));
+        while (i < n){
+            let owner = *vector::borrow(&owners,i);
+            removeFund(_admin,owner,project,registry,version);
+            i = i +1;
+        }
     }
 
     public entry fun claim<COIN>(fee: Coin<SUI>,
@@ -408,8 +422,8 @@ module seapad::vesting {
         //clear user from table if user claim all token!
         if (token_fund.released == token_fund.total){
             let projecIDs = table::borrow_mut(&mut registry.user_projects, sender_addr);
-            let (_a ,index)  = vector::index_of(projecIDs,&projectId);
-            vector::remove( projecIDs, index);
+            let (_a ,index) = vector::index_of(projecIDs,&projectId);
+            vector::remove(projecIDs, index);
             if(vector::is_empty(projecIDs)){
                 table::remove(&mut registry.user_projects, sender_addr);
             }
