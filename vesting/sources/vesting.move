@@ -35,6 +35,7 @@ module seapad::vesting {
     const ERR_FULL_SUPPLY: u64 = 8007;
     const ERR_FEE_NOT_ENOUGH: u64 = 8008;
     const ERR_BDEPRECATED: u64 = 8009;
+    const ERR_PAUSED: u64 = 8010;
 
     const VESTING_TYPE_MILESTONE_UNLOCK_FIRST: u8 = 1;
     const VESTING_TYPE_MILESTONE_CLIFF_FIRST: u8 = 2;
@@ -111,7 +112,8 @@ module seapad::vesting {
         milestone_percents: vector<u64>,
         fee: u64,
         //how many sui will be charged when user claim fund!
-        feeTreasury: Coin<SUI>
+        feeTreasury: Coin<SUI>,
+        paused: bool
     }
 
     struct ProjectRegistry has key, store {
@@ -236,7 +238,8 @@ module seapad::vesting {
             unlock_percent,
             linear_vesting_duration_ms,
             milestone_times,
-            milestone_percents
+            milestone_percents,
+            paused: false
         };
 
         table::add(&mut project_registry.projects, id_address(&project), 0);
@@ -248,6 +251,10 @@ module seapad::vesting {
         });
 
         share_object(project);
+    }
+
+    public entry fun pauseProject<COIN>(_admin: &AdminCap, project: &mut Project<COIN>, paused: bool) {
+        project.paused = paused;
     }
 
     public entry fun setDeprecated<COIN>(_admin: &AdminCap, project: &mut Project<COIN>, deprecated: bool) {
@@ -393,6 +400,7 @@ module seapad::vesting {
                                  registry: &mut ProjectRegistry,
                                  ctx: &mut TxContext) {
         checkVersion(version, VERSION);
+        assert!(!project.paused, ERR_PAUSED);
         assert!(coin::value(&fee) >= project.fee, ERR_FEE_NOT_ENOUGH);
         let now_ms = clock::timestamp_ms(sclock);
         assert!(now_ms >= project.tge_ms, ERR_TGE_NOT_STARTED);
