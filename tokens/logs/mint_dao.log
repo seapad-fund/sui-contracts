@@ -1,0 +1,82 @@
+[warn] Client/Server api version mismatch, client api version : 1.6.1, server api version : 1.5.0
+----- Transaction Digest ----
+DEhpawgzDzDDFo5m987ef7n2cRDxVXwVPvM18H1KvYqE
+----- Transaction Data ----
+Transaction Signature: [Signature(Ed25519SuiSignature(Ed25519SuiSignature([0, 120, 222, 232, 210, 241, 70, 6, 143, 230, 28, 96, 102, 160, 81, 217, 44, 216, 109, 93, 253, 224, 249, 44, 239, 89, 76, 45, 241, 92, 180, 142, 117, 141, 45, 196, 20, 216, 124, 46, 193, 12, 237, 221, 173, 147, 80, 158, 171, 34, 75, 46, 52, 58, 162, 237, 177, 234, 52, 52, 248, 28, 251, 26, 6, 176, 217, 222, 133, 52, 90, 34, 46, 196, 156, 241, 27, 169, 209, 148, 30, 23, 159, 43, 170, 95, 1, 5, 53, 139, 58, 159, 231, 67, 67, 97, 211])))]
+Transaction Kind : Programmable
+Inputs: [Object(ImmOrOwnedObject { object_id: 0x69e484dee6ca45f1f9056df7bf1e3ec7664ca2133c520343d148eb52b7859747, version: SequenceNumber(9099794), digest: o#2xSdJcTpJ3k1XCzVsuwXxHRYe2DPGSzQ1Z8vWmTEwr1D }), Pure(SuiPureValue { value_type: Some(U64), value: "10000000000000000" }), Pure(SuiPureValue { value_type: Some(Address), value: "0x0dd0106a909560b8f2e0262e9946008e307ae7758fde5277853088d25b0b6c7f" })]
+Commands: [
+  MoveCall(0x0000000000000000000000000000000000000000000000000000000000000002::coin::mint_and_transfer<0xb779486cfd6c19e9218cc7dc17c453014d2d9ba12d2ee4dbb0ec4e1e02ae1cca::spt::SPT>(Input(0),Input(1),Input(2))),
+]
+
+Sender: 0x0dd0106a909560b8f2e0262e9946008e307ae7758fde5277853088d25b0b6c7f
+Gas Payment: Object ID: 0x01ba063f3252b3d1a29d2f4ec03141f75139ff487245977963dcd0ea87ba6fb9, version: 0x8adb9c, digest: 3FzKm7ZXgHLQGdJYL4CRhj9jjVyokAyKpb3KkKj73364
+Gas Owner: 0x0dd0106a909560b8f2e0262e9946008e307ae7758fde5277853088d25b0b6c7f
+Gas Price: 790
+Gas Budget: 20000000
+
+----- Transaction Effects ----
+Status : Success
+Created Objects:
+  - ID: 0x29c9d045ac5be1e39dc01d05a584aaceb778790a4cd841baee29619e332b079c , Owner: Account Address ( 0x0dd0106a909560b8f2e0262e9946008e307ae7758fde5277853088d25b0b6c7f )
+Mutated Objects:
+  - ID: 0x01ba063f3252b3d1a29d2f4ec03141f75139ff487245977963dcd0ea87ba6fb9 , Owner: Account Address ( 0x0dd0106a909560b8f2e0262e9946008e307ae7758fde5277853088d25b0b6c7f )
+  - ID: 0x69e484dee6ca45f1f9056df7bf1e3ec7664ca2133c520343d148eb52b7859747 , Owner: Account Address ( 0x0dd0106a909560b8f2e0262e9946008e307ae7758fde5277853088d25b0b6c7f )
+
+----- Events ----
+Array []
+----- Object changes ----
+Array [
+    Object {
+        "type": String("mutated"),
+        "sender": String("0x0dd0106a909560b8f2e0262e9946008e307ae7758fde5277853088d25b0b6c7f"),
+        "owner": Object {
+            "AddressOwner": String("0x0dd0106a909560b8f2e0262e9946008e307ae7758fde5277853088d25b0b6c7f"),
+        },
+        "objectType": String("0x2::coin::Coin<0x2::sui::SUI>"),
+        "objectId": String("0x01ba063f3252b3d1a29d2f4ec03141f75139ff487245977963dcd0ea87ba6fb9"),
+        "version": String("9100189"),
+        "previousVersion": String("9100188"),
+        "digest": String("7eSG5mVsnGUZyhdfk6yfDFUJ8Rjdax4qeY3XsZdc8f6y"),
+    },
+    Object {
+        "type": String("mutated"),
+        "sender": String("0x0dd0106a909560b8f2e0262e9946008e307ae7758fde5277853088d25b0b6c7f"),
+        "owner": Object {
+            "AddressOwner": String("0x0dd0106a909560b8f2e0262e9946008e307ae7758fde5277853088d25b0b6c7f"),
+        },
+        "objectType": String("0x2::coin::TreasuryCap<0xb779486cfd6c19e9218cc7dc17c453014d2d9ba12d2ee4dbb0ec4e1e02ae1cca::spt::SPT>"),
+        "objectId": String("0x69e484dee6ca45f1f9056df7bf1e3ec7664ca2133c520343d148eb52b7859747"),
+        "version": String("9100189"),
+        "previousVersion": String("9099794"),
+        "digest": String("AcqEH8ksT1DYzsCWb6QMaX6nX6eXdrWAXou6SdWfiRcK"),
+    },
+    Object {
+        "type": String("created"),
+        "sender": String("0x0dd0106a909560b8f2e0262e9946008e307ae7758fde5277853088d25b0b6c7f"),
+        "owner": Object {
+            "AddressOwner": String("0x0dd0106a909560b8f2e0262e9946008e307ae7758fde5277853088d25b0b6c7f"),
+        },
+        "objectType": String("0x2::coin::Coin<0xb779486cfd6c19e9218cc7dc17c453014d2d9ba12d2ee4dbb0ec4e1e02ae1cca::spt::SPT>"),
+        "objectId": String("0x29c9d045ac5be1e39dc01d05a584aaceb778790a4cd841baee29619e332b079c"),
+        "version": String("9100189"),
+        "digest": String("E7WEtyx6ZHFpGF8YvWLFih9UiZQLptdPtrPBimgz2v5N"),
+    },
+]
+----- Balance changes ----
+Array [
+    Object {
+        "owner": Object {
+            "AddressOwner": String("0x0dd0106a909560b8f2e0262e9946008e307ae7758fde5277853088d25b0b6c7f"),
+        },
+        "coinType": String("0x2::sui::SUI"),
+        "amount": String("-2123952"),
+    },
+    Object {
+        "owner": Object {
+            "AddressOwner": String("0x0dd0106a909560b8f2e0262e9946008e307ae7758fde5277853088d25b0b6c7f"),
+        },
+        "coinType": String("0xb779486cfd6c19e9218cc7dc17c453014d2d9ba12d2ee4dbb0ec4e1e02ae1cca::spt::SPT"),
+        "amount": String("10000000000000000"),
+    },
+]

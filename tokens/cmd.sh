@@ -13,10 +13,15 @@ export TM_WALLET_PRIVATE=0x4335958e123b9504e023e58c4630a817d5a17f1334e51cba5c99f
 export TM_AMT_PRIVATE=11000000000000000
 export TM_WALLET_PUBLIC_IDO=0x96854f77810cb9730090f6aa4cd40f5828012c02497afdf27996a3671e8826b6
 export TM_AMT_PUBLIC_IDO=14000000000000000
-export ENV_AMOUNT=7000000000000000
+#export ENV_AMOUNT=7000000000000000
+#export ENV_AMOUNT=1000000000
+#export ENV_AMOUNT=12000000000000000
+#export ENV_AMOUNT=4000000000000000
+#export ENV_AMOUNT=9000000000000000
+export ENV_AMOUNT=10000000000000000
 
 ##move  callS
 #sui client call --gas-budget 20000000 --package $SUI --module "coin" --function "mint_and_transfer" --type-args $SPT_TYPE --args  $TREASURY_CAP $TM_AMT_PRIVATE $TM_WALLET_PRIVATE
 #sui client call --gas-budget 20000000 --package $SUI --module "coin" --function "mint_and_transfer" --type-args $SPT_TYPE --args  $TREASURY_CAP $TM_AMT_PUBLIC_IDO $TM_WALLET_PUBLIC_IDO
-
-sui client call --gas-budget 20000000 --package $SUI --module "coin" --function "mint_and_transfer" --type-args $SPT_TYPE --args  $TREASURY_CAP  $ENV_AMOUNT $ENV_ADDR
+#sui client call --gas-budget 20000000 --package $SUI --module "coin" --function "mint_and_transfer" --type-args $SPT_TYPE --args  $TREASURY_CAP  $ENV_AMOUNT $ENV_ADDR
+#sui client call --gas-budget 20000000 --package $SUI --module "coin" --function "mint_and_transfer" --type-args $SPT_TYPE --args  $TREASURY_CAP  $ENV_AMOUNT $ENV_ADDR

@@ -1,0 +1,22 @@
+[package]
+name = "Tokenomic"
+version = "1.0.2"
+published-at = "0xa00d14642a0faa3236f80a990568447a57a51d057ca4dc79f623db5b7334f58d"
+
+
+[dependencies]
+Sui = { git = "https://github.com/MystenLabs/sui", subdir = "crates/sui-framework/packages/sui-framework", rev = "mainnet" }
+
+[addresses]
+seapad = "0xa00d14642a0faa3236f80a990568447a57a51d057ca4dc79f623db5b7334f58d"
+sui = "0x02"
+
+##Test addresses
+seedFund = "0x8880"
+privateFund = "0x8881"
+publicFund = "0x8882"
+foundationFund = "0x8883"
+advisorpartnerFund = "0x8884"
+marketingFund = "0x8885"
+ecosystemFund = "0x8886"
+daoFund = "0x8887"
