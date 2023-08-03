@@ -4,9 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="10b876f6-5f11-44d6-9e4a-d6252006a611" name="Changes" comment="add fun removeFunds">
+    <list default="true" id="10b876f6-5f11-44d6-9e4a-d6252006a611" name="Changes" comment="replace param time_ms to &amp;clock">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/vesting/sources/vesting.move" beforeDir="false" afterPath="$PROJECT_DIR$/vesting/sources/vesting.move" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/deploy/testnet.toml" beforeDir="false" afterPath="$PROJECT_DIR$/deploy/testnet.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/deploy/testnet_101.toml" beforeDir="false" afterPath="$PROJECT_DIR$/deploy/testnet_101.toml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -192,20 +193,6 @@
       <workItem from="1680008715445" duration="9703000" />
       <workItem from="1680195522478" duration="17666000" />
       <workItem from="1680619443954" duration="90000" />
-    </task>
-    <task id="LOCAL-00083" summary="change name">
-      <created>1682410830168</created>
-      <option name="number" value="00083" />
-      <option name="presentableId" value="LOCAL-00083" />
-      <option name="project" value="LOCAL" />
-      <updated>1682410830168</updated>
-    </task>
-    <task id="LOCAL-00084" summary="fix refund">
-      <created>1682486480268</created>
-      <option name="number" value="00084" />
-      <option name="presentableId" value="LOCAL-00084" />
-      <option name="project" value="LOCAL" />
-      <updated>1682486480268</updated>
     </task>
     <task id="LOCAL-00085" summary="build contract">
       <created>1682486717219</created>
@@ -536,7 +523,21 @@
       <option name="project" value="LOCAL" />
       <updated>1686814955379</updated>
     </task>
-    <option name="localTasksCounter" value="137" />
+    <task id="LOCAL-00137" summary="fake big fundValue in tests">
+      <created>1691041116429</created>
+      <option name="number" value="00137" />
+      <option name="presentableId" value="LOCAL-00137" />
+      <option name="project" value="LOCAL" />
+      <updated>1691041116430</updated>
+    </task>
+    <task id="LOCAL-00138" summary="replace param time_ms to &amp;clock">
+      <created>1691041212300</created>
+      <option name="number" value="00138" />
+      <option name="presentableId" value="LOCAL-00138" />
+      <option name="project" value="LOCAL" />
+      <updated>1691041212300</updated>
+    </task>
+    <option name="localTasksCounter" value="139" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -595,8 +596,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="add address in move file" />
-    <MESSAGE value="change name" />
     <MESSAGE value="fix refund" />
     <MESSAGE value="update contract" />
     <MESSAGE value="add unit test" />
@@ -620,7 +619,9 @@
     <MESSAGE value="Create new project vesting" />
     <MESSAGE value="deploy testnet..." />
     <MESSAGE value="add fun removeFunds" />
-    <option name="LAST_COMMIT_MESSAGE" value="add fun removeFunds" />
+    <MESSAGE value="fake big fundValue in tests" />
+    <MESSAGE value="replace param time_ms to &amp;clock" />
+    <option name="LAST_COMMIT_MESSAGE" value="replace param time_ms to &amp;clock" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />
