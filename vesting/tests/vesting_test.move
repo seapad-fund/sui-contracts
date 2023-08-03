@@ -15,8 +15,7 @@ module seapad::vesting_test {
     const ADMIN: address = @0xC0FFEE;
     const SEED_FUND: address = @0xC0FFFF;
     const ONE_MILLION_DECIMAL9: u128 = 1000000000000000;
-    // const TOTAL_SUPPLY: u64 = 100000000;
-    const TOTAL_SUPPLY: u128 = 100000000000000000;
+    const TOTAL_SUPPLY: u128 = 18446744073709551615;//MAX
 
     const TWO_HOURS_IN_MS: u64 = 2 * 3600000;
     const ONE_HOURS_IN_MS: u64 = 3600000;
@@ -28,6 +27,8 @@ module seapad::vesting_test {
 
     const UNLOCK_PERCENT: u64 = 1000;
     const PERCENT_SCALE: u64 = 10000;
+
+    const FUND_VALUE: u64 = 18446744073709000000;
 
     struct XCOIN has drop {}
 
@@ -106,7 +107,7 @@ module seapad::vesting_test {
             scenario
         );
 
-        // let fundValue = 1000000u64;
+        // let fundValue = MAX_FUND_VALUE;
         let fundValue = ((10 * ONE_MILLION_DECIMAL9) as u64);
         addFund(fundValue, SEED_FUND, &mut project, scenario);
 
@@ -176,7 +177,7 @@ module seapad::vesting_test {
             scenario
         );
 
-        let fundValue = 1000000u64;
+        let fundValue = FUND_VALUE;
         addFund(fundValue, SEED_FUND, &mut project, scenario);
 
         //Test claim tge + cliff
@@ -236,7 +237,7 @@ module seapad::vesting_test {
             scenario
         );
 
-        let fundValue = 1000000u64;
+        let fundValue = FUND_VALUE;
         addFund(fundValue, SEED_FUND, &mut project, scenario);
 
         //Test claim tge
@@ -299,7 +300,7 @@ module seapad::vesting_test {
             scenario
         );
 
-        let fundValue = 1000000u64;
+        let fundValue = FUND_VALUE;
         addFund(fundValue, SEED_FUND, &mut project, scenario);
 
         //Test claim tge + cliff
@@ -360,7 +361,7 @@ module seapad::vesting_test {
             scenario
         );
 
-        let fundValue = 1000000u64;
+        let fundValue = FUND_VALUE / 2;
         addFund(fundValue, SEED_FUND, &mut project, scenario);
         addFund(fundValue, SEED_FUND, &mut project, scenario);
 
@@ -397,7 +398,7 @@ module seapad::vesting_test {
 
     #[test]
     #[expected_failure(abort_code = vesting::ERR_NO_FUND)]
-    fun test_remove_fund(){
+    fun test_remove_fund() {
         let scenario_val = scenario();
         let scenario = &mut scenario_val;
         init_env(scenario);
@@ -420,7 +421,7 @@ module seapad::vesting_test {
             scenario
         );
 
-        let fundValue = 1000000u64;
+        let fundValue = FUND_VALUE;
         addFund(fundValue, SEED_FUND, &mut project, scenario);
         removeFund(SEED_FUND, &mut project, scenario);
 
@@ -476,7 +477,7 @@ module seapad::vesting_test {
         let resgistry = take_shared<ProjectRegistry>(scenario);
 
 
-        vesting::removeFund(&admin, owner, project, &mut resgistry,&version);
+        vesting::removeFund(&admin, owner, project, &mut resgistry, &version);
 
         return_to_sender(scenario, admin);
         return_shared(version);
