@@ -129,7 +129,7 @@ module seapad::stake {
         global_config: &GlobalConfig,
         decimalS: u8,
         decimalR: u8,
-        timestamp_ms: u64,
+        sClock: &Clock,
         duration_unstake_time_ms: u64,
         max_stake: u64,
         ctx: &mut TxContext
@@ -137,6 +137,8 @@ module seapad::stake {
         assert!(sender(ctx) == stake_config::get_treasury_admin_address(global_config), ERR_NOT_TREASURY);
         assert!(!stake_config::is_global_emergency(global_config), ERR_EMERGENCY);
         assert!(duration > 0, ERR_DURATION_CANNOT_BE_ZERO);
+
+        let timestamp_ms = clock::timestamp_ms(sClock);
 
         let reward_per_sec_ = coin::value(&reward_coins) / duration;
         assert!(reward_per_sec_ > 0, ERR_REWARD_CANNOT_BE_ZERO);

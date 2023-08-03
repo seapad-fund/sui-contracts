@@ -7,7 +7,6 @@ module seapad::stake_entries {
     use sui::clock::Clock;
     use seapad::stake::StakePool;
     use sui::transfer;
-    use sui::clock;
     use seapad::stake_config;
 
     /// Register new staking pool with staking coin `S` and reward coin `R`.
@@ -28,7 +27,7 @@ module seapad::stake_entries {
             global_config,
             decimalS,
             decimalR,
-            clock::timestamp_ms(clock),
+            clock,
             duration_unstake_time_ms,
             max_stake_value,
             ctx

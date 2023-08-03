@@ -301,17 +301,22 @@ module seapad::emergency_tests {
             let reward_coins = coin::mint_for_testing<REWARD_COIN>(12345 * ONE_COIN, ctx(scenario));
             let duration = 12345;
 
+            let ctx = test_scenario::ctx(scenario);
+            let sClock = clock::create_for_testing(ctx);
+            clock::increment_for_testing(&mut sClock, TIMESTAMP_MS_NOW);
+
             stake::register_pool<STAKE_COIN, REWARD_COIN>(
                 reward_coins,
                 duration,
                 &gConfig,
                 decimalS,
                 decimalR,
-                TIMESTAMP_MS_NOW,
+                &sClock,
                 duration,
                 MAX_STAKE,
                 ctx(scenario)
             );
+            test_scenario::return_shared(sClock);
             test_scenario::return_shared(gConfig);
         };
     }
