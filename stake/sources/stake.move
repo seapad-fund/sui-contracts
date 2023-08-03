@@ -14,6 +14,8 @@ module seapad::stake {
     use sui::object;
     use sui::event;
     use sui::math;
+    use sui::clock::Clock;
+    use sui::clock;
 
     /// Pool does not exist.
     const ERR_NO_POOL: u64 = 100;
@@ -184,12 +186,13 @@ module seapad::stake {
     public fun deposit_reward_coins<S, R>(pool: &mut StakePool<S, R>,
                                           coins: Coin<R>,
                                           global_config: &GlobalConfig,
-                                          timestamp_ms: u64,
+                                          sClock: &Clock,
                                           ctx: &mut TxContext) {
         assert!(!is_emergency_inner(pool, global_config), ERR_EMERGENCY);
 
         // it's forbidden to deposit more rewards (extend pool duration) after previous pool duration passed
         // preventing unfair reward distribution
+        let timestamp_ms = clock::timestamp_ms(sClock);
         assert!(!is_finished_inner(pool, timestamp_ms), ERR_HARVEST_FINISHED);
 
         let amount = coin::value(&coins);
@@ -222,9 +225,10 @@ module seapad::stake {
         pool: &mut StakePool<S, R>,
         coins: Coin<S>,
         global_config: &GlobalConfig,
-        timestamp_ms: u64,
+        sClock: &Clock,
         ctx: &mut TxContext
     ) {
+        let timestamp_ms = clock::timestamp_ms(sClock);
         let amount = coin::value(&coins);
         assert!(amount > 0, ERR_AMOUNT_CANNOT_BE_ZERO);
         assert!(!is_emergency_inner(pool, global_config), ERR_EMERGENCY);
@@ -286,9 +290,10 @@ module seapad::stake {
         pool: &mut StakePool<S, R>,
         amount: u64,
         global_config: &GlobalConfig,
-        now_ms: u64,
+        sClock: &Clock,
         ctx: &mut TxContext
     ): Coin<S> {
+        let now_ms = clock::timestamp_ms(sClock);
         assert!(amount > 0, ERR_AMOUNT_CANNOT_BE_ZERO);
 
         assert!(!is_emergency_inner(pool, global_config), ERR_EMERGENCY);
@@ -338,8 +343,9 @@ module seapad::stake {
     /// Returns R coins: `Coin<R>`.
     public fun harvest<S, R>(pool: &mut StakePool<S, R>,
                              global_config: &GlobalConfig,
-                             now_ms: u64,
+                             sClock: &Clock,
                              ctx: &mut TxContext): Coin<R> {
+        let now_ms = clock::timestamp_ms(sClock);
         assert!(!is_emergency_inner(pool, global_config), ERR_EMERGENCY);
 
         let user_address = sender(ctx);
@@ -426,8 +432,9 @@ module seapad::stake {
     public fun withdraw_to_treasury<S, R>(pool: &mut StakePool<S, R>,
                                           amount: u64,
                                           global_config: &GlobalConfig,
-                                          timestamp_ms: u64,
+                                          sClock: &Clock,
                                           ctx: &mut TxContext): Coin<R> {
+        let timestamp_ms = clock::timestamp_ms(sClock);
         assert!(sender(ctx) == stake_config::get_treasury_admin_address(global_config), ERR_NOT_TREASURY);
 
         if (!is_emergency_inner(pool, global_config)) {
