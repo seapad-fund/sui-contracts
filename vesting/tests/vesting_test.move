@@ -14,7 +14,10 @@ module seapad::vesting_test {
 
     const ADMIN: address = @0xC0FFEE;
     const SEED_FUND: address = @0xC0FFFF;
-    const TOTAL_SUPPLY: u64 = 100000000;
+    const ONE_MILLION_DECIMAL9: u128 = 1000000000000000;
+    // const TOTAL_SUPPLY: u64 = 100000000;
+    const TOTAL_SUPPLY: u128 = 100000000000000000;
+
     const TWO_HOURS_IN_MS: u64 = 2 * 3600000;
     const ONE_HOURS_IN_MS: u64 = 3600000;
 
@@ -34,8 +37,8 @@ module seapad::vesting_test {
     const VESTING_TYPE_LINEAR_CLIFF_FIRST: u8 = 4;
 
 
-    // #[test]
-    // #[expected_failure(abort_code = vesting::ERR_NO_FUND)]
+    #[test]
+    #[expected_failure(abort_code = vesting::ERR_NO_FUND)]
     fun test_claim_no_fund() {
         let scenario_val = scenario();
         let scenario = &mut scenario_val;
@@ -56,14 +59,16 @@ module seapad::vesting_test {
             scenario
         );
         let version = take_shared<Version>(scenario);
+        let registry = test_scenario::take_shared<ProjectRegistry>(scenario);
 
         test_scenario::next_tx(scenario, ADMIN);
         clock::increment_for_testing(&mut sclock, 9 * MONTH_IN_MS);
         let fee = coin::mint_for_testing(0, test_scenario::ctx(scenario));
-        vesting::claim(fee, &mut project, &sclock, &mut version, test_scenario::ctx(scenario));
+        vesting::claim(fee, &mut project, &sclock, &mut version, &mut registry, test_scenario::ctx(scenario));
         test_scenario::return_shared(sclock);
         test_scenario::return_shared(version);
         test_scenario::return_shared(project);
+        test_scenario::return_shared(registry);
         test_scenario::end(scenario_val);
     }
 
@@ -101,7 +106,8 @@ module seapad::vesting_test {
             scenario
         );
 
-        let fundValue = 1000000u64;
+        // let fundValue = 1000000u64;
+        let fundValue = ((10 * ONE_MILLION_DECIMAL9) as u64);
         addFund(fundValue, SEED_FUND, &mut project, scenario);
 
         //Test claim tge
@@ -438,12 +444,13 @@ module seapad::vesting_test {
     fun claim(claimer: address, project: &mut Project<XCOIN>, sclock: &Clock, scenario: &mut Scenario) {
         test_scenario::next_tx(scenario, claimer);
         let version = take_shared<Version>(scenario);
+        let registry = take_shared<ProjectRegistry>(scenario);
         let ctx = test_scenario::ctx(scenario);
         let fee = coin::mint_for_testing(0, ctx);
-        vesting::claim(fee, project, sclock, &version, ctx);
+        vesting::claim(fee, project, sclock, &version, &mut registry, ctx);
         return_shared(version);
+        return_shared(registry);
     }
-
 
     fun addFund(amount: u64, owner: address, project: &mut Project<XCOIN>, scenario: &mut Scenario) {
         test_scenario::next_tx(scenario, ADMIN);

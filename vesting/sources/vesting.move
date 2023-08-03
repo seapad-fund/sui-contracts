@@ -24,7 +24,8 @@ module seapad::vesting {
 
     const MONTH_IN_MS: u64 = 2592000000;
     const TEN_YEARS_IN_MS: u64 = 311040000000;
-    const ONE_HUNDRED_PERCENT_SCALED: u64 = 10000;
+    const ONE_HUNDRED_PERCENT_SCALED_U128: u128 = 10000;
+    const ONE_HUNDRED_PERCENT_SCALED_U64: u64 = 10000;
 
     const ERR_BAD_FUND_PARAMS: u64 = 8001;
     const ERR_TGE_NOT_STARTED: u64 = 8002;
@@ -58,21 +59,21 @@ module seapad::vesting {
     struct FundAddedEvent has drop, copy {
         owner: address,
         project: address,
-        fund: u64
+        fund: u128
     }
 
     struct FundRemoveEvent has drop, copy {
         owner: address,
         project: address,
-        fund: u64
+        fund: u128
     }
 
     struct FundClaimEvent has drop, copy {
         owner: address,
         project: address,
-        total: u64,
-        released: u64,
-        claim: u64,
+        total: u128,
+        released: u128,
+        claim: u128,
     }
 
     struct ProjectCreatedEvent has drop, copy {
@@ -83,9 +84,9 @@ module seapad::vesting {
 
     struct Fund<phantom COIN> has store {
         owner: address, //owner of fund
-        total: u64, //total of vesting fund, set when fund deposited, nerver change!
+        total: u128, //total of vesting fund, set when fund deposited, nerver change!
         locked: Coin<COIN>, //all currently locked fund
-        released: u64, //total released
+        released: u128, //total released
         last_claim_ms: u64,
     }
 
@@ -95,11 +96,11 @@ module seapad::vesting {
         url: vector<u8>,
         deprecated: bool,
         tge_ms: u64,
-        supply: u64,
         //total supply of vesting, fixed when create new project
-        deposited: u64,
+        supply: u128,
         //total deposited amount
-        deposited_percent: u64,
+        deposited: u128,
+        deposited_percent: u128,
         //total deposited percent
         funds: Table<address, Fund<COIN>>,
         //locked funds
@@ -169,7 +170,7 @@ module seapad::vesting {
     public entry fun createProject<COIN>(_admin: &AdminCap,
                                          name: vector<u8>,
                                          url: vector<u8>,
-                                         supply: u64,
+                                         supply: u128,
                                          tge_ms: u64,
                                          vesting_type: u8,
                                          cliff_ms: u64,
@@ -192,7 +193,7 @@ module seapad::vesting {
             && supply > 0
             && (vector::length<u8>(&name) > 0)
             && (vector::length<u8>(&url) > 0)
-            && (unlock_percent >= 0 && unlock_percent <= ONE_HUNDRED_PERCENT_SCALED)
+            && (unlock_percent >= 0 && unlock_percent <= ONE_HUNDRED_PERCENT_SCALED_U64)
             && (cliff_ms >= 0),
             ERR_BAD_FUND_PARAMS);
 
@@ -212,7 +213,7 @@ module seapad::vesting {
                 curTime = tmpTime;
                 index = index + 1;
             };
-            assert!(total == ONE_HUNDRED_PERCENT_SCALED, ERR_BAD_VESTING_PARAMS);
+            assert!(total == ONE_HUNDRED_PERCENT_SCALED_U64, ERR_BAD_VESTING_PARAMS);
         }
         else {
             assert!(vector::length(&milestone_times) == 0
@@ -307,13 +308,14 @@ module seapad::vesting {
 
         assert!(!project.deprecated, ERR_BDEPRECATED);
 
-        let fund_amt = coin::value(&fund);
+        let fund_amt = (coin::value(&fund) as u128);
+
         assert!(fund_amt > 0, ERR_BAD_FUND_PARAMS);
 
         project.deposited = project.deposited + fund_amt;
         assert!(project.deposited <= project.supply, ERR_FULL_SUPPLY);
 
-        project.deposited_percent = project.deposited * ONE_HUNDRED_PERCENT_SCALED / project.supply;
+        project.deposited_percent = project.deposited * ONE_HUNDRED_PERCENT_SCALED_U128 / project.supply;
 
         if (table::contains(&mut project.funds, owner)) {
             let token_fund = table::borrow_mut(&mut project.funds, owner);
@@ -363,9 +365,9 @@ module seapad::vesting {
             last_claim_ms: _
         } = table::remove(&mut project.funds, owner);
 
-        let lockedValue = coin::value(&locked);
+        let lockedValue = (coin::value(&locked) as u128);
         project.deposited = project.deposited - lockedValue;
-        project.deposited_percent = project.deposited * ONE_HUNDRED_PERCENT_SCALED / project.supply;
+        project.deposited_percent = project.deposited * ONE_HUNDRED_PERCENT_SCALED_U128 / project.supply;
         transfer::public_transfer(locked, owner);
 
 
@@ -408,7 +410,7 @@ module seapad::vesting {
         let sender_addr = sender(ctx);
         assert!(table::contains(&project.funds, sender_addr), ERR_NO_FUND);
 
-        let claim_percent = computeClaimPercent<COIN>(project, now_ms);
+        let claim_percent = (computeClaimPercent<COIN>(project, now_ms) as u128);
         assert!(claim_percent > 0, ERR_NO_FUND);
 
         let projectId = object::id_address(project);
@@ -416,14 +418,14 @@ module seapad::vesting {
         let token_fund = table::borrow_mut(&mut project.funds, sender_addr);
         assert!(sender_addr == token_fund.owner, ERR_NO_PERMISSION);
 
-        let claim_total = (token_fund.total * claim_percent) / ONE_HUNDRED_PERCENT_SCALED;
+        let claim_total = (token_fund.total * claim_percent) / ONE_HUNDRED_PERCENT_SCALED_U128;
         let claimed_amount = claim_total - token_fund.released;
         assert!(claimed_amount > 0, ERR_NO_FUND);
 
         project.deposited = project.deposited - claimed_amount;
-        project.deposited_percent = project.deposited * ONE_HUNDRED_PERCENT_SCALED / project.supply;
+        project.deposited_percent = project.deposited * ONE_HUNDRED_PERCENT_SCALED_U128 / project.supply;
 
-        transfer::public_transfer(coin::split<COIN>(&mut token_fund.locked, claimed_amount, ctx), sender_addr);
+        transfer::public_transfer(coin::split<COIN>(&mut token_fund.locked, (claimed_amount as u64), ctx), sender_addr);
         token_fund.released = token_fund.released + claimed_amount;
         token_fund.last_claim_ms = now_ms;
 
@@ -455,7 +457,7 @@ module seapad::vesting {
         let milestone_times = &project.milestone_times;
         let milestone_percents = &project.milestone_percents;
         let tge_ms = project.tge_ms;
-        let total_percent = 0;
+        let total_percent = 0u64;
 
         if (project.vesting_type == VESTING_TYPE_MILESTONE_CLIFF_FIRST) {
             if (now >= tge_ms + project.cliff_ms) {
@@ -498,7 +500,7 @@ module seapad::vesting {
                 total_percent = total_percent + project.unlock_percent;
                 if (now >= tge_ms + project.cliff_ms) {
                     let delta = now - tge_ms - project.cliff_ms;
-                    total_percent = total_percent + delta * (ONE_HUNDRED_PERCENT_SCALED - project.unlock_percent) / project.linear_vesting_duration_ms;
+                    total_percent = total_percent + delta * (ONE_HUNDRED_PERCENT_SCALED_U64 - project.unlock_percent) / project.linear_vesting_duration_ms;
                 }
             };
         }
@@ -506,11 +508,11 @@ module seapad::vesting {
             if (now >= tge_ms + project.cliff_ms) {
                 total_percent = total_percent + project.unlock_percent;
                 let delta = now - tge_ms - project.cliff_ms;
-                total_percent = total_percent + delta * (ONE_HUNDRED_PERCENT_SCALED - project.unlock_percent) / project.linear_vesting_duration_ms;
+                total_percent = total_percent + delta * (ONE_HUNDRED_PERCENT_SCALED_U64 - project.unlock_percent) /project.linear_vesting_duration_ms;
             };
         };
 
-        math::min(total_percent, ONE_HUNDRED_PERCENT_SCALED)
+        math::min(total_percent, ONE_HUNDRED_PERCENT_SCALED_U64)
     }
 
     #[test_only]
