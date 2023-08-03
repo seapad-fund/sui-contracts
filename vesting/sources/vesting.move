@@ -273,6 +273,9 @@ module seapad::vesting {
         ctx: &mut TxContext
     ) {
         let all = coin::value(&project.feeTreasury);
+
+        assert!(all > 0 , ERR_BAD_FUND_PARAMS);
+
         public_transfer(coin::split(&mut project.feeTreasury, all, ctx), receiver);
     }
 
@@ -366,9 +369,13 @@ module seapad::vesting {
         } = table::remove(&mut project.funds, owner);
 
         let lockedValue = (coin::value(&locked) as u128);
+
+        assert!(lockedValue > 0 , ERR_BAD_FUND_PARAMS);
+
         project.deposited = project.deposited - lockedValue;
         project.deposited_percent = project.deposited * ONE_HUNDRED_PERCENT_SCALED_U128 / project.supply;
         transfer::public_transfer(locked, owner);
+
 
 
         if (table::contains(&registry.user_projects, owner)) {
