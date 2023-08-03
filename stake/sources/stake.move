@@ -134,6 +134,7 @@ module seapad::stake {
         max_stake: u64,
         ctx: &mut TxContext
     ) {
+        assert!(sender(ctx) == stake_config::get_treasury_admin_address(global_config), ERR_NOT_TREASURY);
         assert!(!stake_config::is_global_emergency(global_config), ERR_EMERGENCY);
         assert!(duration > 0, ERR_DURATION_CANNOT_BE_ZERO);
 
