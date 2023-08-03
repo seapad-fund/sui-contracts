@@ -530,9 +530,10 @@ module seapad::stake {
     ///     * `pool_addr` - address under which pool are stored.
     ///     * `user_addr` - stake owner address.
     /// Returns true if user can unstake.
-    public fun is_unlocked<S, R>(pool: &StakePool<S, R>, user_addr: address, timestamp_ms: u64): bool {
+    public fun is_unlocked<S, R>(pool: &StakePool<S, R>, user_addr: address, sClock: &Clock): bool {
         assert!(table::contains(&pool.stakes, user_addr), ERR_NO_STAKE);
 
+        let timestamp_ms = clock::timestamp_ms(sClock);
         let current_time = timestamp_ms / 1000;
         let unlock_time = math::min(pool.end_timestamp, table::borrow(&pool.stakes, user_addr).unlock_time);
 
