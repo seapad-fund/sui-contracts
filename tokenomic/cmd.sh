@@ -141,3 +141,6 @@ export FUND_DAO_WALLET=0xaae5239262cf56f30b933fe6deb3f5b006a3e909d21e40e106835cd
 ##10M SPT
 export FUND_DAO_SPT=0x29c9d045ac5be1e39dc01d05a584aaceb778790a4cd841baee29619e332b079c
 #sui client call --gas-budget 200000000 --package $PACKAGE --module "tokenomic_entries" --function "addFund"  --type-args $SPT_TYPE --args $ADMIN_CAP $PIE $FUND_DAO_WALLET "FUND DAO" $FUND_DAO_VESTING_TYPE $TGE_MS $FUND_DAO_CLIFF $FUND_DAO_SPT $FUND_DAO_UNLOCK_PERCENT $FUND_DAO_VESTING_DUR_MS $CLOCK $VERSION [] []
+
+##claim  at explorer:
+### https://suiexplorer.com/object/0xa00d14642a0faa3236f80a990568447a57a51d057ca4dc79f623db5b7334f58d?module=tokenomic_entries
