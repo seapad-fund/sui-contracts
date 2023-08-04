@@ -160,6 +160,13 @@ module seapad::project {
         transfer::public_transfer(adminCap, to);
     }
 
+    public fun setCliffTime<COIN, TOKEN>(_adminCap: &AdminCap,
+                                           cliff_time: u64,
+                                           project: &mut Project<COIN, TOKEN>,
+                                           version: &mut Version) {
+        assert!(cliff_time > 0, EInvalidVestingParam);
+        project.vesting.cliff_time = cliff_time;
+    }
     public fun create_project<COIN, TOKEN>(_adminCap: &AdminCap,
                                            owner: address,
                                            vesting_type: u8,

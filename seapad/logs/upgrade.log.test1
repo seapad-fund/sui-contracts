@@ -1,0 +1,79 @@
+Successfully verified dependencies on-chain against source.
+----- Transaction Digest ----
+Cxe4jR9rdGv1VpbUMBjenFrkVbFyyLL95XCLJWiTieMd
+----- Transaction Data ----
+Transaction Signature: [Signature(Ed25519SuiSignature(Ed25519SuiSignature([0, 79, 58, 197, 208, 32, 144, 34, 43, 219, 58, 193, 78, 232, 43, 249, 203, 211, 20, 53, 117, 46, 172, 94, 175, 186, 83, 165, 116, 205, 247, 194, 219, 176, 85, 118, 25, 46, 144, 62, 5, 150, 11, 91, 39, 95, 199, 17, 32, 220, 69, 246, 195, 202, 85, 45, 56, 43, 41, 12, 132, 246, 20, 145, 11, 176, 217, 222, 133, 52, 90, 34, 46, 196, 156, 241, 27, 169, 209, 148, 30, 23, 159, 43, 170, 95, 1, 5, 53, 139, 58, 159, 231, 67, 67, 97, 211])))]
+Transaction Kind : Programmable
+Inputs: [Object(ImmOrOwnedObject { object_id: 0x4290467a43bb3a22846a4ac8ad771d7bc9aa21d03255753a64d51d73aa58eabe, version: SequenceNumber(15393781), digest: o#7PtQe6hDSYKPgfuJk1ERsb8dLvyAszYpfhiA9sLvkKb4 }), Pure(SuiPureValue { value_type: Some(U8), value: 0 }), Pure(SuiPureValue { value_type: Some(Vector(U8)), value: [29,239,86,153,208,105,200,95,2,232,174,46,37,10,188,140,137,72,159,233,23,103,101,211,111,37,80,27,4,236,6,73] })]
+Commands: [
+  MoveCall(0x0000000000000000000000000000000000000000000000000000000000000002::package::authorize_upgrade(Input(0),Input(1),Input(2))),
+  Upgrade(<modules>, Result(0),0x9acccedc9409023c1eaa33f66616be6d45d90553ef6f1592f4822a913d8f2d86,0x0000000000000000000000000000000000000000000000000000000000000001,0x0000000000000000000000000000000000000000000000000000000000000002,0x0ba8f8fabcc241c95a90829e3a989edb80bf76e48cfa1eca38972285fd894f98, 0x65fc5f6bd596258ba47ef6e65c52322623237b5e82cbef747b42c309d6ac704b),
+  MoveCall(0x0000000000000000000000000000000000000000000000000000000000000002::package::commit_upgrade(Input(0),Result(1))),
+]
+
+Sender: 0x0dd0106a909560b8f2e0262e9946008e307ae7758fde5277853088d25b0b6c7f
+Gas Payment: Object ID: 0x01ba063f3252b3d1a29d2f4ec03141f75139ff487245977963dcd0ea87ba6fb9, version: 0xeae3f7, digest: BmTb3g8NUzm2UKMpAcPtC7ivGkLKwsJhozjjpNF2nYZB
+Gas Owner: 0x0dd0106a909560b8f2e0262e9946008e307ae7758fde5277853088d25b0b6c7f
+Gas Price: 785
+Gas Budget: 200000000
+
+----- Transaction Effects ----
+Status : Success
+Created Objects:
+  - ID: 0x85cf6c9092f75772349ba593858986191bef9cf4da52629584458dc866956d2a , Owner: Immutable
+Mutated Objects:
+  - ID: 0x01ba063f3252b3d1a29d2f4ec03141f75139ff487245977963dcd0ea87ba6fb9 , Owner: Account Address ( 0x0dd0106a909560b8f2e0262e9946008e307ae7758fde5277853088d25b0b6c7f )
+  - ID: 0x4290467a43bb3a22846a4ac8ad771d7bc9aa21d03255753a64d51d73aa58eabe , Owner: Account Address ( 0x0dd0106a909560b8f2e0262e9946008e307ae7758fde5277853088d25b0b6c7f )
+
+----- Events ----
+Array []
+----- Object changes ----
+Array [
+    Object {
+        "type": String("mutated"),
+        "sender": String("0x0dd0106a909560b8f2e0262e9946008e307ae7758fde5277853088d25b0b6c7f"),
+        "owner": Object {
+            "AddressOwner": String("0x0dd0106a909560b8f2e0262e9946008e307ae7758fde5277853088d25b0b6c7f"),
+        },
+        "objectType": String("0x2::coin::Coin<0x2::sui::SUI>"),
+        "objectId": String("0x01ba063f3252b3d1a29d2f4ec03141f75139ff487245977963dcd0ea87ba6fb9"),
+        "version": String("15393784"),
+        "previousVersion": String("15393783"),
+        "digest": String("3jstxznmiaPr7NwJJfWzEAkBUNn58kwj6kAEoQ8AUJbK"),
+    },
+    Object {
+        "type": String("mutated"),
+        "sender": String("0x0dd0106a909560b8f2e0262e9946008e307ae7758fde5277853088d25b0b6c7f"),
+        "owner": Object {
+            "AddressOwner": String("0x0dd0106a909560b8f2e0262e9946008e307ae7758fde5277853088d25b0b6c7f"),
+        },
+        "objectType": String("0x2::package::UpgradeCap"),
+        "objectId": String("0x4290467a43bb3a22846a4ac8ad771d7bc9aa21d03255753a64d51d73aa58eabe"),
+        "version": String("15393784"),
+        "previousVersion": String("15393781"),
+        "digest": String("68JjXVhj1FgMdMPjufXg2MkZHocQrQSSLth1k8brU2jk"),
+    },
+    Object {
+        "type": String("published"),
+        "packageId": String("0x85cf6c9092f75772349ba593858986191bef9cf4da52629584458dc866956d2a"),
+        "version": String("2"),
+        "digest": String("9VEdnSYM6ByzznV2ctnvYMseb9DJus17xknd9SLPSLrG"),
+        "modules": Array [
+            String("project"),
+            String("project_entries"),
+            String("tokenomic"),
+            String("tokenomic_entries"),
+            String("version"),
+        ],
+    },
+]
+----- Balance changes ----
+Array [
+    Object {
+        "owner": Object {
+            "AddressOwner": String("0x0dd0106a909560b8f2e0262e9946008e307ae7758fde5277853088d25b0b6c7f"),
+        },
+        "coinType": String("0x2::sui::SUI"),
+        "amount": String("-142467620"),
+    },
+]

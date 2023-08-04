@@ -1,6 +1,8 @@
 [package]
 name = "Seapad"
 version = "1.0.0"
+##new package
+published-at = "0x85cf6c9092f75772349ba593858986191bef9cf4da52629584458dc866956d2a"
 
 [dependencies]
 Sui = { git = "https://github.com/MystenLabs/sui", subdir = "crates/sui-framework/packages/sui-framework", rev = "mainnet" }
@@ -8,7 +10,8 @@ W3libs = { git = "https://github.com/seapad-fund/w3libs", rev = "1.0.1" }
 Common = { local = "../common" }
 
 [addresses]
-seapad = "0x00"
+##old package
+seapad = "0x65fc5f6bd596258ba47ef6e65c52322623237b5e82cbef747b42c309d6ac704b"
 sui = "0x02"
 
 ##Test addresses

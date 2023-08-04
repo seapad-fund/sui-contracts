@@ -200,4 +200,11 @@ module seapad::project_entries {
                                        ctx: &mut TxContext) {
         project::vote<COIN, TOKEN>(project, version, ctx);
     }
+
+    public entry fun setCliffTime<COIN, TOKEN>(_adminCap: &AdminCap,
+                                         cliff_time: u64,
+                                         project: &mut Project<COIN, TOKEN>,
+                                         version: &mut Version) {
+        project::setCliffTime<COIN, TOKEN>(_adminCap, cliff_time, project, version);
+    }
 }
