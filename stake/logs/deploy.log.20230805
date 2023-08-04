@@ -1,0 +1,89 @@
+Successfully verified dependencies on-chain against source.
+----- Transaction Digest ----
+J6YbDxkdBfRhz5f3SgvBPHG7Le8B14jRv4wx6YVEpMQU
+----- Transaction Data ----
+Transaction Signature: [Signature(Ed25519SuiSignature(Ed25519SuiSignature([0, 224, 145, 145, 171, 191, 238, 186, 80, 183, 9, 80, 111, 249, 51, 230, 166, 59, 231, 30, 189, 186, 103, 81, 65, 188, 184, 87, 94, 118, 124, 63, 251, 99, 69, 129, 227, 220, 131, 1, 31, 243, 174, 38, 29, 244, 214, 22, 93, 246, 105, 56, 1, 236, 176, 120, 152, 24, 171, 221, 112, 220, 21, 79, 6, 176, 217, 222, 133, 52, 90, 34, 46, 196, 156, 241, 27, 169, 209, 148, 30, 23, 159, 43, 170, 95, 1, 5, 53, 139, 58, 159, 231, 67, 67, 97, 211])))]
+Transaction Kind : Programmable
+Inputs: [Pure(SuiPureValue { value_type: Some(Address), value: "0x0dd0106a909560b8f2e0262e9946008e307ae7758fde5277853088d25b0b6c7f" })]
+Commands: [
+  Publish(<modules>,0x0000000000000000000000000000000000000000000000000000000000000001,0x0000000000000000000000000000000000000000000000000000000000000002,0x0ba8f8fabcc241c95a90829e3a989edb80bf76e48cfa1eca38972285fd894f98),
+  TransferObjects([Result(0)],Input(0)),
+]
+
+Sender: 0x0dd0106a909560b8f2e0262e9946008e307ae7758fde5277853088d25b0b6c7f
+Gas Payment: Object ID: 0x01ba063f3252b3d1a29d2f4ec03141f75139ff487245977963dcd0ea87ba6fb9, version: 0xeae3fa, digest: 7cdJZYx7ryxj69uxrRbXvZXtsixYLF6EEiTDh7QyK5nJ
+Gas Owner: 0x0dd0106a909560b8f2e0262e9946008e307ae7758fde5277853088d25b0b6c7f
+Gas Price: 790
+Gas Budget: 200000000
+
+----- Transaction Effects ----
+Status : Success
+Created Objects:
+  - ID: 0x86171a64a40410157588776303de9557ee8618f595782b87af5c62cf25d5d359 , Owner: Immutable
+  - ID: 0x93315f8bcfa7927491d9959a4dad58bcec23cdd2550618c27c57c15079b7729b , Owner: Account Address ( 0x0dd0106a909560b8f2e0262e9946008e307ae7758fde5277853088d25b0b6c7f )
+  - ID: 0x99e7d09908ef67a376573622c540ddb01f17b139f74d011276752bf8daa1f355 , Owner: Shared
+Mutated Objects:
+  - ID: 0x01ba063f3252b3d1a29d2f4ec03141f75139ff487245977963dcd0ea87ba6fb9 , Owner: Account Address ( 0x0dd0106a909560b8f2e0262e9946008e307ae7758fde5277853088d25b0b6c7f )
+
+----- Events ----
+Array []
+----- Object changes ----
+Array [
+    Object {
+        "type": String("mutated"),
+        "sender": String("0x0dd0106a909560b8f2e0262e9946008e307ae7758fde5277853088d25b0b6c7f"),
+        "owner": Object {
+            "AddressOwner": String("0x0dd0106a909560b8f2e0262e9946008e307ae7758fde5277853088d25b0b6c7f"),
+        },
+        "objectType": String("0x2::coin::Coin<0x2::sui::SUI>"),
+        "objectId": String("0x01ba063f3252b3d1a29d2f4ec03141f75139ff487245977963dcd0ea87ba6fb9"),
+        "version": String("15393787"),
+        "previousVersion": String("15393786"),
+        "digest": String("EZRsYEvcZorboVpeesspCvGB9z6CPZufXLTqVsSfg5eg"),
+    },
+    Object {
+        "type": String("published"),
+        "packageId": String("0x86171a64a40410157588776303de9557ee8618f595782b87af5c62cf25d5d359"),
+        "version": String("1"),
+        "digest": String("FBs3EKkaX3AdxMUiLTCVJFW1CEYX3N56QgZZoQBq2vo"),
+        "modules": Array [
+            String("stake"),
+            String("stake_config"),
+            String("stake_entries"),
+        ],
+    },
+    Object {
+        "type": String("created"),
+        "sender": String("0x0dd0106a909560b8f2e0262e9946008e307ae7758fde5277853088d25b0b6c7f"),
+        "owner": Object {
+            "AddressOwner": String("0x0dd0106a909560b8f2e0262e9946008e307ae7758fde5277853088d25b0b6c7f"),
+        },
+        "objectType": String("0x2::package::UpgradeCap"),
+        "objectId": String("0x93315f8bcfa7927491d9959a4dad58bcec23cdd2550618c27c57c15079b7729b"),
+        "version": String("15393787"),
+        "digest": String("CWcyxhma4F4KTuHnXe7gaEsqwKCUujrdKSULPR7HxWVk"),
+    },
+    Object {
+        "type": String("created"),
+        "sender": String("0x0dd0106a909560b8f2e0262e9946008e307ae7758fde5277853088d25b0b6c7f"),
+        "owner": Object {
+            "Shared": Object {
+                "initial_shared_version": Number(15393787),
+            },
+        },
+        "objectType": String("0x86171a64a40410157588776303de9557ee8618f595782b87af5c62cf25d5d359::stake_config::GlobalConfig"),
+        "objectId": String("0x99e7d09908ef67a376573622c540ddb01f17b139f74d011276752bf8daa1f355"),
+        "version": String("15393787"),
+        "digest": String("7XwNoFpNRGL8hWa5V1e1Ky7x8172TqEiBch9Yn6emqxK"),
+    },
+]
+----- Balance changes ----
+Array [
+    Object {
+        "owner": Object {
+            "AddressOwner": String("0x0dd0106a909560b8f2e0262e9946008e307ae7758fde5277853088d25b0b6c7f"),
+        },
+        "coinType": String("0x2::sui::SUI"),
+        "amount": String("-63765880"),
+    },
+]
