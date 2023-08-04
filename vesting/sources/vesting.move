@@ -83,10 +83,14 @@ module seapad::vesting {
     }
 
     struct Fund<phantom COIN> has store {
-        owner: address, //owner of fund
-        total: u128, //total of vesting fund, set when fund deposited, nerver change!
-        locked: Coin<COIN>, //all currently locked fund
-        released: u128, //total released
+        owner: address,
+        //owner of fund
+        total: u128,
+        //total of vesting fund, set when fund deposited, nerver change!
+        locked: Coin<COIN>,
+        //all currently locked fund
+        released: u128,
+        //total released
         last_claim_ms: u64,
     }
 
@@ -132,15 +136,21 @@ module seapad::vesting {
             user_projects: table::new(ctx),
         });
 
-        share_object(AdminCapVault{
+        share_object(AdminCapVault {
             id: object::new(ctx),
             owner: option::none(),
-            to:  option::none(),
+            to: option::none(),
             cap: option::none(),
         })
     }
 
-    public entry fun transferAdmin(adminCap: AdminCap, to: address, vault: &mut AdminCapVault, version: &mut Version, ctx: &mut TxContext) {
+    public entry fun transferAdmin(
+        adminCap: AdminCap,
+        to: address,
+        vault: &mut AdminCapVault,
+        version: &mut Version,
+        ctx: &mut TxContext
+    ) {
         checkVersion(version, VERSION);
         option::fill(&mut vault.owner, sender(ctx));
         option::fill(&mut vault.to, to);
@@ -159,7 +169,12 @@ module seapad::vesting {
         execTransferAdmin(vault, to, version, ctx);
     }
 
-    fun execTransferAdmin(vault: &mut AdminCapVault, ownerOrReceiver: address, version: &mut Version, ctx: &mut TxContext) {
+    fun execTransferAdmin(
+        vault: &mut AdminCapVault,
+        ownerOrReceiver: address,
+        version: &mut Version,
+        ctx: &mut TxContext
+    ) {
         checkVersion(version, VERSION);
         assert!(option::is_some(&vault.cap) && ownerOrReceiver == sender(ctx), ERR_NO_PERMISSION);
         transfer(option::extract(&mut vault.cap), sender(ctx));
@@ -274,7 +289,7 @@ module seapad::vesting {
     ) {
         let all = coin::value(&project.feeTreasury);
 
-        assert!(all > 0 , ERR_BAD_FUND_PARAMS);
+        assert!(all > 0, ERR_BAD_FUND_PARAMS);
 
         public_transfer(coin::split(&mut project.feeTreasury, all, ctx), receiver);
     }
@@ -362,7 +377,7 @@ module seapad::vesting {
 
         let Fund<COIN> {
             owner,
-            total:_,
+            total: _,
             locked,
             released: _,
             last_claim_ms: _
@@ -370,11 +385,23 @@ module seapad::vesting {
 
         let lockedValue = (coin::value(&locked) as u128);
 
-        assert!(lockedValue > 0 , ERR_BAD_FUND_PARAMS);
+        assert!(lockedValue > 0, ERR_BAD_FUND_PARAMS);
 
         project.deposited = project.deposited - lockedValue;
         project.deposited_percent = project.deposited * ONE_HUNDRED_PERCENT_SCALED_U128 / project.supply;
         transfer::public_transfer(locked, owner);
+
+        if (table::contains(&registry.user_projects, owner)) {
+            let projectId = object::id_address(project);
+            let projecIDs = table::borrow_mut(&mut registry.user_projects, owner);
+            let (_a, index) = vector::index_of(projecIDs, &projectId);
+
+            vector::remove(projecIDs, index);
+
+            if (vector::is_empty(projecIDs)) {
+                table::remove(&mut registry.user_projects, owner);
+            };
+        };
 
         emit(FundRemoveEvent {
             project: id_address(project),
@@ -389,10 +416,10 @@ module seapad::vesting {
                                        registry: &mut ProjectRegistry,
                                        version: &Version) {
         let (i, n) = (0, vector::length(&owners));
-        while (i < n){
-            let owner = *vector::borrow(&owners,i);
-            removeFund(_admin,owner,project,registry,version);
-            i = i +1;
+        while (i < n) {
+            let owner = *vector::borrow(&owners, i);
+            removeFund(_admin, owner, project, registry, version);
+            i = i + 1;
         }
     }
 
@@ -431,11 +458,11 @@ module seapad::vesting {
         token_fund.last_claim_ms = now_ms;
 
         //clear user from table if user claim all token!
-        if (token_fund.released == token_fund.total){
+        if (token_fund.released == token_fund.total) {
             let projecIDs = table::borrow_mut(&mut registry.user_projects, sender_addr);
-            let (_a ,index) = vector::index_of(projecIDs,&projectId);
+            let (_a, index) = vector::index_of(projecIDs, &projectId);
             vector::remove(projecIDs, index);
-            if(vector::is_empty(projecIDs)){
+            if (vector::is_empty(projecIDs)) {
                 table::remove(&mut registry.user_projects, sender_addr);
             }
         };
@@ -509,7 +536,7 @@ module seapad::vesting {
             if (now >= tge_ms + project.cliff_ms) {
                 total_percent = total_percent + project.unlock_percent;
                 let delta = now - tge_ms - project.cliff_ms;
-                total_percent = total_percent + delta * (ONE_HUNDRED_PERCENT_SCALED_U64 - project.unlock_percent) /project.linear_vesting_duration_ms;
+                total_percent = total_percent + delta * (ONE_HUNDRED_PERCENT_SCALED_U64 - project.unlock_percent) / project.linear_vesting_duration_ms;
             };
         };
 
