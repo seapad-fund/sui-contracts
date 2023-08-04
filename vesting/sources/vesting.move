@@ -376,12 +376,6 @@ module seapad::vesting {
         project.deposited_percent = project.deposited * ONE_HUNDRED_PERCENT_SCALED_U128 / project.supply;
         transfer::public_transfer(locked, owner);
 
-
-
-        if (table::contains(&registry.user_projects, owner)) {
-            table::remove(&mut registry.user_projects, owner);
-        };
-
         emit(FundRemoveEvent {
             project: id_address(project),
             owner,
