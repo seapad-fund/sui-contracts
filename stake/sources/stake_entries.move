@@ -9,12 +9,11 @@ module seapad::stake_entries {
     use sui::clock::Clock;
     use seapad::stake::StakePool;
     use sui::transfer;
-    use sui::clock;
     use seapad::stake_config;
 
     /// Register new staking pool with staking coin `S` and reward coin `R`.
     public entry fun register_pool<S, R>(rewards: Coin<R>,
-                                         duration: u64,
+                                         duration_sec: u64,
                                          global_config: &GlobalConfig,
                                          decimalS: u8,
                                          decimalR: u8,
@@ -24,11 +23,11 @@ module seapad::stake_entries {
                                          ctx: &mut TxContext) {
         stake::register_pool<S, R>(
             rewards,
-            duration,
+            duration_sec,
             global_config,
             decimalS,
             decimalR,
-            clock::timestamp_ms(clock),
+            clock,
             duration_unstake_time_ms,
             max_stake_value,
             ctx
@@ -41,7 +40,7 @@ module seapad::stake_entries {
                                  global_config: &GlobalConfig,
                                  clock: &Clock,
                                  ctx: &mut TxContext) {
-        stake::stake<S, R>(pool, coins, global_config, clock::timestamp_ms(clock), ctx);
+        stake::stake<S, R>(pool, coins, global_config, clock, ctx);
     }
 
     /// Unstake an `amount` of `Coin<S>` from a pool of stake coin `S` and reward coin `R` `pool`.
@@ -50,7 +49,7 @@ module seapad::stake_entries {
                                    global_config: &GlobalConfig,
                                    clock: &Clock,
                                    ctx: &mut TxContext) {
-        let coins = stake::unstake<S, R>(pool, stake_amount, global_config, clock::timestamp_ms(clock), ctx);
+        let coins = stake::unstake<S, R>(pool, stake_amount, global_config, clock, ctx);
         transfer::public_transfer(coins, sender(ctx));
     }
 
@@ -59,7 +58,7 @@ module seapad::stake_entries {
                                    global_config: &GlobalConfig,
                                    clock: &Clock,
                                    ctx: &mut TxContext) {
-        let rewards = stake::harvest<S, R>(pool, global_config, clock::timestamp_ms(clock), ctx);
+        let rewards = stake::harvest<S, R>(pool, global_config, clock, ctx);
         transfer::public_transfer(rewards, sender(ctx));
     }
 
@@ -69,7 +68,7 @@ module seapad::stake_entries {
                                                 global_config: &GlobalConfig,
                                                 clock: &Clock,
                                                 ctx: &mut TxContext) {
-        stake::deposit_reward_coins<S, R>(pool, reward_coins, global_config, clock::timestamp_ms(clock), ctx);
+        stake::deposit_reward_coins<S, R>(pool, reward_coins, global_config,  clock, ctx);
     }
 
     /// Enable "emergency state" for a pool on a `pool_addr` address. This state cannot be disabled
@@ -100,7 +99,7 @@ module seapad::stake_entries {
             pool,
             amount,
             global_config,
-            clock::timestamp_ms(clock),
+            clock,
             ctx
         );
         transfer::public_transfer(rewards, treasury_addr);
