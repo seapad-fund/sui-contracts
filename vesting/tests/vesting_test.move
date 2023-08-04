@@ -11,17 +11,20 @@ module seapad::vesting_test {
     use seapad::vesting;
     use sui::coin;
     use sui::coin::Coin;
+    use sui::object::id_address;
 
     const ADMIN: address = @0xC0FFEE;
     const SEED_FUND: address = @0xC0FFFF;
     const ONE_MILLION_DECIMAL9: u128 = 1000000000000000;
-    // const TOTAL_SUPPLY: u64 = 100000000;
     const TOTAL_SUPPLY: u128 = 100000000000000000;
 
     const TWO_HOURS_IN_MS: u64 = 2 * 3600000;
     const ONE_HOURS_IN_MS: u64 = 3600000;
 
     const MONTH_IN_MS: u64 = 2592000000;
+    const HALF_MONTH_IN_MS: u64 = 1296000000;
+    const ONE_QUARTER_MONTH_IN_MS: u64 = 648000000;
+
     const TEN_YEARS_IN_MS: u64 = 311040000000;
 
     const TGE_ONE_MONTH_MS: u64 = 2592000000;
@@ -265,7 +268,7 @@ module seapad::vesting_test {
             return_to_sender(scenario, fundClaim);
         };
 
-        //Test claim after...failed
+        //Claim expect failed because no more fund now
         claim(SEED_FUND, &mut project, &sclock, scenario);
 
         return_shared(project);
@@ -273,6 +276,264 @@ module seapad::vesting_test {
         test_scenario::end(scenario_val);
     }
 
+
+    #[test]
+    #[expected_failure(abort_code = vesting::ERR_NO_FUND)]
+    fun test_linenear_unlock_first_claim_all() {
+        let scenario_val = scenario();
+        let scenario = &mut scenario_val;
+        init_env(scenario);
+
+        //setup
+        next_tx(scenario, ADMIN);
+        let sclock = take_shared<Clock>(scenario);
+        let oneYear = 12 * MONTH_IN_MS;
+
+        let unlockHalf = UNLOCK_PERCENT * 5;
+        let project = create_project_(
+            TGE_ONE_MONTH_MS,
+            VESTING_TYPE_LINEAR_UNLOCK_FIRST,
+            0,
+            unlockHalf,
+            oneYear,
+            vector::empty(),
+            vector::empty(),
+            &sclock,
+            scenario
+        );
+
+        let fundValue = 1000000u64;
+        addFund(fundValue, SEED_FUND, &mut project, scenario);
+
+        //Test claim tge
+        {
+            clock::increment_for_testing(&mut sclock, TGE_ONE_MONTH_MS);
+            claim(SEED_FUND, &mut project, &sclock, scenario);
+
+            test_scenario::next_tx(scenario, SEED_FUND);
+            let fundClaim = take_from_sender<Coin<XCOIN>>(scenario);
+            assert!(coin::value(&fundClaim) == (fundValue / PERCENT_SCALE) * unlockHalf, 0);
+
+            return_to_sender(scenario, fundClaim);
+        };
+
+        //Test claim all
+        {
+            clock::increment_for_testing(&mut sclock, 12 * MONTH_IN_MS);
+            claim(SEED_FUND, &mut project, &sclock, scenario);
+
+            test_scenario::next_tx(scenario, SEED_FUND);
+            let fundClaim = take_from_sender<Coin<XCOIN>>(scenario);
+            assert!(coin::value(&fundClaim) == fundValue/2, 0);
+
+            //make sure project deposit value to zero
+            let (deposited, depositedPercent) = vesting::getProjectDeposited(&project);
+            assert!((deposited == 0) && (depositedPercent == 0), 0);
+
+            return_to_sender(scenario, fundClaim);
+        };
+
+        //Claim expect failed because no more fund now
+        claim(SEED_FUND, &mut project, &sclock, scenario);
+
+        return_shared(project);
+        return_shared(sclock);
+        test_scenario::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = vesting::ERR_NO_FUND)]
+    fun test_linenear_unlock_first_claim_all2() {
+        let scenario_val = scenario();
+        let scenario = &mut scenario_val;
+        init_env(scenario);
+
+        //setup
+        next_tx(scenario, ADMIN);
+        let sclock = take_shared<Clock>(scenario);
+        let oneYear = 12 * MONTH_IN_MS;
+
+        let unlockHalf = UNLOCK_PERCENT * 5;
+        let project = create_project_(
+            TGE_ONE_MONTH_MS,
+            VESTING_TYPE_LINEAR_UNLOCK_FIRST,
+            0,
+            unlockHalf,
+            oneYear,
+            vector::empty(),
+            vector::empty(),
+            &sclock,
+            scenario
+        );
+
+        let fundValue = 1000000u64;
+        addFund(fundValue, SEED_FUND, &mut project, scenario);
+
+        //Test claim all
+        {
+            clock::increment_for_testing(&mut sclock, 13 * MONTH_IN_MS);
+            claim(SEED_FUND, &mut project, &sclock, scenario);
+
+            test_scenario::next_tx(scenario, SEED_FUND);
+            let fundClaim = take_from_sender<Coin<XCOIN>>(scenario);
+            assert!(coin::value(&fundClaim) == fundValue, 0);
+
+            return_to_sender(scenario, fundClaim);
+        };
+
+        //Claim expect failed because no more fund now
+        claim(SEED_FUND, &mut project, &sclock, scenario);
+
+        return_shared(project);
+        return_shared(sclock);
+        test_scenario::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = vesting::ERR_NO_FUND)]
+    fun test_linenear_unlock_first_claim_then_remove() {
+        let scenario_val = scenario();
+        let scenario = &mut scenario_val;
+        init_env(scenario);
+
+        //setup
+        next_tx(scenario, ADMIN);
+        let sclock = take_shared<Clock>(scenario);
+
+        let oneYear = 12 * MONTH_IN_MS;
+
+        let unlockHalf = UNLOCK_PERCENT * 5;
+        let project = create_project_(
+            TGE_ONE_MONTH_MS,
+            VESTING_TYPE_LINEAR_UNLOCK_FIRST,
+            0,
+            unlockHalf,
+            oneYear,
+            vector::empty(),
+            vector::empty(),
+            &sclock,
+            scenario
+        );
+
+        let fundValue = 1000000u64;
+        addFund(fundValue, SEED_FUND, &mut project, scenario);
+
+        //Test claim all
+        {
+            clock::increment_for_testing(&mut sclock, 3 * MONTH_IN_MS);
+            claim(SEED_FUND, &mut project, &sclock, scenario);
+
+            test_scenario::next_tx(scenario, SEED_FUND);
+            let fundClaim = take_from_sender<Coin<XCOIN>>(scenario);
+            assert!(coin::value(&fundClaim) > 0, 0);
+
+            return_to_sender(scenario, fundClaim);
+        };
+
+        //then remove fund
+        removeFund(SEED_FUND, &mut project, scenario);
+        //make sure registry clear
+
+        clock::increment_for_testing(&mut sclock, 13 * MONTH_IN_MS);
+
+        //Claim expect failed because no more fund now
+        claim(SEED_FUND, &mut project, &sclock, scenario);
+
+        return_shared(project);
+        return_shared(sclock);
+        test_scenario::end(scenario_val);
+    }
+
+    #[test]
+    fun test_linenear_unlock_first_registry() {
+        let scenario_val = scenario();
+        let scenario = &mut scenario_val;
+        init_env(scenario);
+
+        //setup
+        next_tx(scenario, ADMIN);
+        let sclock = take_shared<Clock>(scenario);
+
+        //add fund
+        let oneYear = 12 * MONTH_IN_MS;
+        let unlockHalf = UNLOCK_PERCENT * 5;
+        let project = create_project_(
+            TGE_ONE_MONTH_MS,
+            VESTING_TYPE_LINEAR_CLIFF_FIRST,
+            MONTH_IN_MS,
+            unlockHalf,
+            oneYear,
+            vector::empty(),
+            vector::empty(),
+            &sclock,
+            scenario
+        );
+
+        let fundValue = 1000000u64;
+        addFund(fundValue, SEED_FUND, &mut project, scenario);
+
+        next_tx(scenario, ADMIN);
+        let registry = take_shared<ProjectRegistry>(scenario);
+        let projectIds = vesting::getUserProjects<XCOIN>(&registry, SEED_FUND);
+        let (exist, _index) = vector::index_of(&projectIds, &id_address(&project));
+        assert!(exist, 0);
+        return_shared(registry);
+
+        //then remove fund
+        next_tx(scenario, ADMIN);
+        removeFund(SEED_FUND, &mut project, scenario);
+        // let registry2 = take_shared<ProjectRegistry>(scenario);
+        // let projectIds = vesting::getUserProjects<XCOIN>(&registry, SEED_FUND);
+        // let (exist, _index) = vector::index_of(&projectIds, &id_address(&project));
+        // assert!(exist, 0);
+        // return_shared(registry2);
+
+        return_shared(project);
+        return_shared(sclock);
+        test_scenario::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = sui::dynamic_field::EFieldDoesNotExist)]
+    fun test_linenear_unlock_first_registry2() {
+        let scenario_val = scenario();
+        let scenario = &mut scenario_val;
+        init_env(scenario);
+
+        //setup
+        next_tx(scenario, ADMIN);
+        let sclock = take_shared<Clock>(scenario);
+
+        //add fund
+        let oneYear = 12 * MONTH_IN_MS;
+        let unlockHalf = UNLOCK_PERCENT * 5;
+        let project = create_project_(
+            TGE_ONE_MONTH_MS,
+            VESTING_TYPE_LINEAR_CLIFF_FIRST,
+            MONTH_IN_MS,
+            unlockHalf,
+            oneYear,
+            vector::empty(),
+            vector::empty(),
+            &sclock,
+            scenario
+        );
+
+        let fundValue = 1000000u64;
+        addFund(fundValue, SEED_FUND, &mut project, scenario);
+        removeFund(SEED_FUND, &mut project, scenario);
+
+        next_tx(scenario, ADMIN);
+        let registry = take_shared<ProjectRegistry>(scenario);
+        let projectIds = vesting::getUserProjects<XCOIN>(&registry, SEED_FUND);
+        let (exist, _index) = vector::index_of(&projectIds, &id_address(&project));
+        assert!(exist, 0);
+        return_shared(registry);
+
+        return_shared(project);
+        return_shared(sclock);
+        test_scenario::end(scenario_val);
+    }
 
     #[test]
     #[expected_failure(abort_code = vesting::ERR_NO_FUND)]
@@ -362,11 +623,17 @@ module seapad::vesting_test {
 
         let fundValue = 1000000u64;
         addFund(fundValue, SEED_FUND, &mut project, scenario);
+        clock::increment_for_testing(&mut sclock, TGE_ONE_MONTH_MS + ONE_QUARTER_MONTH_IN_MS);
+        addFund(fundValue, SEED_FUND, &mut project, scenario);
+        clock::increment_for_testing(&mut sclock, ONE_QUARTER_MONTH_IN_MS);
+        removeFund(SEED_FUND, &mut project, scenario);
+        clock::increment_for_testing(&mut sclock, ONE_QUARTER_MONTH_IN_MS);
+        addFund(fundValue, SEED_FUND, &mut project, scenario);
         addFund(fundValue, SEED_FUND, &mut project, scenario);
 
         //Test claim tge + cliff
         {
-            clock::increment_for_testing(&mut sclock, TGE_ONE_MONTH_MS + MONTH_IN_MS);
+            clock::increment_for_testing(&mut sclock, ONE_QUARTER_MONTH_IN_MS);
             claim(SEED_FUND, &mut project, &sclock, scenario);
 
             test_scenario::next_tx(scenario, SEED_FUND);
@@ -387,6 +654,24 @@ module seapad::vesting_test {
             let percentExpect = (PERCENT_SCALE - unlockHalf) * 3 / 12;
             assert!(coin::value(&fundClaim) == (fundValue * 2 / PERCENT_SCALE) * percentExpect, 0);
 
+            return_to_sender(scenario, fundClaim);
+        };
+
+        //then add fund more
+        addFund(fundValue, SEED_FUND, &mut project, scenario);
+        clock::increment_for_testing(&mut sclock, MONTH_IN_MS);
+        removeFund(SEED_FUND, &mut project, scenario);
+        clock::increment_for_testing(&mut sclock, MONTH_IN_MS);
+        addFund(fundValue, SEED_FUND, &mut project, scenario);
+
+        //then claim again, make sure fund drained
+        {
+            clock::increment_for_testing(&mut sclock, 100 * MONTH_IN_MS);
+            claim(SEED_FUND, &mut project, &sclock, scenario);
+
+            test_scenario::next_tx(scenario, SEED_FUND);
+            let fundClaim = take_from_sender<Coin<XCOIN>>(scenario);
+            assert!(coin::value(&fundClaim) == fundValue, 0);
             return_to_sender(scenario, fundClaim);
         };
 
@@ -424,14 +709,15 @@ module seapad::vesting_test {
         addFund(fundValue, SEED_FUND, &mut project, scenario);
         removeFund(SEED_FUND, &mut project, scenario);
 
-        //Owner receive fund
-        test_scenario::next_tx(scenario, SEED_FUND);
+        //Admin receive fund back
+        test_scenario::next_tx(scenario, ADMIN);
         {
             let receiveFund = take_from_sender<Coin<XCOIN>>(scenario);
             assert!(coin::value(&receiveFund) == fundValue, 0);
             return_to_sender(scenario, receiveFund);
         };
-        //claim after...failed
+
+        //claim again & expect error no fund
         clock::increment_for_testing(&mut sclock, TGE_ONE_MONTH_MS);
         claim(SEED_FUND, &mut project, &sclock, scenario);
 
@@ -470,13 +756,12 @@ module seapad::vesting_test {
 
     fun removeFund(owner: address, project: &mut Project<XCOIN>, scenario: &mut Scenario) {
         test_scenario::next_tx(scenario, ADMIN);
-
         let admin = take_from_sender<AdminCap>(scenario);
         let version = take_shared<Version>(scenario);
         let resgistry = take_shared<ProjectRegistry>(scenario);
 
-
-        vesting::removeFund(&admin, owner, project, &mut resgistry,&version);
+        let ctx = test_scenario::ctx(scenario);
+        vesting::removeFund(&admin, owner, project, &mut resgistry, &version, ctx);
 
         return_to_sender(scenario, admin);
         return_shared(version);
