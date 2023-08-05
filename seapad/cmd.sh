@@ -10,7 +10,7 @@ export PACKAGE2=0x85cf6c9092f75772349ba593858986191bef9cf4da52629584458dc866956d
 #export VERSION_ADMIN_CAP=0xc559003b9f8ad524d57f5185f7022707bbb7b8b7a257bd6249d28bf76d10efad
 export UPGRADE_CAP=0x4290467a43bb3a22846a4ac8ad771d7bc9aa21d03255753a64d51d73aa58eabe
 export UPGRADE_CAP2=0x4290467a43bb3a22846a4ac8ad771d7bc9aa21d03255753a64d51d73aa58eabe
-#sui client upgrade --gas-budget 200000000 --upgrade-capability $UPGRADE_CAP
+#sui client upgrade --gas-budget 200000000 --upgrade-capability 0x7943d110ca3fa7b82c88c22889fe310fe22f97c208b3f830b30157e9bcd5df9a
 
 
 

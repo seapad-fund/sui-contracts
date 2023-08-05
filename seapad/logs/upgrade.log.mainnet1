@@ -1,0 +1,60 @@
+Status : Success
+Created Objects:
+  - ID: 0x456ed33b6d806cd305f90f0d1fa395404880ba709c9c3218e7b826e514e3673f , Owner: Immutable
+Mutated Objects:
+  - ID: 0x6e58a5d099a70567b24685436840098507707ad9825cdece4040e7861f39e4c0 , Owner: Account Address ( 0x98a890e3a370a3e4005460bfcd31dd4adf0f36af6d760bfd2c7014ac6ee2b17e )
+  - ID: 0x7943d110ca3fa7b82c88c22889fe310fe22f97c208b3f830b30157e9bcd5df9a , Owner: Account Address ( 0x98a890e3a370a3e4005460bfcd31dd4adf0f36af6d760bfd2c7014ac6ee2b17e )
+
+----- Events ----
+Array []
+----- Object changes ----
+Array [
+    Object {
+        "type": String("mutated"),
+        "sender": String("0x98a890e3a370a3e4005460bfcd31dd4adf0f36af6d760bfd2c7014ac6ee2b17e"),
+        "owner": Object {
+            "AddressOwner": String("0x98a890e3a370a3e4005460bfcd31dd4adf0f36af6d760bfd2c7014ac6ee2b17e"),
+        },
+        "objectType": String("0x2::coin::Coin<0x2::sui::SUI>"),
+        "objectId": String("0x6e58a5d099a70567b24685436840098507707ad9825cdece4040e7861f39e4c0"),
+        "version": String("1592835"),
+        "previousVersion": String("1592834"),
+        "digest": String("2U5sv2qTmAJ6BDBhRjZCP59fXwxcmaSZUEfsch6m8ax9"),
+    },
+    Object {
+        "type": String("mutated"),
+        "sender": String("0x98a890e3a370a3e4005460bfcd31dd4adf0f36af6d760bfd2c7014ac6ee2b17e"),
+        "owner": Object {
+            "AddressOwner": String("0x98a890e3a370a3e4005460bfcd31dd4adf0f36af6d760bfd2c7014ac6ee2b17e"),
+        },
+        "objectType": String("0x2::package::UpgradeCap"),
+        "objectId": String("0x7943d110ca3fa7b82c88c22889fe310fe22f97c208b3f830b30157e9bcd5df9a"),
+        "version": String("1592835"),
+        "previousVersion": String("1592822"),
+        "digest": String("AnpEiTrcRuKgsnfGv73HXG6YPj52nWWH5YXnthju2yBM"),
+    },
+    Object {
+        "type": String("published"),
+        "packageId": String("0x456ed33b6d806cd305f90f0d1fa395404880ba709c9c3218e7b826e514e3673f"),
+        "version": String("2"),
+        "digest": String("7fwoVxsktC2c79fGhW4Je9XcCnzDF2qavxehX7iyN2Tf"),
+        "modules": Array [
+            String("project"),
+            String("project_entries"),
+            String("tokenomic"),
+            String("tokenomic_entries"),
+            String("version"),
+        ],
+    },
+]
+----- Balance changes ----
+Array [
+    Object {
+        "owner": Object {
+            "AddressOwner": String("0x98a890e3a370a3e4005460bfcd31dd4adf0f36af6d760bfd2c7014ac6ee2b17e"),
+        },
+        "coinType": String("0x2::sui::SUI"),
+        "amount": String("-142472620"),
+    },
+]
+anhtv@mac seapad %
