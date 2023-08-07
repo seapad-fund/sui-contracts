@@ -9,6 +9,7 @@
       <excludeFolder url="file://$MODULE_DIR$/stake/build" />
       <excludeFolder url="file://$MODULE_DIR$/tokens/build" />
       <excludeFolder url="file://$MODULE_DIR$/vesting/build" />
+      <excludeFolder url="file://$MODULE_DIR$/tokenomic/build" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />

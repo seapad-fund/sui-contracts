@@ -4,9 +4,13 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="10b876f6-5f11-44d6-9e4a-d6252006a611" name="Changes" comment="deploy testnet stake v101">
+    <list default="true" id="10b876f6-5f11-44d6-9e4a-d6252006a611" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/stake/logs/deploy.20230807" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/stake/sources/stake.move" beforeDir="false" afterPath="$PROJECT_DIR$/stake/sources/stake.move" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/deploy/testnet_101.toml" beforeDir="false" afterPath="$PROJECT_DIR$/deploy/testnet_101.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/stake/Move.toml" beforeDir="false" afterPath="$PROJECT_DIR$/stake/Move.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/stake/cmd.sh" beforeDir="false" afterPath="$PROJECT_DIR$/stake/cmd.sh" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/sui-contracts.iml" beforeDir="false" afterPath="$PROJECT_DIR$/sui-contracts.iml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -23,7 +27,7 @@
     </option>
   </component>
   <component name="Git.Merge.Settings">
-    <option name="BRANCH" value="origin/mainnet" />
+    <option name="BRANCH" value="devnet" />
   </component>
   <component name="Git.Rebase.Settings">
     <option name="NEW_BASE" value="origin/devnet" />
@@ -32,7 +36,7 @@
     <option name="RECENT_BRANCH_BY_REPOSITORY">
       <map>
         <entry key="$PROJECT_DIR$/../seapad-frontend" value="develop" />
-        <entry key="$PROJECT_DIR$" value="devnet" />
+        <entry key="$PROJECT_DIR$" value="mainnet" />
         <entry key="$PROJECT_DIR$/../w3libs" value="mainnet" />
       </map>
     </option>
@@ -134,9 +138,6 @@
     &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
     &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
     &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;project.structure.last.edited&quot;: &quot;Project&quot;,
-    &quot;project.structure.proportion&quot;: &quot;0.0&quot;,
-    &quot;project.structure.side.proportion&quot;: &quot;0.0&quot;,
     &quot;settings.editor.selected.configurable&quot;: &quot;org.jetbrains.plugins.github.ui.GithubSettingsConfigurable&quot;,
     &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
@@ -192,6 +193,34 @@
       <workItem from="1680008715445" duration="9703000" />
       <workItem from="1680195522478" duration="17666000" />
       <workItem from="1680619443954" duration="90000" />
+    </task>
+    <task id="LOCAL-00083" summary="change name">
+      <created>1682410830168</created>
+      <option name="number" value="00083" />
+      <option name="presentableId" value="LOCAL-00083" />
+      <option name="project" value="LOCAL" />
+      <updated>1682410830168</updated>
+    </task>
+    <task id="LOCAL-00084" summary="fix refund">
+      <created>1682486480268</created>
+      <option name="number" value="00084" />
+      <option name="presentableId" value="LOCAL-00084" />
+      <option name="project" value="LOCAL" />
+      <updated>1682486480268</updated>
+    </task>
+    <task id="LOCAL-00085" summary="build contract">
+      <created>1682486717219</created>
+      <option name="number" value="00085" />
+      <option name="presentableId" value="LOCAL-00085" />
+      <option name="project" value="LOCAL" />
+      <updated>1682486717219</updated>
+    </task>
+    <task id="LOCAL-00086" summary="build contract">
+      <created>1682486773688</created>
+      <option name="number" value="00086" />
+      <option name="presentableId" value="LOCAL-00086" />
+      <option name="project" value="LOCAL" />
+      <updated>1682486773688</updated>
     </task>
     <task id="LOCAL-00087" summary="build contract">
       <created>1682491505561</created>
@@ -508,35 +537,7 @@
       <option name="project" value="LOCAL" />
       <updated>1686814955379</updated>
     </task>
-    <task id="LOCAL-00137" summary="fake big fundValue in tests">
-      <created>1691041116429</created>
-      <option name="number" value="00137" />
-      <option name="presentableId" value="LOCAL-00137" />
-      <option name="project" value="LOCAL" />
-      <updated>1691041116430</updated>
-    </task>
-    <task id="LOCAL-00138" summary="replace param time_ms to &amp;clock">
-      <created>1691041212300</created>
-      <option name="number" value="00138" />
-      <option name="presentableId" value="LOCAL-00138" />
-      <option name="project" value="LOCAL" />
-      <updated>1691041212300</updated>
-    </task>
-    <task id="LOCAL-00139" summary="deploy testnet vesting v101">
-      <created>1691045237291</created>
-      <option name="number" value="00139" />
-      <option name="presentableId" value="LOCAL-00139" />
-      <option name="project" value="LOCAL" />
-      <updated>1691045237291</updated>
-    </task>
-    <task id="LOCAL-00140" summary="deploy testnet stake v101">
-      <created>1691045573651</created>
-      <option name="number" value="00140" />
-      <option name="presentableId" value="LOCAL-00140" />
-      <option name="project" value="LOCAL" />
-      <updated>1691045573651</updated>
-    </task>
-    <option name="localTasksCounter" value="141" />
+    <option name="localTasksCounter" value="134" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -588,13 +589,31 @@
         </entry>
         <entry key="MAIN">
           <value>
-            <State />
+            <State>
+              <option name="FILTERS">
+                <map>
+                  <entry key="branch">
+                    <value>
+                      <list>
+                        <option value="testnet" />
+                      </list>
+                    </value>
+                  </entry>
+                </map>
+              </option>
+            </State>
           </value>
         </entry>
       </map>
     </option>
   </component>
   <component name="VcsManagerConfiguration">
+    <MESSAGE value="update stake, swap token" />
+    <MESSAGE value="add nft" />
+    <MESSAGE value="add address in move file" />
+    <MESSAGE value="change name" />
+    <MESSAGE value="fix refund" />
+    <MESSAGE value="update contract" />
     <MESSAGE value="add unit test" />
     <MESSAGE value="remove kyc" />
     <MESSAGE value="build contract" />
@@ -614,13 +633,7 @@
     <MESSAGE value="Update ClaimInfor" />
     <MESSAGE value="Update value ClaimInfo" />
     <MESSAGE value="Create new project vesting" />
-    <MESSAGE value="deploy testnet..." />
-    <MESSAGE value="add fun removeFunds" />
-    <MESSAGE value="fake big fundValue in tests" />
-    <MESSAGE value="replace param time_ms to &amp;clock" />
-    <MESSAGE value="deploy testnet vesting v101" />
-    <MESSAGE value="deploy testnet stake v101" />
-    <option name="LAST_COMMIT_MESSAGE" value="deploy testnet stake v101" />
+    <option name="LAST_COMMIT_MESSAGE" value="Create new project vesting" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />

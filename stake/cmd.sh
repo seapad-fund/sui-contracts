@@ -2,14 +2,14 @@
 #sui client publish --force --with-unpublished-dependencies  --gas-budget 200000000
 
 ##ENV_ADDR also the publisher
-export ENV_ADDR=0x0dd0106a909560b8f2e0262e9946008e307ae7758fde5277853088d25b0b6c7f
-export PACKAGE=0x71132189cb802b0265ad21634fe841f7f36d2cf4aa6f3d2d839706af39e572c6
-export UPGRADE_CAP=0xfddc9b1cbbef93b34675a6d36855b228644596b43313a281eae47051fee9a0b6
-export CONFIG=0x278fca0d6d027797d8960c10eb9d3b7faae8a86c767a9ae55f89c6a50062bc9f
-export NEW_ADMIN=0x7d0ad419e070245b777ec04461d02a6956afd2d19a3d8f96341dcf26f5053796
-export TREASURY_ADMIN=0x0dd0106a909560b8f2e0262e9946008e307ae7758fde5277853088d25b0b6c7f
-export EMERGENCY_ADMIN=0x0dd0106a909560b8f2e0262e9946008e307ae7758fde5277853088d25b0b6c7f
+export ENV_ADDR=0xc37ce899eb568f490a521590787b167e65300d15819c85c4a12ee8480f2c3554
+export PACKAGE=0x824336292f328ce8ed02e51835bfa630c3082b935d5acf3bc2f42919deb015b0
+export UPGRADE_CAP=0xfa7342fe935a134edd1f6835103b481d1a874f62087b74f15e33301de867c6c6
+export CONFIG=0xc78e0bc2c9ebeca971493292497b195c7384c317c8bfbc50b364961b35020f94
+export NEW_ADMIN=0x0c5fa0762043c0ed91ddca940890c930947d062e1bea110fe4d7a59ad19297a1
+export TREASURY_ADMIN=0xc37ce899eb568f490a521590787b167e65300d15819c85c4a12ee8480f2c3554
+export EMERGENCY_ADMIN=0xc37ce899eb568f490a521590787b167e65300d15819c85c4a12ee8480f2c3554
 
 #
-#sui client call --gas-budget 20000000 --package $PACKAGE --module "stake_entries" --function "set_treasury_admin_address" --args $CONFIG $NEW_ADMIN
-#sui client call --gas-budget 20000000 --package $PACKAGE --module "stake_entries" --function "set_emergency_admin_address" --args $CONFIG $NEW_ADMIN
+sui client call --gas-budget 20000000 --package $PACKAGE --module "stake_entries" --function "set_treasury_admin_address" --args $CONFIG $NEW_ADMIN
+sui client call --gas-budget 20000000 --package $PACKAGE --module "stake_entries" --function "set_emergency_admin_address" --args $CONFIG $NEW_ADMIN
