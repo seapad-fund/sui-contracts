@@ -1,7 +1,7 @@
 [package]
 name = "SeaPad"
 version = "1.0.0"
-published-at=0x86171a64a40410157588776303de9557ee8618f595782b87af5c62cf25d5d359
+published-at=0x71132189cb802b0265ad21634fe841f7f36d2cf4aa6f3d2d839706af39e572c6
 
 [dependencies]
 Sui = { git = "https://github.com/MystenLabs/sui", subdir = "crates/sui-framework/packages/sui-framework", rev = "mainnet" }
