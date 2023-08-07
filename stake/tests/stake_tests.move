@@ -146,11 +146,11 @@ module seapad::emergency_tests {
         end(scenario_val);
     }
 
-    fun get_pending_reward(clock: &Clock, scenario: &mut Scenario): u64 {
+    fun get_pending_reward(sclock: &Clock, scenario: &mut Scenario): u64 {
         let pool = test_scenario::take_shared<StakePool<STAKE_COIN, REWARD_COIN>>(scenario);
         let user = test_scenario::sender(scenario);
 
-        let reward_value = stake::get_pending_user_rewards(&pool, user, clock::timestamp_ms(clock));
+        let reward_value = stake::get_pending_user_rewards(&pool, user, sclock);
         return_shared(pool);
 
         reward_value

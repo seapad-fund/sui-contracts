@@ -10,6 +10,7 @@ module seapad::stake_config {
     const ERR_NO_PERMISSIONS: u64 = 200;
     const ERR_NOT_INITIALIZED: u64 = 201;
     const ERR_GLOBAL_EMERGENCY: u64 = 202;
+
     struct STAKE_CONFIG has drop {}
     struct GlobalConfig has key, store {
         id: UID,
