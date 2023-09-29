@@ -9,4 +9,5 @@ W3libs = { git = "https://github.com/seapad-fund/w3libs", rev = "testnet" }
 
 [addresses]
 common =  "0xc1f35d1803e705f821319bf0a71096af6ffb50bcabed3e395ce2b78412f93775"
+seapad = "0x00"
 sui= "0x02"
