@@ -24,6 +24,8 @@ module seapad::stake {
     const ERR_NOTHING_TO_HARVEST: u64 = 8009;
     const ERR_PAUSED: u64 = 8010;
 
+    const ONE_YEARS_MS: u64 = 31536000000;
+
 
     struct STAKE has drop {}
 
@@ -235,6 +237,7 @@ module seapad::stake {
     /// Unstakes user coins from pool.
     public fun unstake<S, R>(
         pool: &mut StakePool<S, R>,
+        amount: u128,
         sclock: &Clock,
         ctx: &mut TxContext
     ) {
@@ -249,10 +252,11 @@ module seapad::stake {
         update_reward_remaining(pool.apy, now, user_stake);
 
         let totalStake = user_stake.spt_staked;
-        assert!(totalStake > 0, ERR_NO_FUND);
-        user_stake.spt_staked = user_stake.spt_staked - totalStake;
+        assert!(amount > 0, ERR_AMOUNT_CANNOT_BE_ZERO);
+        assert!(totalStake > 0 && totalStake >= amount, ERR_NO_FUND);
+        user_stake.spt_staked = user_stake.spt_staked - amount;
 
-        user_stake.withdraw_stake = user_stake.withdraw_stake + totalStake;
+        user_stake.withdraw_stake = user_stake.withdraw_stake + amount;
 
         user_stake.unlock_times = now + pool.unlock_times;
 
@@ -356,30 +360,28 @@ module seapad::stake {
 
     public entry fun stakeRewards<S, R>(
         pool: &mut StakePool<S, R>,
-        coins: Coin<S>,
         sclock: &Clock,
         ctx: &mut TxContext
     ) {
         assert!(!pool.paused, ERR_PAUSED);
         let now = clock::timestamp_ms(sclock);
-        let amount = (coin::value(&coins) as u128);
         let user_address = sender(ctx);
-        assert!(amount > 0u128, ERR_AMOUNT_CANNOT_BE_ZERO);
         assert!(table::contains(&mut pool.stakes, user_address), ERR_NO_FUND);
 
         let user_stake = table::borrow_mut(&mut pool.stakes, user_address);
 
-        user_stake.spt_staked = user_stake.spt_staked + amount;
-        user_stake.reward_remaining = 0;
-
         update_reward_remaining(pool.apy, now, user_stake);
 
-        coin::join(&mut pool.stake_coins, coins);
+        let value = user_stake.reward_remaining;
+        assert!(value > 0 ,ERR_NO_FUND);
+        user_stake.spt_staked = user_stake.spt_staked + value;
+
+        user_stake.reward_remaining = 0;
 
         event::emit(StakeRewardsEvent {
             pool_id: object::uid_to_address(&pool.id),
             user_address,
-            amount,
+            amount:value,
             total_staked: (coin::value(&mut pool.stake_coins) as u128),
             user_spt_staked: user_stake.spt_staked,
             user_reward_remaining: user_stake.reward_remaining,
@@ -433,7 +435,7 @@ module seapad::stake {
         assert!(time_diff > 0u128, ERR_TIMEDIFF_CANNOT_BE_ZERO);
 
         assert!(user_stake.spt_staked > 0u128, ERR_STAKED_CANNOT_BE_ZERO);
-        let reward_increase = (time_diff * (apy / (356 * 86400 * 100)) * user_stake.spt_staked);
+        let reward_increase = ((time_diff * user_stake.spt_staked * apy) / (ONE_YEARS_MS * 10000 as u128));
 
         user_stake.reward_remaining = user_stake.reward_remaining + reward_increase;
 
