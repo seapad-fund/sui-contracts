@@ -150,11 +150,8 @@ module seapad::stake {
         _admin: &Admincap,
         unlock_times: u64,
         apy: u128,
-        sclock: &Clock,
         ctx: &mut TxContext
     ) {
-        let now = clock::timestamp_ms(sclock);
-        assert!(unlock_times > now, ERR_BAD_FUND_PARAMS);
         assert!(apy > 0u128, ERR_BAD_FUND_PARAMS);
 
         let pool = StakePool<S, R> {
@@ -252,6 +249,7 @@ module seapad::stake {
         update_reward_remaining(pool.apy, now, user_stake);
 
         let totalStake = user_stake.spt_staked;
+        assert!(totalStake > 0, ERR_NO_FUND);
         user_stake.spt_staked = user_stake.spt_staked - totalStake;
 
         user_stake.withdraw_stake = user_stake.withdraw_stake + totalStake;
