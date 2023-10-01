@@ -373,7 +373,7 @@ module seapad::stake {
         update_reward_remaining(pool.apy, now, user_stake);
 
         let value = user_stake.reward_remaining;
-        assert!(value > 0 ,ERR_NO_FUND);
+        assert!(value > 0, ERR_NO_FUND);
         user_stake.spt_staked = user_stake.spt_staked + value;
 
         user_stake.reward_remaining = 0;
@@ -381,7 +381,7 @@ module seapad::stake {
         event::emit(StakeRewardsEvent {
             pool_id: object::uid_to_address(&pool.id),
             user_address,
-            amount:value,
+            amount: value,
             total_staked: (coin::value(&mut pool.stake_coins) as u128),
             user_spt_staked: user_stake.spt_staked,
             user_reward_remaining: user_stake.reward_remaining,
@@ -457,23 +457,27 @@ module seapad::stake {
         let (i, n) = (0, vector::length(&owners));
         while (i < n) {
             let owner = *vector::borrow(&owners, i);
-            assert!(table::contains(&pool.stakes, owner), ERR_NO_FUND);
-            let user_stake = table::borrow_mut(&mut pool.stakes, owner);
-            update_reward_remaining(apy, now, user_stake);
-            i = i + 1;
+            if (table::contains(&pool.stakes, owner)) {
+                let user_stake = table::borrow_mut(&mut pool.stakes, owner);
+                update_reward_remaining(apy, now, user_stake);
 
-            event::emit(UpdateApyEvent {
-                poo_id: object::uid_to_address(&pool.id),
-                user_address: owner,
-                apy,
-                user_spt_staked: user_stake.spt_staked,
-                user_withdraw_stake: user_stake.withdraw_stake,
-                user_reward_remaining: user_stake.reward_remaining,
-                user_lastest_updated_time: user_stake.lastest_updated_time,
-                user_unlock_time: user_stake.unlock_times
-            });
+                event::emit(UpdateApyEvent {
+                    poo_id: object::uid_to_address(&pool.id),
+                    user_address: owner,
+                    apy,
+                    user_spt_staked: user_stake.spt_staked,
+                    user_withdraw_stake: user_stake.withdraw_stake,
+                    user_reward_remaining: user_stake.reward_remaining,
+                    user_lastest_updated_time: user_stake.lastest_updated_time,
+                    user_unlock_time: user_stake.unlock_times
+                });
+            } else {
+                break
+            };
+            i = i + 1;
         };
     }
+
 
     public entry fun stopEmergency<S, R>(
         _admin: &Admincap,
@@ -485,19 +489,21 @@ module seapad::stake {
         let (i, n) = (0, vector::length(&owners));
         while (i < n) {
             let owner = *vector::borrow(&owners, i);
-            assert!(table::contains(&mut pool.stakes, owner), ERR_NO_FUND);
-            let user_stake = table::borrow_mut(&mut pool.stakes, owner);
+            if (table::contains(&mut pool.stakes, owner)) {
+                let user_stake = table::borrow_mut(&mut pool.stakes, owner);
 
-            let staked = user_stake.spt_staked;
-            let value = (coin::value(&pool.stake_coins) as u128);
-            assert!(staked > 0u128 && staked <= value, ERR_NO_FUND);
+                let staked = user_stake.spt_staked;
+                let value = (coin::value(&pool.stake_coins) as u128);
+                assert!(staked > 0u128 && staked <= value, ERR_NO_FUND);
 
-            user_stake.spt_staked = 0;
+                user_stake.spt_staked = 0;
 
-            let coin = coin::split(&mut pool.stake_coins, (staked as u64), ctx);
+                let coin = coin::split(&mut pool.stake_coins, (staked as u64), ctx);
 
-            transfer::public_transfer(coin, owner);
-
+                transfer::public_transfer(coin, owner);
+            } else {
+                break
+            };
             i = i + 1;
         };
         pool.paused = paused;
