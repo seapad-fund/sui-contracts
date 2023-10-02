@@ -432,9 +432,7 @@ module seapad::stake {
         assert!(apy > 0u128, ERR_BAD_FUND_PARAMS);
 
         let time_diff = ((now - user_stake.lastest_updated_time) as u128);
-        assert!(time_diff > 0u128, ERR_TIMEDIFF_CANNOT_BE_ZERO);
 
-        assert!(user_stake.spt_staked > 0u128, ERR_STAKED_CANNOT_BE_ZERO);
         let reward_increase = ((time_diff * user_stake.spt_staked * apy) / (ONE_YEARS_MS * 10000 as u128));
 
         user_stake.reward_remaining = user_stake.reward_remaining + reward_increase;
