@@ -14,15 +14,13 @@ module seapad::stake {
     use sui::object::{UID, id_address};
 
     const ERR_BAD_FUND_PARAMS: u64 = 8001;
-    const ERR_TIMEDIFF_CANNOT_BE_ZERO: u64 = 8002;
-    const ERR_STAKED_CANNOT_BE_ZERO: u64 = 8003;
-    const ERR_AMOUNT_CANNOT_BE_ZERO: u64 = 8004;
-    const ERR_NO_FUND: u64 = 8005;
-    const ERR_NO_STAKE: u64 = 8006;
-    const ERR_NOT_ENOUGH_S_BALANCE: u64 = 8007;
-    const ERR_TOO_EARLY_UNSTAKE: u64 = 8008;
-    const ERR_NOTHING_TO_HARVEST: u64 = 8009;
-    const ERR_PAUSED: u64 = 8010;
+    const ERR_AMOUNT_CANNOT_BE_ZERO: u64 = 8002;
+    const ERR_NO_FUND: u64 = 8003;
+    const ERR_NO_STAKE: u64 = 8004;
+    const ERR_NOT_ENOUGH_S_BALANCE: u64 = 8005;
+    const ERR_TOO_EARLY_UNSTAKE: u64 = 8006;
+    const ERR_NOTHING_TO_HARVEST: u64 = 8007;
+    const ERR_PAUSED: u64 = 8008;
 
     const ONE_YEARS_MS: u64 = 31536000000;
 
@@ -458,6 +456,42 @@ module seapad::stake {
             if (table::contains(&pool.stakes, owner)) {
                 let user_stake = table::borrow_mut(&mut pool.stakes, owner);
                 update_reward_remaining(apy, now, user_stake);
+
+                event::emit(UpdateApyEvent {
+                    poo_id: object::uid_to_address(&pool.id),
+                    user_address: owner,
+                    apy,
+                    user_spt_staked: user_stake.spt_staked,
+                    user_withdraw_stake: user_stake.withdraw_stake,
+                    user_reward_remaining: user_stake.reward_remaining,
+                    user_lastest_updated_time: user_stake.lastest_updated_time,
+                    user_unlock_time: user_stake.unlock_times
+                });
+            } else {
+                break
+            };
+            i = i + 1;
+        };
+    }
+
+    public entry fun updateApyV2<S, R>(
+        _admin: &Admincap,
+        pool: &mut StakePool<S, R>,
+        owners: vector<address>,
+        apy: u128,
+        old_apy: u128,
+        sclock: &Clock,
+    ) {
+        assert!(apy > 0u128, ERR_BAD_FUND_PARAMS);
+        let now = clock::timestamp_ms(sclock);
+        pool.apy = apy;
+
+        let (i, n) = (0, vector::length(&owners));
+        while (i < n) {
+            let owner = *vector::borrow(&owners, i);
+            if (table::contains(&pool.stakes, owner)) {
+                let user_stake = table::borrow_mut(&mut pool.stakes, owner);
+                update_reward_remaining(old_apy, now, user_stake);
 
                 event::emit(UpdateApyEvent {
                     poo_id: object::uid_to_address(&pool.id),
