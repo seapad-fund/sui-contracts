@@ -1,0 +1,84 @@
+----- Transaction Digest ----
+CzdJ7wmxBMRJSVt9MSJrR5bkXsWGoFHdhdhfN2fZcamp
+----- Transaction Data ----
+Transaction Signature: [Signature(Ed25519SuiSignature(Ed25519SuiSignature([0, 178, 23, 172, 122, 141, 169, 17, 204, 100, 140, 218, 219, 175, 89, 20, 63, 163, 69, 124, 190, 111, 248, 238, 139, 48, 155, 145, 149, 33, 163, 167, 27, 183, 156, 191, 161, 108, 28, 126, 233, 59, 95, 137, 98, 223, 82, 65, 1, 139, 244, 122, 47, 198, 17, 132, 142, 133, 156, 96, 137, 103, 126, 253, 2, 95, 10, 69, 52, 141, 9, 164, 137, 125, 67, 27, 126, 24, 131, 254, 223, 96, 125, 89, 202, 252, 122, 0, 165, 160, 126, 72, 164, 200, 210, 64, 57])))]
+Transaction Kind : Programmable
+Inputs: [Pure(SuiPureValue { value_type: Some(Address), value: "0xc37ce899eb568f490a521590787b167e65300d15819c85c4a12ee8480f2c3554" })]
+Commands: [
+  Publish(<modules>,0x0000000000000000000000000000000000000000000000000000000000000001,0x0000000000000000000000000000000000000000000000000000000000000002),
+  TransferObjects([Result(0)],Input(0)),
+]
+
+Sender: 0xc37ce899eb568f490a521590787b167e65300d15819c85c4a12ee8480f2c3554
+Gas Payment: Object ID: 0xedf76f3945752593ffe301f24fc137ed18fdab97cb28741191d8273abd05ed48, version: 0x12ab386, digest: CkY2B4tQWhjpSXXQkUBuuyVnSqHt6BJiKPY9w37yVir5
+Gas Owner: 0xc37ce899eb568f490a521590787b167e65300d15819c85c4a12ee8480f2c3554
+Gas Price: 750
+Gas Budget: 200000000
+
+----- Transaction Effects ----
+Status : Success
+Created Objects:
+  - ID: 0x147eb786eab5386f657ea987e1849479929951494f3f8a8333810589be90a5cf , Owner: Immutable
+  - ID: 0xaef71dc7a000d09cab8a0973201fa1db25de129dd1c91dca5df24692d8766b49 , Owner: Account Address ( 0xc37ce899eb568f490a521590787b167e65300d15819c85c4a12ee8480f2c3554 )
+  - ID: 0xe3e454a1a07a4a30024cf5e962e99c4776e2b46b5f9b30499d81c5dadd8c45fd , Owner: Account Address ( 0xc37ce899eb568f490a521590787b167e65300d15819c85c4a12ee8480f2c3554 )
+Mutated Objects:
+  - ID: 0xedf76f3945752593ffe301f24fc137ed18fdab97cb28741191d8273abd05ed48 , Owner: Account Address ( 0xc37ce899eb568f490a521590787b167e65300d15819c85c4a12ee8480f2c3554 )
+
+----- Events ----
+Array []
+----- Object changes ----
+Array [
+    Object {
+        "type": String("mutated"),
+        "sender": String("0xc37ce899eb568f490a521590787b167e65300d15819c85c4a12ee8480f2c3554"),
+        "owner": Object {
+            "AddressOwner": String("0xc37ce899eb568f490a521590787b167e65300d15819c85c4a12ee8480f2c3554"),
+        },
+        "objectType": String("0x2::coin::Coin<0x2::sui::SUI>"),
+        "objectId": String("0xedf76f3945752593ffe301f24fc137ed18fdab97cb28741191d8273abd05ed48"),
+        "version": String("19575687"),
+        "previousVersion": String("19575686"),
+        "digest": String("DBxfKco4PEmesfUNMje6JqKxZW6z8GV3MfohGDkwA6Nf"),
+    },
+    Object {
+        "type": String("published"),
+        "packageId": String("0x147eb786eab5386f657ea987e1849479929951494f3f8a8333810589be90a5cf"),
+        "version": String("1"),
+        "digest": String("HB3FxSc895LdXLCEgG51YJAcByk9GLRYfH7rKoJDtB57"),
+        "modules": Array [
+            String("stake"),
+        ],
+    },
+    Object {
+        "type": String("created"),
+        "sender": String("0xc37ce899eb568f490a521590787b167e65300d15819c85c4a12ee8480f2c3554"),
+        "owner": Object {
+            "AddressOwner": String("0xc37ce899eb568f490a521590787b167e65300d15819c85c4a12ee8480f2c3554"),
+        },
+        "objectType": String("0x147eb786eab5386f657ea987e1849479929951494f3f8a8333810589be90a5cf::stake::Admincap"),
+        "objectId": String("0xaef71dc7a000d09cab8a0973201fa1db25de129dd1c91dca5df24692d8766b49"),
+        "version": String("19575687"),
+        "digest": String("DQ5Y9KR7PzLm6G2TaF2TK87W428KQ1uU1nejTwix3aTw"),
+    },
+    Object {
+        "type": String("created"),
+        "sender": String("0xc37ce899eb568f490a521590787b167e65300d15819c85c4a12ee8480f2c3554"),
+        "owner": Object {
+            "AddressOwner": String("0xc37ce899eb568f490a521590787b167e65300d15819c85c4a12ee8480f2c3554"),
+        },
+        "objectType": String("0x2::package::UpgradeCap"),
+        "objectId": String("0xe3e454a1a07a4a30024cf5e962e99c4776e2b46b5f9b30499d81c5dadd8c45fd"),
+        "version": String("19575687"),
+        "digest": String("AsonwkqqtaQtkBxPQH6RY3vUKcQ9dUP93Ban4o7Hg8Za"),
+    },
+]
+----- Balance changes ----
+Array [
+    Object {
+        "owner": Object {
+            "AddressOwner": String("0xc37ce899eb568f490a521590787b167e65300d15819c85c4a12ee8480f2c3554"),
+        },
+        "coinType": String("0x2::sui::SUI"),
+        "amount": String("-44855080"),
+    },
+]

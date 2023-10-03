@@ -1,0 +1,11 @@
+[package]
+name = "StakeV2"
+version = "0.0.1"
+published-at = "0xc37ce899eb568f490a521590787b167e65300d15819c85c4a12ee8480f2c3554"
+
+[dependencies]
+Sui = { git = "https://github.com/MystenLabs/sui", subdir = "crates/sui-framework/packages/sui-framework", rev = "mainnet" }
+
+[addresses]
+seapad = "0x00"
+sui = "0x02"
