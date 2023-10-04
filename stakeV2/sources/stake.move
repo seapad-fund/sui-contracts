@@ -1,12 +1,13 @@
 module seapad::stake {
 
     use std::vector;
+    use sui::transfer::share_object;
+    use seapad::version::{Version, checkVersion};
     use sui::event;
     use sui::coin;
     use sui::clock;
     use sui::clock::Clock;
     use sui::transfer;
-    use sui::transfer::{transfer, share_object};
     use sui::object;
     use sui::tx_context::{TxContext, sender};
     use sui::coin::Coin;
@@ -23,6 +24,8 @@ module seapad::stake {
     const ERR_PAUSED: u64 = 8008;
 
     const ONE_YEARS_MS: u64 = 31536000000;
+
+    const VERSION: u64 = 1;
 
 
     struct STAKE has drop {}
@@ -142,16 +145,21 @@ module seapad::stake {
         transfer::transfer(adminCap, sender(ctx));
     }
 
-    public entry fun change_admin(admin: Admincap, to: address) {
-        transfer(admin, to);
+    public fun change_admin(adminCap: Admincap,
+                            to: address,
+                            version: &mut Version) {
+        checkVersion(version, VERSION);
+        transfer::public_transfer(adminCap, to);
     }
 
     public entry fun createPool<S, R>(
         _admin: &Admincap,
         unlock_times: u64,
         apy: u128,
+        version: &mut Version,
         ctx: &mut TxContext
     ) {
+        checkVersion(version, VERSION);
         assert!(apy > 0u128, ERR_BAD_FUND_PARAMS);
 
         let pool = StakePool<S, R> {
@@ -183,7 +191,9 @@ module seapad::stake {
         _admin: &Admincap,
         pool: &mut StakePool<S, R>,
         unlock_times: u64,
+        version: &mut Version,
     ) {
+        checkVersion(version, VERSION);
         assert!(unlock_times > 0, ERR_BAD_FUND_PARAMS);
         pool.unlock_times = unlock_times;
     }
@@ -193,8 +203,10 @@ module seapad::stake {
         pool: &mut StakePool<S, R>,
         coins: Coin<S>,
         sclock: &Clock,
+        version: &mut Version,
         ctx: &mut TxContext
     ) {
+        checkVersion(version, VERSION);
         assert!(!pool.paused, ERR_PAUSED);
         let now = clock::timestamp_ms(sclock);
         let amount = (coin::value(&coins) as u128);
@@ -237,8 +249,10 @@ module seapad::stake {
         pool: &mut StakePool<S, R>,
         amount: u128,
         sclock: &Clock,
+        version: &mut Version,
         ctx: &mut TxContext
     ) {
+        checkVersion(version, VERSION);
         assert!(!pool.paused, ERR_PAUSED);
         let now = clock::timestamp_ms(sclock);
         let user_address = sender(ctx);
@@ -284,8 +298,10 @@ module seapad::stake {
     public entry fun withdrawSpt<S, R>(
         pool: &mut StakePool<S, R>,
         sclock: &Clock,
+        version: &mut Version,
         ctx: &mut TxContext
     ) {
+        checkVersion(version, VERSION);
         assert!(!pool.paused, ERR_PAUSED);
         let user_address = sender(ctx);
         let now = clock::timestamp_ms(sclock);
@@ -320,8 +336,10 @@ module seapad::stake {
     public entry fun claimRewards<S, R>(
         pool: &mut StakePool<S, R>,
         sclock: &Clock,
+        version: &mut Version,
         ctx: &mut TxContext
     ) {
+        checkVersion(version, VERSION);
         assert!(!pool.paused, ERR_PAUSED);
         let now = clock::timestamp_ms(sclock);
         let user_address = sender(ctx);
@@ -359,8 +377,10 @@ module seapad::stake {
     public entry fun stakeRewards<S, R>(
         pool: &mut StakePool<S, R>,
         sclock: &Clock,
+        version: &mut Version,
         ctx: &mut TxContext
     ) {
+        checkVersion(version, VERSION);
         assert!(!pool.paused, ERR_PAUSED);
         let now = clock::timestamp_ms(sclock);
         let user_address = sender(ctx);
@@ -388,11 +408,13 @@ module seapad::stake {
     }
 
     /// Depositing reward coins to specific pool
-    public entry fun deposit_reward_coins<S, R>(
+    public entry fun depositRewardCoins<S, R>(
         _admin: &Admincap,
         pool: &mut StakePool<S, R>,
+        version: &mut Version,
         coins: Coin<R>
     ) {
+        checkVersion(version, VERSION);
         let amount = (coin::value(&coins) as u128);
         assert!(amount > 0u128, ERR_AMOUNT_CANNOT_BE_ZERO);
 
@@ -407,11 +429,13 @@ module seapad::stake {
         );
     }
 
-    public entry fun withdraw_reward_coins<S, R>(
+    public entry fun withdrawRewardCoins<S, R>(
         _admin: &Admincap,
         pool: &mut StakePool<S, R>,
+        version: &mut Version,
         ctx: &mut TxContext
     ) {
+        checkVersion(version, VERSION);
         let value = (coin::value(&pool.reward_coins) as u128);
         assert!(value > 0u128, ERR_NO_FUND);
         let coin = coin::split(&mut pool.reward_coins, (value as u64), ctx);
@@ -444,18 +468,19 @@ module seapad::stake {
         pool: &mut StakePool<S, R>,
         owners: vector<address>,
         apy: u128,
+        version: &mut Version,
         sclock: &Clock,
     ) {
+        checkVersion(version, VERSION);
         assert!(apy > 0u128, ERR_BAD_FUND_PARAMS);
         let now = clock::timestamp_ms(sclock);
-        pool.apy = apy;
 
         let (i, n) = (0, vector::length(&owners));
         while (i < n) {
             let owner = *vector::borrow(&owners, i);
             if (table::contains(&pool.stakes, owner)) {
                 let user_stake = table::borrow_mut(&mut pool.stakes, owner);
-                update_reward_remaining(apy, now, user_stake);
+                update_reward_remaining(pool.apy, now, user_stake);
 
                 event::emit(UpdateApyEvent {
                     poo_id: object::uid_to_address(&pool.id),
@@ -472,6 +497,7 @@ module seapad::stake {
             };
             i = i + 1;
         };
+        pool.apy = apy;
     }
 
     public entry fun updateApyV2<S, R>(
@@ -480,8 +506,10 @@ module seapad::stake {
         owners: vector<address>,
         apy: u128,
         old_apy: u128,
+        version: &mut Version,
         sclock: &Clock,
     ) {
+        checkVersion(version, VERSION);
         assert!(apy > 0u128, ERR_BAD_FUND_PARAMS);
         let now = clock::timestamp_ms(sclock);
         pool.apy = apy;
@@ -516,13 +544,19 @@ module seapad::stake {
         pool: &mut StakePool<S, R>,
         owners: vector<address>,
         paused: bool,
+        sclock: &Clock,
+        version: &mut Version,
         ctx: &mut TxContext
     ) {
+        checkVersion(version, VERSION);
         let (i, n) = (0, vector::length(&owners));
+        let now = clock::timestamp_ms(sclock);
         while (i < n) {
             let owner = *vector::borrow(&owners, i);
             if (table::contains(&mut pool.stakes, owner)) {
                 let user_stake = table::borrow_mut(&mut pool.stakes, owner);
+
+                update_reward_remaining(pool.apy, now, user_stake);
 
                 let staked = user_stake.spt_staked;
                 let value = (coin::value(&pool.stake_coins) as u128);
