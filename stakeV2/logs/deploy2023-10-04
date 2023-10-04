@@ -1,0 +1,111 @@
+----- Transaction Digest ----
+2RV9tKERXwvHrWRneBwPbcdRS1L8DNK299zhiLgVNfLY
+----- Transaction Data ----
+Transaction Signature: [Signature(Ed25519SuiSignature(Ed25519SuiSignature([0, 224, 82, 86, 148, 75, 191, 138, 25, 248, 149, 144, 73, 155, 66, 139, 172, 143, 76, 122, 52, 155, 217, 241, 159, 24, 163, 11, 85, 157, 157, 112, 207, 83, 245, 235, 138, 146, 25, 137, 75, 204, 206, 241, 223, 89, 109, 86, 74, 100, 24, 226, 169, 137, 31, 203, 241, 252, 0, 73, 209, 137, 253, 51, 0, 95, 10, 69, 52, 141, 9, 164, 137, 125, 67, 27, 126, 24, 131, 254, 223, 96, 125, 89, 202, 252, 122, 0, 165, 160, 126, 72, 164, 200, 210, 64, 57])))]
+Transaction Kind : Programmable
+Inputs: [Pure(SuiPureValue { value_type: Some(Address), value: "0xc37ce899eb568f490a521590787b167e65300d15819c85c4a12ee8480f2c3554" })]
+Commands: [
+  Publish(<modules>,0x0000000000000000000000000000000000000000000000000000000000000001,0x0000000000000000000000000000000000000000000000000000000000000002),
+  TransferObjects([Result(0)],Input(0)),
+]
+
+Sender: 0xc37ce899eb568f490a521590787b167e65300d15819c85c4a12ee8480f2c3554
+Gas Payment: Object ID: 0x09fc4be5e2ed2d6f1911865379a3c9d001952a42f3abd1f02d6920aa13b62eda, version: 0xb7c7e8, digest: HhFULDxp3Q8EgMxf1u2uA6JqrjSfCW4VWAXFkiuth4QQ
+Gas Owner: 0xc37ce899eb568f490a521590787b167e65300d15819c85c4a12ee8480f2c3554
+Gas Price: 1000
+Gas Budget: 200000000
+
+----- Transaction Effects ----
+Status : Success
+Created Objects:
+  - ID: 0x227b59d3ea9ed16b940f8e276943c87cbff7f791aa710760d58f970f496085f0 , Owner: Account Address ( 0xc37ce899eb568f490a521590787b167e65300d15819c85c4a12ee8480f2c3554 )
+  - ID: 0x53781ac64ac8618e3cc5402563718d616342b829826fc13023f946f95d323a73 , Owner: Account Address ( 0xc37ce899eb568f490a521590787b167e65300d15819c85c4a12ee8480f2c3554 )
+  - ID: 0x7270be9efdc19f010cc982efecfaae311b00dca9b130ea22007c8edbbf2a3455 , Owner: Shared
+  - ID: 0x9a24e54db68b0e440e24e1771985a81c4e59e3cb651de44dae109b381479565e , Owner: Account Address ( 0xc37ce899eb568f490a521590787b167e65300d15819c85c4a12ee8480f2c3554 )
+  - ID: 0xd56a0073be6e574750d72824f4d04f09cce6a6143eebce77452a9859fe67a739 , Owner: Immutable
+Mutated Objects:
+  - ID: 0x09fc4be5e2ed2d6f1911865379a3c9d001952a42f3abd1f02d6920aa13b62eda , Owner: Account Address ( 0xc37ce899eb568f490a521590787b167e65300d15819c85c4a12ee8480f2c3554 )
+
+----- Events ----
+Array []
+----- Object changes ----
+Array [
+    Object {
+        "type": String("mutated"),
+        "sender": String("0xc37ce899eb568f490a521590787b167e65300d15819c85c4a12ee8480f2c3554"),
+        "owner": Object {
+            "AddressOwner": String("0xc37ce899eb568f490a521590787b167e65300d15819c85c4a12ee8480f2c3554"),
+        },
+        "objectType": String("0x2::coin::Coin<0x2::sui::SUI>"),
+        "objectId": String("0x09fc4be5e2ed2d6f1911865379a3c9d001952a42f3abd1f02d6920aa13b62eda"),
+        "version": String("12044265"),
+        "previousVersion": String("12044264"),
+        "digest": String("91dEFdhhq1xMpDNUq3T37hHtiPvTeRNds9KE9EAjvu7S"),
+    },
+    Object {
+        "type": String("created"),
+        "sender": String("0xc37ce899eb568f490a521590787b167e65300d15819c85c4a12ee8480f2c3554"),
+        "owner": Object {
+            "AddressOwner": String("0xc37ce899eb568f490a521590787b167e65300d15819c85c4a12ee8480f2c3554"),
+        },
+        "objectType": String("0xd56a0073be6e574750d72824f4d04f09cce6a6143eebce77452a9859fe67a739::stake::Admincap"),
+        "objectId": String("0x227b59d3ea9ed16b940f8e276943c87cbff7f791aa710760d58f970f496085f0"),
+        "version": String("12044265"),
+        "digest": String("6gWkUAngKMjxapQkCtMR47SoYzmD6hPqV9AFybxZwqYk"),
+    },
+    Object {
+        "type": String("created"),
+        "sender": String("0xc37ce899eb568f490a521590787b167e65300d15819c85c4a12ee8480f2c3554"),
+        "owner": Object {
+            "AddressOwner": String("0xc37ce899eb568f490a521590787b167e65300d15819c85c4a12ee8480f2c3554"),
+        },
+        "objectType": String("0x2::package::UpgradeCap"),
+        "objectId": String("0x53781ac64ac8618e3cc5402563718d616342b829826fc13023f946f95d323a73"),
+        "version": String("12044265"),
+        "digest": String("8wrAo1hCFqNjkfBHkf1Q6Zehr8x5p5rgqT5JVDaAGsjM"),
+    },
+    Object {
+        "type": String("created"),
+        "sender": String("0xc37ce899eb568f490a521590787b167e65300d15819c85c4a12ee8480f2c3554"),
+        "owner": Object {
+            "Shared": Object {
+                "initial_shared_version": Number(12044265),
+            },
+        },
+        "objectType": String("0xd56a0073be6e574750d72824f4d04f09cce6a6143eebce77452a9859fe67a739::version::Version"),
+        "objectId": String("0x7270be9efdc19f010cc982efecfaae311b00dca9b130ea22007c8edbbf2a3455"),
+        "version": String("12044265"),
+        "digest": String("557U21WUvq31tk1o8pn4cdBmi7Aee7E8bpVgDy4qYZBf"),
+    },
+    Object {
+        "type": String("created"),
+        "sender": String("0xc37ce899eb568f490a521590787b167e65300d15819c85c4a12ee8480f2c3554"),
+        "owner": Object {
+            "AddressOwner": String("0xc37ce899eb568f490a521590787b167e65300d15819c85c4a12ee8480f2c3554"),
+        },
+        "objectType": String("0xd56a0073be6e574750d72824f4d04f09cce6a6143eebce77452a9859fe67a739::version::VAdminCap"),
+        "objectId": String("0x9a24e54db68b0e440e24e1771985a81c4e59e3cb651de44dae109b381479565e"),
+        "version": String("12044265"),
+        "digest": String("HvpzAfgppXChGuv6hNRC8zARwHVxaAzCvYKgLksaQx8G"),
+    },
+    Object {
+        "type": String("published"),
+        "packageId": String("0xd56a0073be6e574750d72824f4d04f09cce6a6143eebce77452a9859fe67a739"),
+        "version": String("1"),
+        "digest": String("4j68ufZwJWuRtdBjpC94LexGHkawpzZhtR3skFDgsvCv"),
+        "modules": Array [
+            String("stake"),
+            String("version"),
+        ],
+    },
+]
+----- Balance changes ----
+Array [
+    Object {
+        "owner": Object {
+            "AddressOwner": String("0xc37ce899eb568f490a521590787b167e65300d15819c85c4a12ee8480f2c3554"),
+        },
+        "coinType": String("0x2::sui::SUI"),
+        "amount": String("-54954680"),
+    },
+]

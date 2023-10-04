@@ -492,8 +492,6 @@ module seapad::stake {
                     user_lastest_updated_time: user_stake.lastest_updated_time,
                     user_unlock_time: user_stake.unlock_times
                 });
-            } else {
-                break
             };
             i = i + 1;
         };
@@ -531,8 +529,6 @@ module seapad::stake {
                     user_lastest_updated_time: user_stake.lastest_updated_time,
                     user_unlock_time: user_stake.unlock_times
                 });
-            } else {
-                break
             };
             i = i + 1;
         };
@@ -567,8 +563,6 @@ module seapad::stake {
                 let coin = coin::split(&mut pool.stake_coins, (staked as u64), ctx);
 
                 transfer::public_transfer(coin, owner);
-            } else {
-                break
             };
             i = i + 1;
         };
