@@ -1,0 +1,113 @@
+----- Transaction Digest ----
+2MT5A3EBhVs5xD4yA38c4YgrRzBzqAMBr3WNJ6kZW74s
+╭───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ Transaction Data                                                                                                                                                                                                                                                                                                                                                                                                                                      │
+├───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Sender: 0x0dd0106a909560b8f2e0262e9946008e307ae7758fde5277853088d25b0b6c7f                                                                                                                                                                                                                                                                                                                                                                            │
+│ Gas Owner: 0x0dd0106a909560b8f2e0262e9946008e307ae7758fde5277853088d25b0b6c7f                                                                                                                                                                                                                                                                                                                                                                         │
+│ Gas Budget: 200000000                                                                                                                                                                                                                                                                                                                                                                                                                                 │
+│ Gas Price: 750                                                                                                                                                                                                                                                                                                                                                                                                                                        │
+│ Gas Payment:                                                                                                                                                                                                                                                                                                                                                                                                                                          │
+│  ┌──                                                                                                                                                                                                                                                                                                                                                                                                                                                  │
+│  │ ID: 0x01ba063f3252b3d1a29d2f4ec03141f75139ff487245977963dcd0ea87ba6fb9                                                                                                                                                                                                                                                                                                                                                                             │
+│  │ Version: 37855584                                                                                                                                                                                                                                                                                                                                                                                                                                  │
+│  │ Digest: CoQs5qnV8AF9f22BgPPuuH7qyynhmyvX4wohnM3UtqXQ                                                                                                                                                                                                                                                                                                                                                                                               │
+│  └──                                                                                                                                                                                                                                                                                                                                                                                                                                                  │
+│                                                                                                                                                                                                                                                                                                                                                                                                                                                       │
+│ Transaction Kind : Programmable                                                                                                                                                                                                                                                                                                                                                                                                                       │
+│ Inputs: [Object(ImmOrOwnedObject { object_id: 0x772c8390d65654f39ab8dcdd6c8324baf4c1b5e911ff47283e3ead1a7916cbac, version: SequenceNumber(9092575), digest: o#CrjMu6iXbYsZK53JVjsjsDkEiFXGn92ZXUDEsbneo4Sh }), Pure(SuiPureValue { value_type: Some(U8), value: 0 }), Pure(SuiPureValue { value_type: Some(Vector(U8)), value: [210,13,109,214,21,186,33,200,201,129,0,111,106,88,242,178,195,58,47,36,229,83,146,60,9,176,228,19,206,157,31,227] })] │
+│ Commands: [                                                                                                                                                                                                                                                                                                                                                                                                                                           │
+│   MoveCall(0x0000000000000000000000000000000000000000000000000000000000000002::package::authorize_upgrade(Input(0),Input(1),Input(2))),                                                                                                                                                                                                                                                                                                               │
+│   Upgrade(<modules>, Result(0),0x0000000000000000000000000000000000000000000000000000000000000001,0x0000000000000000000000000000000000000000000000000000000000000002, 0xa00d14642a0faa3236f80a990568447a57a51d057ca4dc79f623db5b7334f58d),                                                                                                                                                                                                            │
+│   MoveCall(0x0000000000000000000000000000000000000000000000000000000000000002::package::commit_upgrade(Input(0),Result(1))),                                                                                                                                                                                                                                                                                                                          │
+│ ]                                                                                                                                                                                                                                                                                                                                                                                                                                                     │
+│                                                                                                                                                                                                                                                                                                                                                                                                                                                       │
+│                                                                                                                                                                                                                                                                                                                                                                                                                                                       │
+│ Signatures:                                                                                                                                                                                                                                                                                                                                                                                                                                           │
+│    zr8kJ6Vqjju8gZQVt9dITiuHxBw6PnTxqLkT/NsS2rbZR/TKizujVNLXDtKd+0gtxqK9W448QHGenPw1+f6TCQ==                                                                                                                                                                                                                                                                                                                                                           │
+│                                                                                                                                                                                                                                                                                                                                                                                                                                                       │
+╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭───────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ Transaction Effects                                                                               │
+├───────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Digest: 2MT5A3EBhVs5xD4yA38c4YgrRzBzqAMBr3WNJ6kZW74s                                              │
+│ Status: Success                                                                                   │
+│ Executed Epoch: 237                                                                               │
+│                                                                                                   │
+│ Created Objects:                                                                                  │
+│  ┌──                                                                                              │
+│  │ ID: 0x2f0b6610e03738a9dcf03e9db273e61c4e40f30b1c604406545777a3cbe4feb6                         │
+│  │ Owner: Immutable                                                                               │
+│  │ Version: 2                                                                                     │
+│  │ Digest: 4gz4HrrQJcMiwwXp5fcEXFZrumEyGQ112JYUUnJnudLc                                           │
+│  └──                                                                                              │
+│                                                                                                   │
+│ Mutated Objects:                                                                                  │
+│  ┌──                                                                                              │
+│  │ ID: 0x01ba063f3252b3d1a29d2f4ec03141f75139ff487245977963dcd0ea87ba6fb9                         │
+│  │ Owner: Account Address ( 0x0dd0106a909560b8f2e0262e9946008e307ae7758fde5277853088d25b0b6c7f )  │
+│  │ Version: 37855585                                                                              │
+│  │ Digest: B75bnoAEV9DewyYPgKUGVJKq7BHKizZkaipVn1dvNG5a                                           │
+│  └──                                                                                              │
+│  ┌──                                                                                              │
+│  │ ID: 0x772c8390d65654f39ab8dcdd6c8324baf4c1b5e911ff47283e3ead1a7916cbac                         │
+│  │ Owner: Account Address ( 0x0dd0106a909560b8f2e0262e9946008e307ae7758fde5277853088d25b0b6c7f )  │
+│  │ Version: 37855585                                                                              │
+│  │ Digest: H5tDTk1LR2btVUEyas1amC8i9c1iUkkD7XVyMEbChiu5                                           │
+│  └──                                                                                              │
+│                                                                                                   │
+│ Gas Object:                                                                                       │
+│  ┌──                                                                                              │
+│  │ ID: 0x01ba063f3252b3d1a29d2f4ec03141f75139ff487245977963dcd0ea87ba6fb9                         │
+│  │ Owner: Account Address ( 0x0dd0106a909560b8f2e0262e9946008e307ae7758fde5277853088d25b0b6c7f )  │
+│  │ Version: 37855585                                                                              │
+│  │ Digest: B75bnoAEV9DewyYPgKUGVJKq7BHKizZkaipVn1dvNG5a                                           │
+│  └──                                                                                              │
+│                                                                                                   │
+│ Gas Cost Summary:                                                                                 │
+│    Storage Cost: 54940400                                                                         │
+│    Computation Cost: 750000                                                                       │
+│    Storage Rebate: 2595780                                                                        │
+│    Non-refundable Storage Fee: 26220                                                              │
+│                                                                                                   │
+│ Transaction Dependencies:                                                                         │
+│    3D2PmxFbYQzV4KSHe1BcNw6MHaJsXrnPAgBRTbf6E88L                                                   │
+│    6U8tFNDWLAgvhugLtuzqSdBgzXjNUD19PyWCPbp2en24                                                   │
+│    BEb8wBMP1GawREPj4XMmFC75VTmZL5U6aMLLo7122eWn                                                   │
+│    D5VhY9fohjqff5RHycoXRXCkQuq4zCpa9JV2hsnJeR7o                                                   │
+╰───────────────────────────────────────────────────────────────────────────────────────────────────╯
+----- Events ----
+Array []
+----- Object changes ----
+
+Mutated Objects:
+ ┌──
+ │ ObjectID: 0x01ba063f3252b3d1a29d2f4ec03141f75139ff487245977963dcd0ea87ba6fb9
+ │ Sender: 0x0dd0106a909560b8f2e0262e9946008e307ae7758fde5277853088d25b0b6c7f
+ │ Owner: Account Address ( 0x0dd0106a909560b8f2e0262e9946008e307ae7758fde5277853088d25b0b6c7f )
+ │ ObjectType: 0x2::coin::Coin<0x2::sui::SUI>
+ │ Version: 37855585
+ │ Digest: B75bnoAEV9DewyYPgKUGVJKq7BHKizZkaipVn1dvNG5a
+ └──
+ ┌──
+ │ ObjectID: 0x772c8390d65654f39ab8dcdd6c8324baf4c1b5e911ff47283e3ead1a7916cbac
+ │ Sender: 0x0dd0106a909560b8f2e0262e9946008e307ae7758fde5277853088d25b0b6c7f
+ │ Owner: Account Address ( 0x0dd0106a909560b8f2e0262e9946008e307ae7758fde5277853088d25b0b6c7f )
+ │ ObjectType: 0x2::package::UpgradeCap
+ │ Version: 37855585
+ │ Digest: H5tDTk1LR2btVUEyas1amC8i9c1iUkkD7XVyMEbChiu5
+ └──
+
+Published Objects:
+ ┌──
+ │ PackageID: 0x2f0b6610e03738a9dcf03e9db273e61c4e40f30b1c604406545777a3cbe4feb6
+ │ Version: 2
+ │ Digest: 4gz4HrrQJcMiwwXp5fcEXFZrumEyGQ112JYUUnJnudLc
+ | Modules: tokenomic, tokenomic_entries, version
+ └──
+----- Balance changes ----
+ ┌──
+ │ Owner: Account Address ( 0x0dd0106a909560b8f2e0262e9946008e307ae7758fde5277853088d25b0b6c7f )
+ │ CoinType: 0x2::sui::SUI
+ │ Amount: -53094620
+ └──
