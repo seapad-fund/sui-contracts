@@ -1,0 +1,21 @@
+[package]
+name = "Reward"
+version = "0.0.1"
+#published-at = "0xea30bcadc535bd75b72e64806194a37e28affab12188741d86c97bad2df5887c"
+
+[dependencies]
+Sui = { git = "https://github.com/MystenLabs/sui", subdir = "crates/sui-framework/packages/sui-framework", rev = "mainnet" }
+
+[addresses]
+seapad = "0x00"
+sui = "0x02"
+
+##test only
+seedFund = "0x8880"
+privateFund = "0x8881"
+publicFund = "0x8882"
+foundationFund = "0x8883"
+advisorpartnerFund = "0x8884"
+marketingFund = "0x8885"
+ecosystemFund = "0x8886"
+daoFund = "0x8887"
