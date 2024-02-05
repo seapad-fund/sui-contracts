@@ -16,7 +16,7 @@ export BATCH_RECEIVER=0xc088e371ab0e039f4048cc3320458a460edbdebc411097e6548af3fd
 #echo "start nft_workshop..."
 #sui client call --gas-budget 200000000 --package $PACKAGE --module "nft_workshop" --function "start" --args  $NFT_ADMIN_CAP $WORKSHOP
 echo "mint batch to $BATCH_RECEIVER ..."
-sui client call --gas-budget 200000000 --package $PACKAGE --module "nft_workshop" --function "mintBatch" --args  $NFT_ADMIN_CAP $WORKSHOP $BATCH_RECEIVER 4
+sui client call --gas-budget 4000000000 --package $PACKAGE --module "nft_workshop" --function "mintBatch" --args  $NFT_ADMIN_CAP $WORKSHOP $BATCH_RECEIVER 96
 
 #sui client call --gas-budget 200000000 --package $PACKAGE --module "nft_workshop" --function "end" --args  $NFT_ADMIN_CAP $WORKSHOP
 #sui client call --gas-budget 200000000 --package $PACKAGE --module "nft_workshop" --function "addWhiteList" --args  $NFT_ADMIN_CAP [$ENV_ADDR] $WORKSHOP
