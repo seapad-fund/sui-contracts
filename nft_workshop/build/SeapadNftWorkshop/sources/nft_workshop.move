@@ -30,9 +30,9 @@ module seapad::nft_workshop {
 
     const DEFAULT_SUPPLY: u64 = 100000;
 
-    //fixme change url
-    const DEFAULT_THUMNAIL: vector<u8> = b"https://amethyst-careful-angelfish-202.mypinata.cloud/ipfs/QmerJGWjJfYCvXTnzCQn492KKzNUQgxCumCPW9R64pdJhx";
-    const DEFAULT_URL: vector<u8> = b"https://amethyst-careful-angelfish-202.mypinata.cloud/ipfs/QmerJGWjJfYCvXTnzCQn492KKzNUQgxCumCPW9R64pdJhx";
+    ///default nft image
+    const DEFAULT_THUMNAIL: vector<u8> = b"https://seapad.s3.ap-southeast-1.amazonaws.com/uploads/nft/new-year-nft.png";
+    const DEFAULT_URL: vector<u8> = b"https://seapad.s3.ap-southeast-1.amazonaws.com/uploads/nft/new-year-nft.png";
 
     const ErrBadState: u64 = 6100;
     const ErrPermDenied: u64 = 6101;
@@ -77,8 +77,9 @@ module seapad::nft_workshop {
     }
 
     struct MintNftEvent has copy, drop {
-        sender: address,
-        nft: address
+        minter: address,
+        receiver: address,
+        nft: address,
     }
 
     struct BurnNftEvent has copy, drop {
@@ -144,12 +145,12 @@ module seapad::nft_workshop {
         let nft = nft_private::mint(
             b"Genesis NFT campaign",
             b"https://seapad.fund/nftcampaign",
-            b"https://seapad.s3.ap-southeast-1.amazonaws.com/uploads/PROD/public/media/images/logo_1686475080033.png",
+            DEFAULT_THUMNAIL,
             b"Genesis NFT campaign",
             b"https://seapad.fund/",
             1,
-            b"https://seapad.s3.ap-southeast-1.amazonaws.com/uploads/PROD/public/media/images/logo_1686475080033.png",
-            b"SeaPadFoundation",
+            DEFAULT_THUMNAIL,
+            b"SeaPad Foundation",
             table::new(ctx),
             ctx);
         public_transfer(nft, sender(ctx));
@@ -187,7 +188,6 @@ module seapad::nft_workshop {
         share_object(workshop);
         public_transfer(adminCap, sender(ctx));
     }
-
 
     ///set template
     public entry fun setTemplate(_adminCap: &NftAdminCap,
@@ -314,27 +314,27 @@ module seapad::nft_workshop {
     }
 
     ///User in whitelist claim NFT
-    public entry fun claimNft(campaign: &mut Workshop, ctx: &mut TxContext) {
+    public entry fun claimNft(workshop: &mut Workshop, ctx: &mut TxContext) {
         //check campaign state
-        assert!(campaign.state == STATE_RUN, ErrBadState);
-        assert!(campaign.total_mint < campaign.total_supply, ErrSoldOut);
+        assert!(workshop.state == STATE_RUN, ErrBadState);
+        assert!(workshop.total_mint < workshop.total_supply, ErrSoldOut);
         let senderAddr = sender(ctx);
 
         //check user perm: in whitelist, not claimed
-        assert!(table::contains(&campaign.whitelist, senderAddr)
-            && table::borrow(&campaign.whitelist, senderAddr).version >= campaign.version
-            && !table::borrow(&campaign.whitelist, senderAddr).claimed ,
+        assert!(table::contains(&workshop.whitelist, senderAddr)
+            && table::borrow(&workshop.whitelist, senderAddr).version >= workshop.version
+            && !table::borrow(&workshop.whitelist, senderAddr).claimed ,
             ErrPermDenied
         );
 
         //simply randomize
         let weight = address::to_u256(senderAddr) + (tx_context::epoch_timestamp_ms(ctx) as u256);
-        let size = (vector::length(&campaign.urls) as u256);
+        let size = (vector::length(&workshop.urls) as u256);
         let mod = weight - size * (weight / size);
-        let url = *vector::borrow(&campaign.urls, (mod as u64));
+        let url = *vector::borrow(&workshop.urls, (mod as u64));
 
         //fetch template
-        let template = option::borrow_mut(&mut campaign.template);
+        let template = option::borrow_mut(&mut workshop.template);
         let names = &template.attributes_names;
         let values = &template.attributes_values;
         let attrs = table::new(ctx);
@@ -360,19 +360,77 @@ module seapad::nft_workshop {
             ctx);
 
         let mintEvent = MintNftEvent {
-            sender: senderAddr,
+            minter: senderAddr,
+            receiver: senderAddr,
             nft: id_address(&nft)
         };
 
         public_transfer(nft, senderAddr);
 
         //update value ClaimInfor
-        table::borrow_mut(&mut campaign.whitelist, senderAddr).claimed = true;
+        table::borrow_mut(&mut workshop.whitelist, senderAddr).claimed = true;
 
         //update campaign
-        campaign.total_mint = campaign.total_mint + 1;
+        workshop.total_mint = workshop.total_mint + 1;
 
         emit(mintEvent);
+    }
+
+    ///mint batch
+    public entry fun mintBatch(_adminCap: &NftAdminCap, workshop: &mut Workshop, receiverAddr: address, amt: u64, ctx: &mut TxContext) {
+        //check workshop state
+        assert!(workshop.state == STATE_RUN, ErrBadState);
+        assert!(workshop.total_mint < workshop.total_supply, ErrSoldOut);
+        assert!(amt > 0, ErrBadParams);
+
+        let senderAddr = sender(ctx);
+
+        //randomize url
+        let weight = address::to_u256(senderAddr) + (tx_context::epoch_timestamp_ms(ctx) as u256);
+        let size = (vector::length(&workshop.urls) as u256);
+        let mod = weight - size * (weight / size);
+        let url = *vector::borrow(&workshop.urls, (mod as u64));
+
+        //fetch template
+        let template = option::borrow_mut(&mut workshop.template);
+        let names = &template.attributes_names;
+        let values = &template.attributes_values;
+
+        //mint from template
+        while (amt > 0){
+            amt = amt - 1;
+            let nft = nft_private::mint(
+                template.name,
+                template.link,
+                url,
+                template.description,
+                template.project_url,
+                template.edition,
+                template.thumbnail_url,
+                template.creator,
+                buildAttr(names, values, ctx),
+                ctx);
+
+            let mintEvent = MintNftEvent {
+                minter: senderAddr,
+                receiver: receiverAddr,
+                nft: id_address(&nft)
+            };
+
+            public_transfer(nft, receiverAddr);
+            workshop.total_mint = workshop.total_mint + 1;
+            emit(mintEvent);
+        }
+    }
+
+    fun buildAttr(names: &vector<vector<u8>>, values: &vector<vector<u8>>, ctx: &mut TxContext): Table<vector<u8>, vector<u8>>{
+        let attrs = table::new(ctx);
+        let len = vector::length(names);
+        while (len > 0) {
+            len = len - 1;
+            table::add(&mut attrs, *vector::borrow(names, len), *vector::borrow(values, len));
+        };
+        attrs
     }
 
     ///User burn nft
