@@ -1,11 +1,17 @@
 [package]
 name = "StakeV2"
-version = "0.0.1"
-published-at = "0xc37ce899eb568f490a521590787b167e65300d15819c85c4a12ee8480f2c3554"
+version = "0.0.2"
+#published-at = "0xc37ce899eb568f490a521590787b167e65300d15819c85c4a12ee8480f2c3554"
+#published-at = "0xcd72e9b1dfdd998047c07db08b48ff5458558a6deff4575ee07f1264b12e6ea2"
+published-at = "0x891c8b474cdf08a388faacb295d2335e3344fd470e932162fac04f1d6541488d"
 
 [dependencies]
 Sui = { git = "https://github.com/MystenLabs/sui", subdir = "crates/sui-framework/packages/sui-framework", rev = "mainnet" }
 
 [addresses]
-seapad = "0x00"
+#seapad = "0x00"
+seapad = "0x0"
 sui = "0x02"
+
+#staking admin
+treasury_admin = "0x7d0ad419e070245b777ec04461d02a6956afd2d19a3d8f96341dcf26f5053796"

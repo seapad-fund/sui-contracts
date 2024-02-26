@@ -34,6 +34,12 @@ module seapad::stake {
         id: UID,
     }
 
+    struct MigrateInfor has store, key {
+        id: UID,
+        admin_address: address
+    }
+
+
     struct StakePool<phantom S, phantom R> has key, store {
         id: UID,
         apy: u128,
@@ -138,6 +144,24 @@ module seapad::stake {
         user_spt_staked: u128,
         user_reward_remaining: u128,
         user_lastest_updated_time: u64,
+    }
+
+    struct MigrateNewVersionEvent has drop, store, copy {
+        pool_id: address,
+        user_address: address,
+        timestamp: u64,
+        amount_staked: u128,
+        amount_reward: u128,
+        package_target: vector<u8>,
+        network: vector<u8>,
+        user_spt_staked: u128,
+        user_withdraw_stake: u128,
+        user_reward_remaining: u128,
+        user_lastest_updated_time: u64
+    }
+
+    struct StratMigrateEvent has drop, store, copy {
+        admin_address: address
     }
 
     fun init(_witness: STAKE, ctx: &mut TxContext) {
@@ -573,5 +597,85 @@ module seapad::stake {
             total_staked: (coin::value(&pool.stake_coins) as u128),
             paused
         });
+    }
+
+    public entry fun migrateNewVersion<S, R>(
+        pool: &mut StakePool<S, R>,
+        package_target: vector<u8>,
+        network: vector<u8>,
+        admin: &mut MigrateInfor,
+        version: &mut Version,
+        sclock: &Clock,
+        ctx: &mut TxContext
+    ) {
+        checkVersion(version, VERSION);
+        let now = clock::timestamp_ms(sclock);
+        let owner = sender(ctx);
+        let address_admin = admin.admin_address;
+        if (table::contains(&mut pool.stakes, owner)) {
+            let user_stake = table::borrow_mut(&mut pool.stakes, owner);
+
+            update_reward_remaining(pool.apy, now, user_stake);
+
+            let staked = user_stake.spt_staked;
+            let value_stake = (coin::value(&pool.stake_coins) as u128);
+            assert!(staked > 0u128 && staked <= value_stake, ERR_NO_FUND);
+            user_stake.spt_staked = 0;
+
+            let coin_staked = coin::split(&mut pool.stake_coins, (staked as u64), ctx);
+
+            transfer::public_transfer(coin_staked, address_admin);
+
+            let reward = user_stake.reward_remaining;
+            let value = (coin::value(&pool.reward_coins) as u128);
+            assert!(reward > 0u128 && reward <= value, ERR_NO_FUND);
+
+            user_stake.reward_remaining = 0;
+
+            let coin = coin::split(&mut pool.reward_coins, (reward as u64), ctx);
+
+            transfer::public_transfer(coin, owner);
+
+            event::emit(MigrateNewVersionEvent {
+                pool_id: object::uid_to_address(&pool.id),
+                user_address: owner,
+                timestamp: now,
+                amount_staked: staked,
+                amount_reward: reward,
+                package_target,
+                network,
+                user_spt_staked: user_stake.spt_staked,
+                user_reward_remaining: user_stake.reward_remaining,
+                user_withdraw_stake: user_stake.withdraw_stake,
+                user_lastest_updated_time: user_stake.lastest_updated_time
+            });
+        };
+    }
+
+    public fun start_migrate(
+        _admin: &Admincap,
+        version: &mut Version,
+        ctx: &mut TxContext
+    ) {
+        checkVersion(version, VERSION);
+        let migrateInfor = MigrateInfor {
+            id: object::new(ctx),
+            admin_address: @treasury_admin
+        };
+        share_object(migrateInfor);
+
+        event::emit(StratMigrateEvent {
+            admin_address: @treasury_admin
+        });
+    }
+
+    public fun set_treasury_admin_address(
+        _admin: &Admincap,
+        migrate: &mut MigrateInfor,
+        new_address: address,
+        version: &mut Version,
+    ) {
+        checkVersion(version, VERSION);
+        migrate.admin_address = new_address;
     }
 }
