@@ -16,4 +16,10 @@ export ADMIN_CAP_VERSION=0xaa10bbf81632b7f8f1a4dee25b5d3a490834fbfc496a8aa914b85
 export NEW_ADMIN=0x7d0ad419e070245b777ec04461d02a6956afd2d19a3d8f96341dcf26f5053796
 
 #upgrade package
-sui client upgrade --gas-budget 200000000 --upgrade-capability $UPGRADE_CAP
+#sui client upgrade --gas-budget 200000000 --upgrade-capability $UPGRADE_CAP
+
+#transfer admin
+sui client call --gas-budget 200000000 --package $PACKAGE --module "stake" --function "change_admin" --args  $ADMIN_CAP_STAKE $NEW_ADMIN $VERSION
+
+#Package_late_Updrage
+export PACKAGE_NEW=0xf8d9455dd2769d2882a645eb5a85d759e80de75b7fb962cd93321f8a202c48c2
