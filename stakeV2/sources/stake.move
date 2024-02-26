@@ -161,6 +161,7 @@ module seapad::stake {
     }
 
     struct StratMigrateEvent has drop, store, copy {
+        id: address,
         admin_address: address
     }
 
@@ -652,7 +653,7 @@ module seapad::stake {
         };
     }
 
-    public fun start_migrate(
+    public fun start_migrate<S,R>(
         _admin: &Admincap,
         version: &mut Version,
         ctx: &mut TxContext
@@ -662,14 +663,16 @@ module seapad::stake {
             id: object::new(ctx),
             admin_address: @treasury_admin
         };
-        share_object(migrateInfor);
 
+        let mifgrate_id = id_address(&migrateInfor);
         event::emit(StratMigrateEvent {
+            id: mifgrate_id,
             admin_address: @treasury_admin
         });
+        transfer::share_object(migrateInfor);
     }
 
-    public fun set_treasury_admin_address(
+    public fun set_treasury_admin_address<S,R>(
         _admin: &Admincap,
         migrate: &mut MigrateInfor,
         new_address: address,

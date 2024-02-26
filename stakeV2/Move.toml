@@ -1,9 +1,8 @@
 [package]
 name = "StakeV2"
 version = "0.0.2"
-#published-at = "0xc37ce899eb568f490a521590787b167e65300d15819c85c4a12ee8480f2c3554"
 #published-at = "0xcd72e9b1dfdd998047c07db08b48ff5458558a6deff4575ee07f1264b12e6ea2"
-published-at = "0x891c8b474cdf08a388faacb295d2335e3344fd470e932162fac04f1d6541488d"
+published-at = "0x06f6b78d4571d1c13766b06c682ec6f24becbc54921072937efb274da15dbbc1"
 
 [dependencies]
 Sui = { git = "https://github.com/MystenLabs/sui", subdir = "crates/sui-framework/packages/sui-framework", rev = "mainnet" }
