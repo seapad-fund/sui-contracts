@@ -681,4 +681,10 @@ module seapad::stake {
         checkVersion(version, VERSION);
         migrate.admin_address = new_address;
     }
+
+    #[test_only]
+    public fun initForTesting(ctx: &mut TxContext) {
+        init(STAKE {}, ctx);
+    }
+
 }
