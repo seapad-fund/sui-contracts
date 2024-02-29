@@ -21,6 +21,8 @@ module seapad::stake_test {
     const TWELVE_IN_MS: u64 = 43200000;
     const TIME_WITHDRAW: u64 = 129600001;
     const VALUE_TEST: u64 = 50000000000;
+    const VALUE_REWARD_UNSTAKE: u64 = 27397261;
+    const VALUE_WITHDRAW_REWARD_COIN: u64 = 9972602739;
 
 
     #[test]
@@ -92,7 +94,7 @@ module seapad::stake_test {
         test_scenario::next_tx(scenario, SEED_FUND);
         {
             let coin_unstake = take_from_sender<Coin<REWARD_COIN>>(scenario);
-            assert!(coin::value(&coin_unstake) < (unstake_amount as u64), 0);
+            assert!(coin::value(&coin_unstake) < VALUE_REWARD_UNSTAKE, 0);
             return_to_sender(scenario, coin_unstake);
         };
 
@@ -102,7 +104,7 @@ module seapad::stake_test {
     }
 
     #[test]
-    fun test_withdrawSpt(){
+    fun test_withdrawSpt() {
         let scenario_val = scenario();
         let scenario = &mut scenario_val;
         let ctx = ctx(scenario);
@@ -130,7 +132,7 @@ module seapad::stake_test {
 
         // user withdraw SPT
         clock::increment_for_testing(&mut clock, TIME_WITHDRAW);
-        withdrawSpt(SEED_FUND,&mut pool,&clock,scenario);
+        withdrawSpt(SEED_FUND, &mut pool, &clock, scenario);
 
         test_scenario::next_tx(scenario, SEED_FUND);
         {
@@ -142,7 +144,191 @@ module seapad::stake_test {
         clock::destroy_for_testing(clock);
         return_shared(pool);
         test_scenario::end(scenario_val);
+    }
 
+    #[test]
+    fun test_updateUnlockTime() {
+        let scenario_val = scenario();
+        let scenario = &mut scenario_val;
+
+        init_env(scenario);
+        next_tx(scenario, ADMIN);
+        //Create pool
+        let pool = create_pool(scenario);
+
+        //Update unlock time
+        update_UnlockTime(&mut pool, 10000000, scenario);
+
+        return_shared(pool);
+        test_scenario::end(scenario_val);
+    }
+
+    #[test]
+    fun test_change_admin() {
+        let scenario_val = scenario();
+        let scenario = &mut scenario_val;
+        init_env(scenario);
+        next_tx(scenario, ADMIN);
+        change_admin(@admin, scenario);
+        test_scenario::end(scenario_val);
+    }
+
+    #[test]
+    fun test_pause() {
+        let scenario_val = scenario();
+        let scenario = &mut scenario_val;
+        init_env(scenario);
+        next_tx(scenario, ADMIN);
+
+        //Create pool and Deposit Reward
+        let pool = create_pool(scenario);
+
+        //pause pool
+        pause(&mut pool, true, scenario);
+
+        return_shared(pool);
+        test_scenario::end(scenario_val);
+    }
+
+    #[test]
+    fun test_claimRewards() {
+        let scenario_val = scenario();
+        let scenario = &mut scenario_val;
+        let ctx = ctx(scenario);
+        let clock = clock::create_for_testing(ctx);
+
+        init_env(scenario);
+        next_tx(scenario, ADMIN);
+
+        //Create pool and Deposit Reward
+        let pool = create_pool(scenario);
+        depositRewardCoins(&mut pool, REWARD_VALUE, scenario);
+
+        //User stake amount
+        next_tx(scenario, SEED_FUND);
+        stake(SEED_FUND, &mut pool, STAKE_VALUE, &clock, scenario);
+
+        // next time 12 hours
+        next_tx(scenario, SEED_FUND);
+        clock::increment_for_testing(&mut clock, TWELVE_IN_MS);
+
+        // user claim reward
+        claimRewards(SEED_FUND, &mut pool, &clock, scenario);
+
+        test_scenario::next_tx(scenario, SEED_FUND);
+        {
+            let coin_reward = take_from_sender<Coin<REWARD_COIN>>(scenario);
+            assert!(coin::value(&coin_reward) < VALUE_REWARD_UNSTAKE, 0);
+            return_to_sender(scenario, coin_reward);
+        };
+
+        clock::destroy_for_testing(clock);
+        return_shared(pool);
+        test_scenario::end(scenario_val);
+    }
+
+    #[test]
+    fun test_stakeRewards() {
+        let scenario_val = scenario();
+        let scenario = &mut scenario_val;
+        let ctx = ctx(scenario);
+        let clock = clock::create_for_testing(ctx);
+
+        init_env(scenario);
+        next_tx(scenario, ADMIN);
+
+        //Create pool and Deposit Reward
+        let pool = create_pool(scenario);
+        depositRewardCoins(&mut pool, REWARD_VALUE, scenario);
+
+        //User stake amount
+        next_tx(scenario, SEED_FUND);
+        stake(SEED_FUND, &mut pool, STAKE_VALUE, &clock, scenario);
+
+        // next time 12 hours
+        next_tx(scenario, SEED_FUND);
+        clock::increment_for_testing(&mut clock, TWELVE_IN_MS);
+
+        // user stake rewards
+        stakeRewards(SEED_FUND, &mut pool, &clock, scenario);
+
+        clock::destroy_for_testing(clock);
+        return_shared(pool);
+        test_scenario::end(scenario_val);
+    }
+
+    #[test]
+    fun test_withdrawRewardCoins() {
+        let scenario_val = scenario();
+        let scenario = &mut scenario_val;
+        let ctx = ctx(scenario);
+        let clock = clock::create_for_testing(ctx);
+
+        init_env(scenario);
+        next_tx(scenario, ADMIN);
+
+        //Create pool and Deposit Reward
+        let pool = create_pool(scenario);
+        depositRewardCoins(&mut pool, REWARD_VALUE, scenario);
+
+        //User stake amount
+        next_tx(scenario, SEED_FUND);
+        stake(SEED_FUND, &mut pool, STAKE_VALUE, &clock, scenario);
+
+
+        // next time 12 hours
+        next_tx(scenario, SEED_FUND);
+        clock::increment_for_testing(&mut clock, TWELVE_IN_MS);
+
+        // user claim reward
+        claimRewards(SEED_FUND, &mut pool, &clock, scenario);
+
+        //withdraw reward coin
+        next_tx(scenario, ADMIN);
+        withdrawRewardCoins(&mut pool, scenario);
+
+        test_scenario::next_tx(scenario, ADMIN);
+        {
+            let coin_reward = take_from_sender<Coin<REWARD_COIN>>(scenario);
+            assert!(coin::value(&coin_reward) > VALUE_WITHDRAW_REWARD_COIN, 0);
+            return_to_sender(scenario, coin_reward);
+        };
+        clock::destroy_for_testing(clock);
+        return_shared(pool);
+        test_scenario::end(scenario_val);
+    }
+
+    #[test]
+    fun test_updateApy() {
+        let scenario_val = scenario();
+        let scenario = &mut scenario_val;
+        let ctx = ctx(scenario);
+        let clock = clock::create_for_testing(ctx);
+
+        init_env(scenario);
+        next_tx(scenario, ADMIN);
+
+        //Create pool and Deposit Reward
+        let pool = create_pool(scenario);
+        depositRewardCoins(&mut pool, REWARD_VALUE, scenario);
+
+        //User stake amount
+        next_tx(scenario, SEED_FUND);
+        stake(SEED_FUND, &mut pool, STAKE_VALUE, &clock, scenario);
+
+        next_tx(scenario, @alice);
+        stake(SEED_FUND, &mut pool, STAKE_VALUE, &clock, scenario);
+
+
+        //admin updateApy
+        next_tx(scenario, ADMIN);
+        clock::increment_for_testing(&mut clock, TWELVE_IN_MS);
+
+        updateApy(&mut pool, vector[SEED_FUND, @alice], 2001, &clock, scenario);
+
+        clock::destroy_for_testing(clock);
+        return_shared(pool);
+        test_scenario::end(scenario_val);
     }
 
 
@@ -220,6 +406,93 @@ module seapad::stake_test {
         return_to_sender(scenario, admin);
         return_shared(version);
     }
+
+    fun update_UnlockTime(pool: &mut StakePool<STAKE_COIN, REWARD_COIN>, unlock_times: u64, scenario: &mut Scenario) {
+        test_scenario::next_tx(scenario, ADMIN);
+        let admin = take_from_sender<Admincap>(scenario);
+        let version = test_scenario::take_shared<Version>(scenario);
+        stake::updateUnlockTime(&admin, pool, unlock_times, &mut version);
+
+        return_to_sender(scenario, admin);
+        return_shared(version);
+    }
+
+    fun change_admin(to: address, scenario: &mut Scenario) {
+        test_scenario::next_tx(scenario, ADMIN);
+        let admin = take_from_sender<Admincap>(scenario);
+        let version = test_scenario::take_shared<Version>(scenario);
+        stake::change_admin(admin, to, &mut version);
+
+        return_shared(version);
+    }
+
+    fun pause(pool: &mut StakePool<STAKE_COIN, REWARD_COIN>, pause: bool, scenario: &mut Scenario) {
+        test_scenario::next_tx(scenario, ADMIN);
+        let admin = take_from_sender<Admincap>(scenario);
+        stake::pause(&admin, pool, pause);
+
+        return_to_sender(scenario, admin);
+    }
+
+    fun claimRewards(
+        claimer: address,
+        pool: &mut StakePool<STAKE_COIN, REWARD_COIN>,
+        clock: &Clock,
+        scenario: &mut Scenario
+    ) {
+        test_scenario::next_tx(scenario, claimer);
+        let version = test_scenario::take_shared<Version>(scenario);
+        let ctx = test_scenario::ctx(scenario);
+
+        stake::claimRewards(pool, clock, &mut version, ctx);
+
+        return_shared(version);
+    }
+
+    fun stakeRewards(
+        staker: address,
+        pool: &mut StakePool<STAKE_COIN, REWARD_COIN>,
+        clock: &Clock,
+        scenario: &mut Scenario
+    ) {
+        test_scenario::next_tx(scenario, staker);
+        let version = test_scenario::take_shared<Version>(scenario);
+        let ctx = test_scenario::ctx(scenario);
+
+        stake::stakeRewards(pool, clock, &mut version, ctx);
+
+        return_shared(version);
+    }
+
+    fun withdrawRewardCoins(pool: &mut StakePool<STAKE_COIN, REWARD_COIN>, scenario: &mut Scenario) {
+        test_scenario::next_tx(scenario, ADMIN);
+        let admin = take_from_sender<Admincap>(scenario);
+        let version = test_scenario::take_shared<Version>(scenario);
+        let ctx = test_scenario::ctx(scenario);
+
+        stake::withdrawRewardCoins(&admin, pool, &mut version, ctx);
+
+        return_to_sender(scenario, admin);
+        return_shared(version);
+    }
+
+    fun updateApy(
+        pool: &mut StakePool<STAKE_COIN, REWARD_COIN>,
+        owners: vector<address>,
+        apy: u128,
+        clock: &Clock,
+        scenario: &mut Scenario
+    ) {
+        test_scenario::next_tx(scenario, ADMIN);
+        let admin = take_from_sender<Admincap>(scenario);
+        let version = test_scenario::take_shared<Version>(scenario);
+
+        stake::updateApy(&admin, pool, owners, apy, &mut version, clock);
+
+        return_to_sender(scenario, admin);
+        return_shared(version);
+    }
+
 
     fun init_env(scenario: &mut Scenario) {
         let ctx = test_scenario::ctx(scenario);
