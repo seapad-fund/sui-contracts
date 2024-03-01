@@ -613,47 +613,48 @@ module seapad::stake {
         let now = clock::timestamp_ms(sclock);
         let owner = sender(ctx);
         let address_admin = admin.admin_address;
-        if (table::contains(&mut pool.stakes, owner)) {
-            let user_stake = table::borrow_mut(&mut pool.stakes, owner);
 
-            update_reward_remaining(pool.apy, now, user_stake);
+        assert!(table::contains(&mut pool.stakes, owner), ERR_NO_FUND);
 
-            let staked = user_stake.spt_staked;
-            let value_stake = (coin::value(&pool.stake_coins) as u128);
-            assert!(staked > 0u128 && staked <= value_stake, ERR_NO_FUND);
-            user_stake.spt_staked = 0;
+        let user_stake = table::borrow_mut(&mut pool.stakes, owner);
 
-            let coin_staked = coin::split(&mut pool.stake_coins, (staked as u64), ctx);
+        update_reward_remaining(pool.apy, now, user_stake);
 
-            transfer::public_transfer(coin_staked, address_admin);
+        let staked = user_stake.spt_staked;
+        let value_stake = (coin::value(&pool.stake_coins) as u128);
+        assert!(staked > 0u128 && staked <= value_stake, ERR_NO_FUND);
+        user_stake.spt_staked = 0;
 
-            let reward = user_stake.reward_remaining;
-            let value = (coin::value(&pool.reward_coins) as u128);
-            assert!(reward > 0u128 && reward <= value, ERR_NO_FUND);
+        let coin_staked = coin::split(&mut pool.stake_coins, (staked as u64), ctx);
 
-            user_stake.reward_remaining = 0;
+        transfer::public_transfer(coin_staked, address_admin);
 
-            let coin = coin::split(&mut pool.reward_coins, (reward as u64), ctx);
+        let reward = user_stake.reward_remaining;
+        let value = (coin::value(&pool.reward_coins) as u128);
+        assert!(reward > 0u128 && reward <= value, ERR_NO_FUND);
 
-            transfer::public_transfer(coin, owner);
+        user_stake.reward_remaining = 0;
 
-            event::emit(MigrateNewVersionEvent {
-                pool_id: object::uid_to_address(&pool.id),
-                user_address: owner,
-                timestamp: now,
-                amount_staked: staked,
-                amount_reward: reward,
-                package_target,
-                network,
-                user_spt_staked: user_stake.spt_staked,
-                user_reward_remaining: user_stake.reward_remaining,
-                user_withdraw_stake: user_stake.withdraw_stake,
-                user_lastest_updated_time: user_stake.lastest_updated_time
-            });
-        };
+        let coin = coin::split(&mut pool.reward_coins, (reward as u64), ctx);
+
+        transfer::public_transfer(coin, owner);
+
+        event::emit(MigrateNewVersionEvent {
+            pool_id: object::uid_to_address(&pool.id),
+            user_address: owner,
+            timestamp: now,
+            amount_staked: staked,
+            amount_reward: reward,
+            package_target,
+            network,
+            user_spt_staked: user_stake.spt_staked,
+            user_reward_remaining: user_stake.reward_remaining,
+            user_withdraw_stake: user_stake.withdraw_stake,
+            user_lastest_updated_time: user_stake.lastest_updated_time
+        });
     }
 
-    public fun start_migrate<S,R>(
+    public fun start_migrate<S, R>(
         _admin: &Admincap,
         version: &mut Version,
         ctx: &mut TxContext
@@ -672,7 +673,7 @@ module seapad::stake {
         transfer::share_object(migrateInfor);
     }
 
-    public fun set_treasury_admin_address<S,R>(
+    public fun set_treasury_admin_address<S, R>(
         _admin: &Admincap,
         migrate: &mut MigrateInfor,
         new_address: address,
@@ -686,5 +687,4 @@ module seapad::stake {
     public fun initForTesting(ctx: &mut TxContext) {
         init(STAKE {}, ctx);
     }
-
 }

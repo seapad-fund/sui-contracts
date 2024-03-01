@@ -2,7 +2,7 @@
 name = "StakeV2"
 version = "0.0.2"
 #published-at = "0xcd72e9b1dfdd998047c07db08b48ff5458558a6deff4575ee07f1264b12e6ea2"
-published-at = "0x06f6b78d4571d1c13766b06c682ec6f24becbc54921072937efb274da15dbbc1"
+published-at = "0x3f4371b17a47e72d99c1380d1bfb3e291ebe4891a0cf75cca1704902aea3804b"
 
 [dependencies]
 Sui = { git = "https://github.com/MystenLabs/sui", subdir = "crates/sui-framework/packages/sui-framework", rev = "mainnet" }

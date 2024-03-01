@@ -2,7 +2,7 @@
 module seapad::stake_test {
     use sui::coin::Coin;
     use seapad::stake;
-    use seapad::stake::{StakePool, Admincap};
+    use seapad::stake::{StakePool, Admincap, MigrateInfor};
     use sui::clock;
     use sui::coin;
     use sui::clock::Clock;
@@ -317,7 +317,7 @@ module seapad::stake_test {
         stake(SEED_FUND, &mut pool, STAKE_VALUE, &clock, scenario);
 
         next_tx(scenario, @alice);
-        stake(SEED_FUND, &mut pool, STAKE_VALUE, &clock, scenario);
+        stake(@alice, &mut pool, STAKE_VALUE, &clock, scenario);
 
 
         //admin updateApy
@@ -326,11 +326,329 @@ module seapad::stake_test {
 
         updateApy(&mut pool, vector[SEED_FUND, @alice], 2001, &clock, scenario);
 
+        //next 12 hours user claim rewards
+        next_tx(scenario, SEED_FUND);
+        clock::increment_for_testing(&mut clock, TWELVE_IN_MS + TWELVE_IN_MS);
+        claimRewards(SEED_FUND, &mut pool, &clock, scenario);
+
+        test_scenario::next_tx(scenario, SEED_FUND);
+        {
+            let coin_reward = take_from_sender<Coin<REWARD_COIN>>(scenario);
+            assert!(coin::value(&coin_reward) > 54794521, 0);
+            return_to_sender(scenario, coin_reward);
+        };
+
         clock::destroy_for_testing(clock);
         return_shared(pool);
         test_scenario::end(scenario_val);
     }
 
+    #[test]
+    fun test_updateApyV2() {
+        let scenario_val = scenario();
+        let scenario = &mut scenario_val;
+        let ctx = ctx(scenario);
+        let clock = clock::create_for_testing(ctx);
+
+        init_env(scenario);
+        next_tx(scenario, ADMIN);
+
+        //Create pool and Deposit Reward
+        let pool = create_pool(scenario);
+        depositRewardCoins(&mut pool, REWARD_VALUE, scenario);
+
+        //User stake amount
+        next_tx(scenario, SEED_FUND);
+        stake(SEED_FUND, &mut pool, STAKE_VALUE, &clock, scenario);
+
+        next_tx(scenario, @alice);
+        stake(@alice, &mut pool, STAKE_VALUE, &clock, scenario);
+
+        //admin updateApy
+        next_tx(scenario, ADMIN);
+        clock::increment_for_testing(&mut clock, TWELVE_IN_MS);
+
+        updateApyV2(&mut pool, vector[SEED_FUND, @alice], 2002, 2000, &clock, scenario);
+
+        next_tx(scenario, SEED_FUND);
+        clock::increment_for_testing(&mut clock, TWELVE_IN_MS + TWELVE_IN_MS);
+        claimRewards(SEED_FUND, &mut pool, &clock, scenario);
+
+        test_scenario::next_tx(scenario, SEED_FUND);
+        {
+            let coin_reward = take_from_sender<Coin<REWARD_COIN>>(scenario);
+            assert!(coin::value(&coin_reward) > 54794520, 0);
+            return_to_sender(scenario, coin_reward);
+        };
+
+        clock::destroy_for_testing(clock);
+        return_shared(pool);
+        test_scenario::end(scenario_val);
+    }
+
+    #[test]
+    fun test_stopEmergency() {
+        let scenario_val = scenario();
+        let scenario = &mut scenario_val;
+        let ctx = ctx(scenario);
+        let clock = clock::create_for_testing(ctx);
+
+        init_env(scenario);
+        next_tx(scenario, ADMIN);
+
+        //Create pool and Deposit Reward
+        let pool = create_pool(scenario);
+        depositRewardCoins(&mut pool, REWARD_VALUE, scenario);
+
+        //User stake amount
+        next_tx(scenario, SEED_FUND);
+        stake(SEED_FUND, &mut pool, STAKE_VALUE, &clock, scenario);
+
+        next_tx(scenario, @alice);
+        stake(@alice, &mut pool, STAKE_VALUE, &clock, scenario);
+
+        // next time 12 hours
+        next_tx(scenario, SEED_FUND);
+        clock::increment_for_testing(&mut clock, TWELVE_IN_MS);
+
+        // user claim reward
+        claimRewards(SEED_FUND, &mut pool, &clock, scenario);
+
+
+        // next 12 hours admin stop emergency
+        next_tx(scenario, ADMIN);
+        clock::increment_for_testing(&mut clock, TWELVE_IN_MS + 1);
+        stopEmergency(&mut pool, vector[SEED_FUND, @alice], true, &clock, scenario);
+
+        test_scenario::next_tx(scenario, SEED_FUND);
+        {
+            let coin_reward = take_from_sender<Coin<STAKE_COIN>>(scenario);
+            assert!(coin::value(&coin_reward) == (STAKE_VALUE as u64), 0);
+            return_to_sender(scenario, coin_reward);
+        };
+
+
+        clock::destroy_for_testing(clock);
+        return_shared(pool);
+        test_scenario::end(scenario_val);
+    }
+
+    #[test]
+    fun test_start_migrate() {
+        let scenario_val = scenario();
+        let scenario = &mut scenario_val;
+
+        init_env(scenario);
+        next_tx(scenario, ADMIN);
+
+        //admin start migrate
+        let migrate = start_migrate(scenario);
+
+        return_shared(migrate);
+        test_scenario::end(scenario_val);
+    }
+
+    #[test]
+    fun test_set_treasury_admin_address() {
+        let scenario_val = scenario();
+        let scenario = &mut scenario_val;
+
+        init_env(scenario);
+        next_tx(scenario, ADMIN);
+
+        // admin start migrate
+        let migrate = start_migrate(scenario);
+
+        //admin set treasury
+        set_treasury_admin_address(&mut migrate, @alice, scenario);
+
+        return_shared(migrate);
+        test_scenario::end(scenario_val);
+    }
+
+    #[test]
+    fun test_migrateNewVersion() {
+        let scenario_val = scenario();
+        let scenario = &mut scenario_val;
+        let ctx = ctx(scenario);
+        let clock = clock::create_for_testing(ctx);
+
+        init_env(scenario);
+        next_tx(scenario, ADMIN);
+
+        //Create pool and Deposit Reward
+        let pool = create_pool(scenario);
+        depositRewardCoins(&mut pool, REWARD_VALUE, scenario);
+
+        //User stake amount
+        next_tx(scenario, SEED_FUND);
+        stake(SEED_FUND, &mut pool, STAKE_VALUE, &clock, scenario);
+
+        // admin start migrate
+        next_tx(scenario, ADMIN);
+        let migrate = start_migrate(scenario);
+
+        //user migrate
+        next_tx(scenario, SEED_FUND);
+        clock::increment_for_testing(&mut clock, TWELVE_IN_MS);
+        migrateNewVersion(SEED_FUND, &mut pool, b"package_target", b"BSC", &mut migrate, &clock, scenario);
+
+        test_scenario::next_tx(scenario, @treasury_admin);
+        {
+            let coin_stake = take_from_sender<Coin<STAKE_COIN>>(scenario);
+            assert!(coin::value(&coin_stake) == (STAKE_VALUE as u64), 0);
+            return_to_sender(scenario, coin_stake);
+        };
+
+        test_scenario::next_tx(scenario, SEED_FUND);
+        {
+            let coin_reward = take_from_sender<Coin<REWARD_COIN>>(scenario);
+            assert!(coin::value(&coin_reward) < VALUE_REWARD_UNSTAKE, 0);
+            return_to_sender(scenario, coin_reward);
+        };
+
+
+        clock::destroy_for_testing(clock);
+        return_shared(migrate);
+        return_shared(pool);
+        test_scenario::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = stake::ERR_NO_FUND)]
+    fun test_value_spt_migrate() {
+        let scenario_val = scenario();
+        let scenario = &mut scenario_val;
+        let ctx = ctx(scenario);
+        let clock = clock::create_for_testing(ctx);
+
+        init_env(scenario);
+        next_tx(scenario, ADMIN);
+
+        //Create pool and Deposit Reward
+        let pool = create_pool(scenario);
+        depositRewardCoins(&mut pool, REWARD_VALUE, scenario);
+
+        //User stake amount
+        next_tx(scenario, SEED_FUND);
+        stake(SEED_FUND, &mut pool, STAKE_VALUE, &clock, scenario);
+
+        // next time 12 hours
+        next_tx(scenario, SEED_FUND);
+        clock::increment_for_testing(&mut clock, TWELVE_IN_MS);
+
+        // user unstake
+        let unstake_amount = STAKE_VALUE ;
+        unstake(SEED_FUND, &mut pool, unstake_amount, &clock, scenario);
+
+        // user withdraw SPT
+        clock::increment_for_testing(&mut clock, TIME_WITHDRAW);
+        withdrawSpt(SEED_FUND, &mut pool, &clock, scenario);
+
+        // admin start migrate
+        next_tx(scenario, ADMIN);
+        let migrate = start_migrate(scenario);
+
+        //user migrate --> err because spt ==0
+        next_tx(scenario, SEED_FUND);
+        clock::increment_for_testing(&mut clock, TWELVE_IN_MS);
+        migrateNewVersion(SEED_FUND, &mut pool, b"package_target", b"BSC", &mut migrate, &clock, scenario);
+
+        clock::destroy_for_testing(clock);
+        return_shared(migrate);
+        return_shared(pool);
+        test_scenario::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = stake::ERR_NO_FUND)]
+    fun test_user_not_migrate() {
+        let scenario_val = scenario();
+        let scenario = &mut scenario_val;
+        let ctx = ctx(scenario);
+        let clock = clock::create_for_testing(ctx);
+
+        init_env(scenario);
+        next_tx(scenario, ADMIN);
+
+        //Create pool and Deposit Reward
+        let pool = create_pool(scenario);
+        depositRewardCoins(&mut pool, REWARD_VALUE, scenario);
+
+        // admin start migrate
+        next_tx(scenario, ADMIN);
+        let migrate = start_migrate(scenario);
+
+        //User stake amount
+        next_tx(scenario, SEED_FUND);
+        stake(SEED_FUND, &mut pool, STAKE_VALUE, &clock, scenario);
+
+
+        //user migrate --> err because user is not in the stakes table
+        clock::increment_for_testing(&mut clock, TWELVE_IN_MS);
+        migrateNewVersion(USER_ERR, &mut pool, b"package_target", b"BSC", &mut migrate, &clock, scenario);
+
+        clock::destroy_for_testing(clock);
+        return_shared(migrate);
+        return_shared(pool);
+        test_scenario::end(scenario_val);
+    }
+
+    #[test]
+    fun test_user_unstake_with_migrate() {
+        let scenario_val = scenario();
+        let scenario = &mut scenario_val;
+        let ctx = ctx(scenario);
+        let clock = clock::create_for_testing(ctx);
+
+        init_env(scenario);
+        next_tx(scenario, ADMIN);
+
+        //Create pool and Deposit Reward
+        let pool = create_pool(scenario);
+        depositRewardCoins(&mut pool, REWARD_VALUE, scenario);
+
+        // admin start migrate
+        next_tx(scenario, ADMIN);
+        let migrate = start_migrate(scenario);
+
+
+        //User stake amount
+        next_tx(scenario, SEED_FUND);
+        stake(SEED_FUND, &mut pool, STAKE_VALUE, &clock, scenario);
+
+        // next time 12 hours
+        next_tx(scenario, SEED_FUND);
+        clock::increment_for_testing(&mut clock, TWELVE_IN_MS);
+
+        // user unstake
+        let unstake_amount = STAKE_VALUE / 2 ;
+        unstake(SEED_FUND, &mut pool, unstake_amount, &clock, scenario);
+
+        // next user done time unstake.
+        clock::increment_for_testing(&mut clock, TIME_WITHDRAW);
+        migrateNewVersion(SEED_FUND, &mut pool, b"package_target", b"BSC", &mut migrate, &clock, scenario);
+
+
+        test_scenario::next_tx(scenario, @treasury_admin);
+        {
+            let coin_stake = take_from_sender<Coin<STAKE_COIN>>(scenario);
+            assert!(coin::value(&coin_stake) == VALUE_TEST, 0);
+            return_to_sender(scenario, coin_stake);
+        };
+
+        test_scenario::next_tx(scenario, SEED_FUND);
+        {
+            let coin_reward = take_from_sender<Coin<REWARD_COIN>>(scenario);
+            assert!(coin::value(&coin_reward) < VALUE_REWARD_UNSTAKE + VALUE_REWARD_UNSTAKE, 0);
+            return_to_sender(scenario, coin_reward);
+        };
+
+        clock::destroy_for_testing(clock);
+        return_shared(migrate);
+        return_shared(pool);
+        test_scenario::end(scenario_val);
+    }
 
     fun create_pool(scenario: &mut Scenario): StakePool<STAKE_COIN, REWARD_COIN> {
         test_scenario::next_tx(scenario, ADMIN);
@@ -493,6 +811,89 @@ module seapad::stake_test {
         return_shared(version);
     }
 
+    fun updateApyV2(
+        pool: &mut StakePool<STAKE_COIN, REWARD_COIN>,
+        owners: vector<address>,
+        apy: u128,
+        old_apy: u128,
+        clock: &Clock,
+        scenario: &mut Scenario
+    ) {
+        test_scenario::next_tx(scenario, ADMIN);
+        let admin = take_from_sender<Admincap>(scenario);
+        let version = test_scenario::take_shared<Version>(scenario);
+
+        stake::updateApyV2(&admin, pool, owners, apy, old_apy, &mut version, clock);
+
+        return_to_sender(scenario, admin);
+        return_shared(version);
+    }
+
+    fun stopEmergency(
+        pool: &mut StakePool<STAKE_COIN, REWARD_COIN>,
+        owners: vector<address>,
+        paused: bool,
+        clock: &Clock,
+        scenario: &mut Scenario
+    ) {
+        test_scenario::next_tx(scenario, ADMIN);
+        let admin = take_from_sender<Admincap>(scenario);
+        let version = test_scenario::take_shared<Version>(scenario);
+        let ctx = test_scenario::ctx(scenario);
+
+        stake::stopEmergency(&admin, pool, owners, paused, clock, &mut version, ctx);
+
+        return_to_sender(scenario, admin);
+        return_shared(version);
+    }
+
+    fun start_migrate(scenario: &mut Scenario): MigrateInfor {
+        test_scenario::next_tx(scenario, ADMIN);
+        {
+            let admin = take_from_sender<Admincap>(scenario);
+            let version = test_scenario::take_shared<Version>(scenario);
+            let ctx = test_scenario::ctx(scenario);
+
+            stake::start_migrate<STAKE_COIN, REWARD_COIN>(
+                &admin,
+                &mut version,
+                ctx
+            );
+            test_scenario::return_to_sender(scenario, admin);
+            test_scenario::return_shared(version);
+        };
+        test_scenario::next_tx(scenario, ADMIN);
+        test_scenario::take_shared<MigrateInfor>(scenario)
+    }
+
+    fun set_treasury_admin_address(migrate: &mut MigrateInfor, new_address: address, scenario: &mut Scenario) {
+        test_scenario::next_tx(scenario, ADMIN);
+        let admin = take_from_sender<Admincap>(scenario);
+        let version = test_scenario::take_shared<Version>(scenario);
+
+        stake::set_treasury_admin_address<STAKE_COIN, REWARD_COIN>(&admin, migrate, new_address, &mut version);
+
+        return_to_sender(scenario, admin);
+        return_shared(version);
+    }
+
+    fun migrateNewVersion(
+        user: address,
+        pool: &mut StakePool<STAKE_COIN, REWARD_COIN>,
+        package_target: vector<u8>,
+        network: vector<u8>,
+        admin: &mut MigrateInfor,
+        clock: &Clock,
+        scenario: &mut Scenario
+    ) {
+        test_scenario::next_tx(scenario, user);
+        let version = test_scenario::take_shared<Version>(scenario);
+        let ctx = test_scenario::ctx(scenario);
+
+        stake::migrateNewVersion(pool, package_target, network, admin, &mut version, clock, ctx);
+
+        return_shared(version);
+    }
 
     fun init_env(scenario: &mut Scenario) {
         let ctx = test_scenario::ctx(scenario);
