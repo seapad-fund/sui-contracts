@@ -19,10 +19,12 @@ module seapad::stake_test {
     const APY: u128 = 2000;
     const UNLOCTIME: u64 = 86400000;
     const TWELVE_IN_MS: u64 = 43200000;
-    const TIME_WITHDRAW: u64 = 129600001;
+    const TIME_WITHDRAW: u64 = 86400001;
+    const TIME_NOT_WITHDRAW: u64 = 86399999;
     const VALUE_TEST: u64 = 50000000000;
     const VALUE_REWARD_UNSTAKE: u64 = 27397261;
     const VALUE_WITHDRAW_REWARD_COIN: u64 = 9972602739;
+    const VALUE_REWARD_MIGRATE: u64 = 1;
 
 
     #[test]
@@ -629,6 +631,8 @@ module seapad::stake_test {
         clock::increment_for_testing(&mut clock, TIME_WITHDRAW);
         migrateNewVersion(SEED_FUND, &mut pool, b"package_target", b"BSC", &mut migrate, &clock, scenario);
 
+        //user withdraw spt
+        withdrawSpt(SEED_FUND, &mut pool, &clock, scenario);
 
         test_scenario::next_tx(scenario, @treasury_admin);
         {
@@ -639,8 +643,156 @@ module seapad::stake_test {
 
         test_scenario::next_tx(scenario, SEED_FUND);
         {
+            let coin_stake = take_from_sender<Coin<STAKE_COIN>>(scenario);
+            assert!(coin::value(&coin_stake) == VALUE_TEST, 0);
+            return_to_sender(scenario, coin_stake);
+        };
+
+        test_scenario::next_tx(scenario, SEED_FUND);
+        {
             let coin_reward = take_from_sender<Coin<REWARD_COIN>>(scenario);
-            assert!(coin::value(&coin_reward) < VALUE_REWARD_UNSTAKE + VALUE_REWARD_UNSTAKE, 0);
+            assert!(coin::value(&coin_reward) < VALUE_REWARD_UNSTAKE + VALUE_REWARD_MIGRATE, 0);
+            return_to_sender(scenario, coin_reward);
+        };
+
+        clock::destroy_for_testing(clock);
+        return_shared(migrate);
+        return_shared(pool);
+        test_scenario::end(scenario_val);
+    }
+
+    #[test]
+    fun test_user_is_in_unstake_time_with_migate() {
+        let scenario_val = scenario();
+        let scenario = &mut scenario_val;
+        let ctx = ctx(scenario);
+        let clock = clock::create_for_testing(ctx);
+
+        init_env(scenario);
+        next_tx(scenario, ADMIN);
+
+        //Create pool and Deposit Reward
+        let pool = create_pool(scenario);
+        depositRewardCoins(&mut pool, REWARD_VALUE, scenario);
+
+        // admin start migrate
+        next_tx(scenario, ADMIN);
+        let migrate = start_migrate(scenario);
+
+        //User stake amount
+        next_tx(scenario, SEED_FUND);
+        stake(SEED_FUND, &mut pool, STAKE_VALUE, &clock, scenario);
+
+        // next time 12 hours
+        next_tx(scenario, SEED_FUND);
+        clock::increment_for_testing(&mut clock, TWELVE_IN_MS);
+
+        // User partially unstakes 50%
+        let unstake_amount = STAKE_VALUE / 2 ;
+        unstake(SEED_FUND, &mut pool, unstake_amount, &clock, scenario);
+
+        // The user is not eligible to unstake and migrate
+        next_tx(scenario, SEED_FUND);
+        clock::increment_for_testing(&mut clock, TIME_NOT_WITHDRAW);
+
+        //user migrate
+        migrateNewVersion(SEED_FUND, &mut pool, b"package_target", b"BSC", &mut migrate, &clock, scenario);
+
+        next_tx(scenario, SEED_FUND);
+        clock::increment_for_testing(&mut clock, TIME_NOT_WITHDRAW + 10);
+
+        // user withdraw SPT
+        withdrawSpt(SEED_FUND, &mut pool, &clock, scenario);
+
+        test_scenario::next_tx(scenario, @treasury_admin);
+        {
+            let coin_stake = take_from_sender<Coin<STAKE_COIN>>(scenario);
+            assert!(coin::value(&coin_stake) == VALUE_TEST, 0);
+            return_to_sender(scenario, coin_stake);
+        };
+
+        test_scenario::next_tx(scenario, SEED_FUND);
+        {
+            let coin_stake = take_from_sender<Coin<STAKE_COIN>>(scenario);
+            assert!(coin::value(&coin_stake) == VALUE_TEST, 0);
+            return_to_sender(scenario, coin_stake);
+        };
+
+        test_scenario::next_tx(scenario, SEED_FUND);
+        {
+            let coin_reward = take_from_sender<Coin<REWARD_COIN>>(scenario);
+            assert!(coin::value(&coin_reward) < VALUE_REWARD_UNSTAKE + 13698631, 0);
+            return_to_sender(scenario, coin_reward);
+        };
+
+        clock::destroy_for_testing(clock);
+        return_shared(migrate);
+        return_shared(pool);
+        test_scenario::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = stake::ERR_NO_FUND)]
+    fun test_user_is_in_unstake_time_with_migate_V2() {
+        let scenario_val = scenario();
+        let scenario = &mut scenario_val;
+        let ctx = ctx(scenario);
+        let clock = clock::create_for_testing(ctx);
+
+        init_env(scenario);
+        next_tx(scenario, ADMIN);
+
+        //Create pool and Deposit Reward
+        let pool = create_pool(scenario);
+        depositRewardCoins(&mut pool, REWARD_VALUE, scenario);
+
+        // admin start migrate
+        next_tx(scenario, ADMIN);
+        let migrate = start_migrate(scenario);
+
+        //User stake amount
+        next_tx(scenario, SEED_FUND);
+        stake(SEED_FUND, &mut pool, STAKE_VALUE, &clock, scenario);
+
+        // next time 12 hours
+        next_tx(scenario, SEED_FUND);
+        clock::increment_for_testing(&mut clock, TWELVE_IN_MS);
+
+        // User partially unstakes 100%
+        let unstake_amount = STAKE_VALUE ;
+        unstake(SEED_FUND, &mut pool, unstake_amount, &clock, scenario);
+
+        // The user is not eligible to unstake and migrate
+        next_tx(scenario, SEED_FUND);
+        clock::increment_for_testing(&mut clock, TIME_NOT_WITHDRAW);
+
+        //user migrate --> err because SPT = 0
+        migrateNewVersion(SEED_FUND, &mut pool, b"package_target", b"BSC", &mut migrate, &clock, scenario);
+
+        next_tx(scenario, SEED_FUND);
+        clock::increment_for_testing(&mut clock, TIME_NOT_WITHDRAW + 10);
+
+        // user withdraw SPT
+        withdrawSpt(SEED_FUND, &mut pool, &clock, scenario);
+
+        test_scenario::next_tx(scenario, @treasury_admin);
+        {
+            let coin_stake = take_from_sender<Coin<STAKE_COIN>>(scenario);
+            assert!(coin::value(&coin_stake) == 0, 0);
+            return_to_sender(scenario, coin_stake);
+        };
+
+        test_scenario::next_tx(scenario, SEED_FUND);
+        {
+            let coin_stake = take_from_sender<Coin<STAKE_COIN>>(scenario);
+            assert!(coin::value(&coin_stake) == (STAKE_VALUE as u64), 0);
+            return_to_sender(scenario, coin_stake);
+        };
+
+        test_scenario::next_tx(scenario, SEED_FUND);
+        {
+            let coin_reward = take_from_sender<Coin<REWARD_COIN>>(scenario);
+            assert!(coin::value(&coin_reward) < VALUE_REWARD_UNSTAKE, 0);
             return_to_sender(scenario, coin_reward);
         };
 
