@@ -662,7 +662,7 @@ module seapad::stake_test {
     }
 
     #[test]
-    fun test_user_is_in_unstake_time_with_migate() {
+    fun test_user_is_in_unstake_time_with_migrate() {
         let scenario_val = scenario();
         let scenario = &mut scenario_val;
         let ctx = ctx(scenario);
@@ -733,7 +733,7 @@ module seapad::stake_test {
 
     #[test]
     #[expected_failure(abort_code = stake::ERR_NO_FUND)]
-    fun test_user_is_in_unstake_time_with_migate_V2() {
+    fun test_user_is_in_unstake_time_with_migrate_V2() {
         let scenario_val = scenario();
         let scenario = &mut scenario_val;
         let ctx = ctx(scenario);
