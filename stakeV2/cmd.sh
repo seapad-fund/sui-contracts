@@ -16,5 +16,5 @@ export NEW_ADMIN=0x0c5fa0762043c0ed91ddca940890c930947d062e1bea110fe4d7a59ad1929
 sui client upgrade --gas-budget 200000000 --upgrade-capability $UPGRADE_CAP
 
 #Package_after_Updrage
-#export PACKAGE_NEW=
+export PACKAGE_NEW = 0xa59716ed4f4b05f227b7d7d1ad09a968ea62162850c594b28098b08911a53eda
 
